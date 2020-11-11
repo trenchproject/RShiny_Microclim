@@ -1,0 +1,60 @@
+---
+title: "Dataset comparison"
+output: html_document
+---
+
+# Microclim Datasets
+
+| |**Horizontal coverage**|**Horizontal resolution**|**Vertical coverage**|**Vertical resolution**|**Temporal Coverage**|**Temporal resolution**|**Variables**
+:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
+ERA-5 Land|Global|0.1° x 0.1°|2m above - 289cm below|0-7cm, 7-28cm, 28-100cm, 100-289cm|1981-now|hourly|Wind,dewpoint, temp, evap, soil water, snow, many variables: etc
+GLDAS 2.0|Global|0.25° x 0.25°|Surface - 200cm below|10cm, 40cm, 100cm, 200cm|1948-01-01 - 2014-12-31|3-Hourly|Many (see list below)
+GLDAS 2.1|Global|0.25° x 0.25°|Surface - 200cm below|10cm, 40cm, 100cm, 200cm|2000-01-01 - 3-months behind current|3-Hourly|Many (see list below)
+GRIDMET|US only|0.04° x 0.04°|Surface|Surface|1979 - yesterday|Daily|Precip,. Max/Min humidity, max/min temp, mean evap.
+NicheMapR/Microclima|Global|30m coarsest, 3m finest|5cm above - 75cm below|1 cm |1957 - now|Hourly|Temp, Radiation, Wind speed, Humidity (time-series, not gridded):Soil moisture, Snow cover
+NOAA NCDC|Global|One location (lat, lon)|Surface|Surface|Varies|Varies|Precip, min/max temp, snowfall and depth, etc dep. On location
+SNODAS|US only|1km x 1km|Surface|Surface|Sept 2003 - now|Daily |Snow variables
+microclim|Global|15km x15km|surface to 1m depth|0, 2.5, 5, 10, 15, 20, 30, 50, 100, 200cm|1 day each month of 1 year|Hourly for 1 day|air temperature, wind speed, relative humidity, solar radiation, sky radiation and substrate temperatures from the surface to 1m depth
+microclimUS|US only|4km x 4km|2m above - 2m below|Below at [0, 2.5, 5, 10, 15, 20, 30, 50, 100 and 200cm] at [0, 50, 75 and 90%] shade. Above at 1cm and 200cm |1979 - 2017|Hourly|solar zenith angle, solar radiation, sky radiant temperature, air temp, wind speed, relative humidity, snow depth, soil temperature at specific depths, soil water potential at specific depths, soil moisture at specific depths, soil humidity at specific depths
+
+## ERA-5
+
+## GRIDMET
+
+## NOAA NCDC
+
+Go to this website and enter your email to get a token.
+Install rnoaa package in Rstudio. devtools::install_github("ropensci/rnoaa")
+Search for a weather station in your area of interest by running ncdc_stations() function. 
+Example:
+ncdc_stations(extent = c(47.5204, -122.2047, 47.6139, -122.1065), token = “token_received”)
+In the $data section, you can get a list of stations within the extent. Mindate and maxdate are the period during which the data are collected, which is an important variable to look for.
+Choose a station and copy the station ID. Run the ncdc() function with the station ID and your preferred period and data type.
+
+
+# Microclimate dataset Comparison
+
+Three locations:  
+Burnt mountain GHCND:USS0021B63S (47.04000, -121.9400)  
+on NCDC: MARICAO 2 SSW GHCND:RQC00665908 (18.15110, -66.98880) on SCAN: Maricao Forest (18.15, -67.00)  
+Wild basin GHCND:USS0005J05S (40.20000, -105.6000)
+
+
+Time to compare  
+2017 Jan 1-31 & Jul 1-31
+
+### Method 1. ERA-5
+
+
+### Method 2. GRIDMET
+
+
+### Method 3. NOAA NCDC
+```
+ncdc(datasetid = 'GHCND', 
+     stationid = "GHCND:USW00024234", 
+     token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+     startdate = "2017-07-01", 
+     enddate = "2017-07-31",
+     datatypeid = "TMAX")
+```
