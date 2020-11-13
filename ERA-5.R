@@ -1,7 +1,7 @@
 # ERA-5
 
 library(raster)
-
+library(MALDIquant)
 
 vars <- c('10m_u_component_of_wind', '10m_v_component_of_wind', '2m_temperature', 
           'skin_temperature', 'soil_temperature_level_3', 'surface_net_solar_radiation')
@@ -35,6 +35,15 @@ dates <- as.Date(c(Jan, Jul))
 repdate <- rep(dates, each = 24)
 
 
-tmaxERA <- data.frame("Date" = repdate, "Hour" = rep(0:23, 62), "WA" = getERA("WA", 3), "PR" = getERA("PR", 3), "CO" = getERA("CO", 3))
+tmaxERA <- data.frame("Date" = repdate, 
+                      "Hour" = rep(0:23, 62),
+                      "WA" = getERA("WA", 3), 
+                      "PR" = getERA("PR", 3), 
+                      "CO" = getERA("CO", 3),
+                      "Month" = rep(c(1, 7), each = 744))
 
 
+tmaxERA$FullDate <- format(as.POSIXct(paste0(tmaxERA$Date, " ", tmaxERA$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+tmaxERA
+
+rep(c(1, 7), each = 744)

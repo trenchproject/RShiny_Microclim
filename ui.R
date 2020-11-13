@@ -2,6 +2,7 @@ library(shiny)
 library(ggplot2)
 library(shinyWidgets)
 library(shinythemes)
+library(plotly)
 
 variables <- c("Surface temp", "Air temp", "Soil temperature", "Snow", "Radiation", "Wind speed")
 methods <- c("ERA5", "GRIDMET", "microclima", "NOAA NCDC", "SNODAS", "microclim")
@@ -27,7 +28,7 @@ shinyUI <- fluidPage(
     ),
     
     mainPanel(
-      plotOutput("plot")  
+      plotlyOutput("plot")  
     )
   )
 

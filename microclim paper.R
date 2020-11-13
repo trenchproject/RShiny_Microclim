@@ -4,7 +4,7 @@ locs <- data.frame(row.names = c("WA", "PR", "CO"),
                    "lon" = c(-118.5657, -66.98880, -104.7552), 
                    "lat" = c(47.0022, 18.15110, 40.8066))
 library(ncdf4)
-
+library(MALDIquant)
 
 ncUS <- nc_open("TA200cm_2017.nc")
 ncUSvar <- ncvar_get(ncUS)
@@ -27,7 +27,22 @@ microData <- function(loc) {
 }
 
 
-tempclimUS <- data.frame("Date" = repdate, "Hour" = rep(0:23, 62), "WA" = microData("WA"), "CO" = microData("CO"))
+Jan <- c()
+Jul <- c()
+for (i in 1:31) {
+  Jan <- c(Jan, paste0("2017-01-", i))
+  Jul <- c(Jul, paste0("2017-07-", i))
+}
+dates <- as.Date(c(Jan, Jul))
+repdate <- rep(dates, each = 24)
+
+tempclimUS <- data.frame("Date" = repdate, 
+                         "Month" = rep(c(1, 7), each = length(repdate) / 2), 
+                         "Hour" = rep(0:23, 62), 
+                         "WA" = microData("WA"), 
+                         "CO" = microData("CO"))
+
+tempclimUS$FullDate <- format(as.POSIXct(paste0(tempclimUS$Date, " ", tempclimUS$Hour, ":00")), format = "%Y-%m-%d %H:%M")
 
 
 

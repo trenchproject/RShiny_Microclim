@@ -49,9 +49,10 @@ getData <- function(loc, month, para) {
              startdate = paste0("2017-0", month, "-01"), 
              enddate = paste0("2017-0", month, "-31"),
              datatypeid = para)
-  data$data[, 4] <- data$data[, 4] / 10
-  df <- data$data[,c(1,4)]
-  df$month <- month
+  data$data[, "value"] <- data$data[, "value"] / 10
+  df <- data$data[,c("date", "value")] %>% as.data.frame()
+  colnames(df)[1] <- "Date"
+  df$Month <- month
   return (df)
 }
 
@@ -64,8 +65,8 @@ getDataFull <- function(loc, para) {
 
 fullDf <- function(var) {
   return (getDataFull("WA", var) %>% 
-            merge(getDataFull("PR", var), by = c("date", "month"), all = T) %>% 
-            merge(getDataFull("CO", var), by = c("date", "month"), all = T))
+            merge(getDataFull("PR", var), by = c("Date", "Month"), all = T) %>% 
+            merge(getDataFull("CO", var), by = c("Date", "Month"), all = T))
 }
 
 

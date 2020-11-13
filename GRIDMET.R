@@ -42,7 +42,7 @@ fullDataFrame <- function(param) {
   }
   dates <- as.Date(c(Jan, Jul))
   
-  df <- data.frame(date = dates, WA = fullArray("WA", AOIWA, param), CO = fullArray("CO", AOICO, param))
+  df <- data.frame(Date = dates, Month = rep(c(1, 7), each = 31), WA = fullArray("WA", AOIWA, param), CO = fullArray("CO", AOICO, param))
   return (df)
 }
 
