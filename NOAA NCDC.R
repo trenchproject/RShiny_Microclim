@@ -1,11 +1,21 @@
+# NOAA NCDC
+
 library(rnoaa)
 library(magrittr)
 
-# WA Burnt mountain GHCND:USS0021B63S (47.04000, -121.9400)
-ncdc_stations(extent = c(46.9, -122.1, 47.1, -121.76), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50)
+
+locs <- data.frame(row.names = c("WA", "PR", "CO"), 
+                   "lon" = c(-118.5657, -66.98880, -104.7552), 
+                   "lat" = c(47.0022, 18.15110, 40.8066))
+
+
+# WA Lind 3 NE GHCND:USC00454679  (47.0022, -118.5657)
+
+
+ncdc_stations(extent = c(46.9, -118.7, 47.1, -118.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50)
 
 df <- ncdc(datasetid = 'GHCND', 
-     stationid = "GHCND:USS0021B63S", 
+     stationid = "GHCND:USC00454679", 
      token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
      startdate = paste0("2017-07-01"), 
      enddate = paste0("2017-07-31")
@@ -15,19 +25,23 @@ unique(df$data$datatype)
 # PR MARICAO 2 SSW GHCND:RQC00665908 (18.15110, -66.98880)
 ncdc_stations(extent = c(18.1, -67.1, 18.2, -66.9), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
-# CO Wild basin GHCND:USS0005J05S (40.20000, -105.6000)
+
+# CO NUNN 7 NNE GHCND:USW00094074 (40.8066, -104.7552)
 ncdc_stations(extent = c(40.1, -105.7, 40.3, -105.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+
+
+ncdc_stations(extent = c(40.8, -104.8, 40.9, -104.6), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
 
 #_____________________________________________________________________________________
 
 getData <- function(loc, month, para) {
   if (loc == "WA") {
-    id = "GHCND:USS0021B63S"
+    id = "GHCND:USC00454679"
   } else if (loc == "PR") {
     id = "GHCND:RQC00665908"
   } else if (loc == "CO") {
-    id = "GHCND:USS0005J05S"
+    id = "GHCND:USW00094074"
   }
   data <- ncdc(datasetid = 'GHCND', 
              stationid = id, 
@@ -44,6 +58,7 @@ getData <- function(loc, month, para) {
 getDataFull <- function(loc, para) {
   df <- rbind(getData(loc, 1, para), getData(loc, 7, para))
   colnames(df)[2] <- loc
+  #df$date <- format(as.Date(df$date), format = "%Y-%m-%d")
   return (df)
 }
 
@@ -54,10 +69,8 @@ fullDf <- function(var) {
 }
 
 
-tmax <- fullDf("TMAX")
-tmin <- fullDf("TMIN")
- 
+tmaxNOAA <- fullDf("TMAX")
+tminNOAA <- fullDf("TMIN")
 
-tmax
 Jan <- tmax[tmax$month == 1,]
 plot(as.Date(Jan$date), Jan$WA)

@@ -5,6 +5,11 @@ shinyServer <- function(input, output, session) {
     if (input$methods == "NOAA NCDC") {
       ggplot() + geom_line(aes(x = as.Date(tmax[tmax$month == input$season, ]$date), y = tmax[tmax$month == input$season, ]$WA))
         
+    } else if (input$methods == "GRIDMET") {
+      
+    } else if (input$methods == "ERA-5") {
+      
     }
+      
   })
 }
