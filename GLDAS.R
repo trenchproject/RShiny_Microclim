@@ -1,14 +1,14 @@
 # GLDAS
 
-
-
 # Variables: 
-array <- c()
-for (i in 1:nc$nvars) {
-  array <- c(array, nc$var[[i]]$name)
-}
+# array <- c()
+# for (i in 1:nc$nvars) {
+#   array <- c(array, nc$var[[i]]$name)
+# }
 # "time_bnds"            "Lwnet_tavg"           "AvgSurfT_inst"        "SnowDepth_inst"      
 # "SoilTMP40_100cm_inst" "Wind_f_inst"          "Tair_f_inst" 
+
+# Function: fullGLDAS("var")
 
 
 locs <- data.frame(row.names = c("WA", "PR", "CO"), 
@@ -74,9 +74,4 @@ fullGLDAS <- function(var) {
 
 
 TairGLDAS <- fullGLDAS("Tair_f_inst")
-
-text <- read.delim("subset_GLDAS_NOAH025_3H_2.1_20201114_012548.txt", header = F) %>% as.data.frame()
-
-download.file(url = text[2,1], destfile = "test.nc4", mode = "wb")
-
 

@@ -1,7 +1,20 @@
 # NOAA NCDC
 
+# Variables (https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt)
+# TMAX, TMIN (tenths of degrees C)
+# PRCP: Precipitation (tenths of mm)
+# SNOW: Snowfall (mm)
+# SNWD: Snow depth (mm)
+
+
+# Function: fullDf("var")
+
+
+
+
 library(rnoaa)
 library(magrittr)
+
 
 
 locs <- data.frame(row.names = c("WA", "PR", "CO"), 
@@ -14,17 +27,32 @@ locs <- data.frame(row.names = c("WA", "PR", "CO"),
 
 ncdc_stations(extent = c(46.9, -118.7, 47.1, -118.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50)
 
-df <- ncdc(datasetid = 'GHCND', 
+ncdc(datasetid = 'GHCND', 
      stationid = "GHCND:USC00454679", 
      token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-     startdate = paste0("2017-07-01"), 
-     enddate = paste0("2017-07-31")
+     startdate = paste0("2017-01-01"), 
+     enddate = paste0("2017-01-31")
 )
+
+datasets <- ncdc_datasets(datasetid = 'GHCND', 
+              stationid = "GHCND:USC00454679", 
+              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+              startdate = paste0("2017-07-01"), 
+              enddate = paste0("2017-07-31")
+              )
 unique(df$data$datatype)
 
 # PR MARICAO 2 SSW GHCND:RQC00665908 (18.15110, -66.98880)
 ncdc_stations(extent = c(18.1, -67.1, 18.2, -66.9), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
+
+ncdc(datasetid = 'GHCND', 
+     stationid = "GHCND:RQC00665908", 
+     token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+     startdate = paste0("2017-07-01"), 
+     enddate = paste0("2017-07-31"),
+     datatypeid = "PRCP"
+)
 
 # CO NUNN 7 NNE GHCND:USW00094074 (40.8066, -104.7552)
 ncdc_stations(extent = c(40.1, -105.7, 40.3, -105.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
@@ -32,6 +60,13 @@ ncdc_stations(extent = c(40.1, -105.7, 40.3, -105.5), token = "MpEroBAcjEIOFDbJd
 
 ncdc_stations(extent = c(40.8, -104.8, 40.9, -104.6), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
+
+ncdc(datasetid = 'GHCND', 
+     stationid = "GHCND:USW00094074", 
+     token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+     startdate = paste0("2017-07-01"), 
+     enddate = paste0("2017-07-31")
+)
 
 #_____________________________________________________________________________________
 
@@ -73,5 +108,3 @@ fullDf <- function(var) {
 tmaxNOAA <- fullDf("TMAX")
 tminNOAA <- fullDf("TMIN")
 
-Jan <- tmax[tmax$month == 1,]
-plot(as.Date(Jan$date), Jan$WA)

@@ -1,5 +1,8 @@
 # microclim and microclimUS
 
+# Variables:
+
+
 locs <- data.frame(row.names = c("WA", "PR", "CO"), 
                    "lon" = c(-118.5657, -66.98880, -104.7552), 
                    "lat" = c(47.0022, 18.15110, 40.8066))

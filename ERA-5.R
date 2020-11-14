@@ -1,5 +1,17 @@
 # ERA-5
 
+# Variables
+
+# 1. 10m_u_component_of_wind
+# 2. 10m_v_component_of_wind
+# 3. 2m_temperature
+# 4. skin_temperature (surface temperature)
+# 5. soil_temperature_level_3 (28-100cm)
+# 6. surface_net_solar_radiation
+
+
+# Function: ERAdf("varIndex")
+
 library(raster)
 library(MALDIquant)
 
@@ -25,25 +37,26 @@ getERA <- function(loc, varIndex) {
   return (vals)
 }
 
-Jan <- c()
-Jul <- c()
-for (i in 1:31) {
-  Jan <- c(Jan, paste0("2017-01-", i))
-  Jul <- c(Jul, paste0("2017-07-", i))
+
+ERAdf <- function(varIndex) {
+  Jan <- c()
+  Jul <- c()
+  for (i in 1:31) {
+    Jan <- c(Jan, paste0("2017-01-", i))
+    Jul <- c(Jul, paste0("2017-07-", i))
+  }
+  dates <- as.Date(c(Jan, Jul))
+  repdate <- rep(dates, each = 24)
+  
+  df <- data.frame("Date" = repdate, 
+                   "Hour" = 0:23,
+                   "WA" = getERA("WA", 3), 
+                   "PR" = getERA("PR", 3), 
+                   "CO" = getERA("CO", 3),
+                   "Month" = rep(c(1, 7), each = 24 * 31))
+  
+  df$FullDate <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+  
+  return (df)
 }
-dates <- as.Date(c(Jan, Jul))
-repdate <- rep(dates, each = 24)
 
-
-tmaxERA <- data.frame("Date" = repdate, 
-                      "Hour" = rep(0:23, 62),
-                      "WA" = getERA("WA", 3), 
-                      "PR" = getERA("PR", 3), 
-                      "CO" = getERA("CO", 3),
-                      "Month" = rep(c(1, 7), each = 744))
-
-
-tmaxERA$FullDate <- format(as.POSIXct(paste0(tmaxERA$Date, " ", tmaxERA$Hour, ":00")), format = "%Y-%m-%d %H:%M")
-tmaxERA
-
-rep(c(1, 7), each = 744)
