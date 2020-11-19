@@ -39,7 +39,7 @@ arrayGLDAS <- function(var, loc) {
         char_day <- ifelse(day < 10, paste0("0", day), day)
         char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
 
-        nc <- nc_open(paste0("GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4"))
+        nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4"))
         
         val <- valGLDAS(nc, var, loc)
         array <- c(array, val)

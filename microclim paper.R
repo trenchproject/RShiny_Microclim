@@ -9,7 +9,7 @@ locs <- data.frame(row.names = c("WA", "PR", "CO"),
 library(ncdf4)
 library(MALDIquant)
 
-ncUS <- nc_open("TA200cm_2017.nc")
+ncUS <- nc_open("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/TA200cm_2017.nc")
 ncUSvar <- ncvar_get(ncUS)
 # 96 * 40 * 8760
 
@@ -53,7 +53,7 @@ tempclimUS$FullDate <- format(as.POSIXct(paste0(tempclimUS$Date, " ", tempclimUS
 
 microclimProcess <- function(month) {
   
-  nc <- nc_open(paste0("air_temperature_degC_120cm/TA120cm_", month, ".nc"))
+  nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/air_temperature_degC_120cm/TA120cm_", month, ".nc"))
   ncvar <- ncvar_get(nc)
   # dimension: 2159 * 852 * 24
   
