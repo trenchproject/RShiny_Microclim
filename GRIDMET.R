@@ -35,8 +35,6 @@ library(climateR)
 library(MALDIquant)
 library(raster)
 
-getGridMET(AOIWA, "burn_index", startDate = Sys.Date() - 3)
-param_meta$gridmet
 
 valsToArray <- function(loc, AOI, param, month) {
   array <- c()
@@ -49,7 +47,10 @@ valsToArray <- function(loc, AOI, param, month) {
     y <- sort(df$y)[match.closest(locs[loc, "lat"], sort(df$y))]
     array <- c(array, df[df$x == x & df$y == y, 3])
   }
-  return (array - 273.2)
+  if (param %in% c("tmin", "tmax")) {
+    array <- array - 273.2
+  }
+  return (array)
 }
 
 fullArray <- function(loc, AOI, param) {
@@ -77,5 +78,3 @@ fullGRID <- function(param) {
   return (df)
 }
 
-tmaxGRID <- fullGRID("tmax")
-tminGRID <- fullGRID("tmin")

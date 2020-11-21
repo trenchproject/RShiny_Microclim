@@ -3,9 +3,10 @@ library(ggplot2)
 library(shinyWidgets)
 library(shinythemes)
 library(plotly)
+library(data.table)
 
-variables <- c("Surface temp", "Air temp", "Soil temperature", "Snow", "Radiation", "Wind speed")
-methods <- c("ERA5", "GRIDMET", "microclima", "NOAA NCDC", "SNODAS", "microclim")
+variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
+methods <- c("ERA5", "GLDAS", "GRIDMET", "microclima", "NOAA_NCDC", "SNODAS", "microclim")
 
 shinyUI <- fluidPage(
   theme = shinytheme("united"),
@@ -24,6 +25,9 @@ shinyUI <- fluidPage(
                   options = list(style = "btn-success")),
       
       pickerInput("season", "Season", choices = c("Summer" = 7, "Winter" = 1),
+                  options = list(style = "btn-success")),
+      
+      pickerInput("loc", "Location", choices = c("Washington" = "WA", "Colorado" = "CO", "Puerto Rico" = "PR"),
                   options = list(style = "btn-success"))
     ),
     

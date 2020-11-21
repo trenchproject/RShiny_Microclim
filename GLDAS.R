@@ -1,12 +1,18 @@
-# GLDAS
+# GLDAS 3-hourly
 
 # Variables: 
 # array <- c()
 # for (i in 1:nc$nvars) {
 #   array <- c(array, nc$var[[i]]$name)
 # }
-# "time_bnds"            "Lwnet_tavg"           "AvgSurfT_inst"        "SnowDepth_inst"      
-# "SoilTMP40_100cm_inst" "Wind_f_inst"          "Tair_f_inst" 
+# or, https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS
+# "time_bnds"     
+# "Lwnet_tavg" Net longwave radiation flux (W m-2)           
+# "AvgSurfT_inst" Average surface skin temperature (K)        
+# "SnowDepth_inst" Snow depth (m) 
+# "SoilTMP40_100cm_inst" Soil temperature (40-100 cm underground) (K)
+# "Wind_f_inst" Wind speed (m s-1)         
+# "Tair_f_inst" Air temperature (K)
 
 # Function: fullGLDAS("var")
 
@@ -27,7 +33,12 @@ valGLDAS <- function(nc, var, loc) {
   lat <- sort(nc$dim$lat$vals)[match.closest(locs[loc, "lat"], sort(nc$dim$lat$vals))]
   latInd <- match(lat, nc$dim$lat$vals)
   
-  val <- ncvar[lonInd, latInd] - 273.15
+  val <- ncvar[lonInd, latInd]
+  
+  if (var %in% c("AvgSurfT_inst", "Tair_f_inst")) {
+    val <- val- 273.15
+  }
+
   return (val)
 }
 
@@ -57,21 +68,16 @@ fullGLDAS <- function(var) {
     Jan <- c(Jan, paste0("2017-01-", i))
     Jul <- c(Jul, paste0("2017-07-", i))
   }
-  dates <- as.Date(c(Jan, Jul))
-  repdate <- rep(dates, each = 8)
+  dates <- rep(c(Jan, Jul), each = 8)
   
-  df <- data.frame(Date = repdate, 
+  df <- data.frame(Date = as.Date(dates), 
                    Hour = seq(from = 0, to = 21, by = 3), 
                    WA = arrayGLDAS(var, "WA"), 
                    PR = arrayGLDAS(var, "PR"), 
                    CO = arrayGLDAS(var, "CO"),
                    Month = rep(c(1, 7), each = 31 * 8))
   
-  df$FullDate <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+  df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
   return (df)
 }
-
-
-TairGLDAS <- fullGLDAS("Tair_f_inst")
-
