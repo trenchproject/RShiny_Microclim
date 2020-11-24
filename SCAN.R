@@ -77,7 +77,9 @@ grabSCAN <- function(varIndex, loc, month) {
   vals <- data[, varIndex]
   
   if (varIndex %in% c(3, 4, 18:22)) {
-    vals <- (vals - 32) / 1.8
+    vals <- (vals - 32) / 1.8 # degF to degC
+  } else if (varIndex %in% c(7, 8)) {
+    vals <- vals * 0.44704  # mi/hr to m/s
   }
   
   days <- c()
@@ -85,9 +87,7 @@ grabSCAN <- function(varIndex, loc, month) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  df <- data.frame("Date" = days, 
+  df <- data.frame("Date" = as.Date(days), 
                    "Data" = vals)
   return (df)
 }
-
-grabSCAN(3, "WA", 1)

@@ -1,4 +1,8 @@
 # GLDAS 3-hourly
+# Extent: -119,18,-66,48
+
+# https://disc.gsfc.nasa.gov/data-access
+# wget for Windows methods for download
 
 # Variables: 
 # array <- c()
@@ -16,15 +20,27 @@
 
 # Function: fullGLDAS("var")
 
-
-locs <- data.frame(row.names = c("WA", "PR", "CO"), 
-                   "lon" = c(-118.5657, -66.98880, -104.7552), 
-                   "lat" = c(47.0022, 18.15110, 40.8066))
-
 library(ncdf4)
 library(MALDIquant)
 library(magrittr)
 
+locs <- data.frame(row.names = c("WA", "PR", "CO"), 
+                   "lon" = c(-118.5657, -66.98880, -104.7552), 
+                   "lat" = c(47.0022, 18.15110, 40.8066), 
+                   "offset" = c(-8, -4, -7))
+
+# 
+# 303.86
+# 
+# nc2 <- nc_open("GLDAS7-temp/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4")
+# ncvar2 <- ncvar_get(nc2)
+# val2 <- ncvar2[lonInd, latInd]
+# var = "Tair_f_inst"
+# 
+# filename <- "G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170701.1200.021.nc4.SUB.nc4"
+# nc <- nc_open(filename)
+# nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
+# 
 
 valGLDAS <- function(nc, var, loc) {
   ncvar <- ncvar_get(nc, varid = var)
@@ -42,42 +58,35 @@ valGLDAS <- function(nc, var, loc) {
   return (val)
 }
 
-arrayGLDAS <- function(var, loc) {
-  array <- c()
-  for (month in c(1, 7)) {
-    for (day in 1:31) {
-      for (hour in seq(from = 0, to = 21, by = 3)) {
-        char_day <- ifelse(day < 10, paste0("0", day), day)
-        char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
 
-        nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4"))
-        
-        val <- valGLDAS(nc, var, loc)
-        array <- c(array, val)
-      }
+grabGLDAS <- function(var, loc, month) {
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  array <- c()
+  for (day in 1:31) {
+    for (hour in seq(from = 0, to = 21, by = 3)) {
+      
+      char_day <- ifelse(day < 10, paste0("0", day), day)
+      char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+      
+      filename <- paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+      nc <- nc_open(filename)
+      
+      val <- valGLDAS(nc, var, loc)
+      array <- c(array, val)
     }
   }
-  return (array)
-}
 
-
-fullGLDAS <- function(var) {
-  Jan <- c()
-  Jul <- c()
-  for (i in 1:31) {
-    Jan <- c(Jan, paste0("2017-01-", i))
-    Jul <- c(Jul, paste0("2017-07-", i))
-  }
-  dates <- rep(c(Jan, Jul), each = 8)
-  
-  df <- data.frame(Date = as.Date(dates), 
+  df <- data.frame(Date = rep(days, each = 8), 
                    Hour = seq(from = 0, to = 21, by = 3), 
-                   WA = arrayGLDAS(var, "WA"), 
-                   PR = arrayGLDAS(var, "PR"), 
-                   CO = arrayGLDAS(var, "CO"),
-                   Month = rep(c(1, 7), each = 31 * 8))
+                   Data = array)
   
   df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
   return (df)
 }
+
+

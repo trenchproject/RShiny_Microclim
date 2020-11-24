@@ -12,10 +12,6 @@
 library(rnoaa)
 library(magrittr)
 
-locs <- data.frame(row.names = c("WA", "PR", "CO"), 
-                   "lon" = c(-118.5657, -66.98880, -104.7552), 
-                   "lat" = c(47.0022, 18.15110, 40.8066))
-
 
 # # WA Lind 3 NE GHCND:USC00454679  (47.0022, -118.5657)
 # ncdc_stations(extent = c(46.9, -118.7, 47.1, -118.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50)
@@ -65,10 +61,40 @@ getDataNOAA <- function(loc, para) {
 }
 
 fullNOAA <- function(var) {
-  return (getDataFull("WA", var) %>% 
+  return (getDataNOAA("WA", var) %>% 
             merge(getDataNOAA("PR", var), by = c("Date", "Month"), all = T) %>% 
             merge(getDataNOAA("CO", var), by = c("Date", "Month"), all = T))
 }
 
 
 
+
+grabNOAA <- function(var, loc, month) {
+  
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  if (loc == "WA") {
+    id = "GHCND:USC00454679"
+  } else if (loc == "PR") {
+    id = "GHCND:RQC00665908"
+  } else if (loc == "CO") {
+    id = "GHCND:USW00094074"
+  }
+  data <- ncdc(datasetid = 'GHCND', 
+               stationid = id, 
+               token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+               startdate = paste0("2017-0", month, "-01"), 
+               enddate = paste0("2017-0", month, "-31"),
+               datatypeid = var)
+  
+  if (var %in% c("TMAX", "TMIN")) {
+    data$data[, "value"] <- data$data[, "value"] / 10
+  }
+  
+  df <- data$data[, c("date", "value")] %>% as.data.frame() %>% magrittr::set_colnames(c("Date", "Data"))
+  
+  return (df)
+}

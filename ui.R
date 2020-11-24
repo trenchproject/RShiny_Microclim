@@ -4,9 +4,9 @@ library(shinyWidgets)
 library(shinythemes)
 library(plotly)
 library(data.table)
+library(shinycssloaders)
 
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
-methods <- c("ERA5", "GLDAS", "GRIDMET", "microclima", "NOAA_NCDC", "SNODAS", "microclim")
 
 shinyUI <- fluidPage(
   theme = shinytheme("united"),
@@ -21,18 +21,17 @@ shinyUI <- fluidPage(
       pickerInput("var", "Variable", choices = variables,
                   options = list(style = "btn-success")),
       
-      pickerInput("methods", "Methods", choices = methods,
-                  options = list(style = "btn-success")),
+      uiOutput("methodsOutput"),
       
-      pickerInput("season", "Season", choices = c("Summer" = 7, "Winter" = 1),
-                  options = list(style = "btn-success")),
+      radioGroupButtons("season", "Season", choices = c("Summer" = 7, "Winter" = 1), selected = 7, status = "danger", size = "sm"),
       
-      pickerInput("loc", "Location", choices = c("Washington" = "WA", "Colorado" = "CO", "Puerto Rico" = "PR"),
-                  options = list(style = "btn-success"))
+      radioGroupButtons("loc", "Location", choices = c("Washington" = "WA", "Colorado" = "CO", "Puerto Rico" = "PR"), selected = "WA", status = "danger", size = "sm"),
+      
+      htmlOutput("info")
     ),
     
     mainPanel(
-      plotlyOutput("plot")  
+      plotlyOutput("plot") %>% withSpinner(type = 7)
     )
   )
 
