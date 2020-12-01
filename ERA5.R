@@ -1,6 +1,6 @@
 # ERA-5 hourly
 
-# db <- brick(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/", loc, "_ERA.grib"))
+# db <- brick(paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/", loc, "_ERA.grib"))
 # # 8928 (6 variables * 2 months * 31 days * 24 hours)
 # 
 # df <- rasterToPoints(db) %>% as.data.frame()
@@ -12,19 +12,20 @@
 
 # Variables
 
-# 1. 10m_u_component_of_wind
+# 1. 10m_u_component_of_wind (m/s)
 # 2. 10m_v_component_of_wind
-# 3. 2m_temperature
+# 3. 2m_temperature (K)
 # 4. skin_temperature (surface temperature)
 # 5. soil_temperature_level_3 (28-100cm)
-# 6. surface_net_solar_radiation
+# 6. surface_net_solar_radiation (J/m^2)
 
-# Function: ERAdf("varIndex")
 
 # Test:
 # varIndex = 6; loc = "WA"; month = 7
 library(raster)
+library(magrittr)
 library(MALDIquant)
+
 
 grabERA <- function(varIndex, loc, month) {
   locs <- data.frame(row.names = c("WA", "PR", "CO"), 
@@ -40,7 +41,6 @@ grabERA <- function(varIndex, loc, month) {
   }
   
   offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
-  print(varIndex)
   # The data for July comes after the data for January in the data frame. Each month has 24 hours and 31 days of data.
   if (month == 1) {
     vals <- vals[(1 + offset) : 744]
@@ -50,6 +50,10 @@ grabERA <- function(varIndex, loc, month) {
   
   if (varIndex %in% c(3, 4, 5)) {
     vals <- vals - 273.15
+  }
+  
+  if (varIndex == 6) {
+    vals <- vals / 3600
   }
   
   if (varIndex == 1) {  # For wind speed, we want to consider the combined wind speed.

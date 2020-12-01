@@ -546,25 +546,204 @@ summary {
 <div id="microclimate-dataset-comparison" class="section level1">
 <h1>Microclimate dataset Comparison</h1>
 <p>Three locations:<br />
-Burnt mountain GHCND:USS0021B63S (47.04000, -121.9400)<br />
-on NCDC: MARICAO 2 SSW GHCND:RQC00665908 (18.15110, -66.98880) on SCAN: Maricao Forest (18.15, -67.00)<br />
-Wild basin GHCND:USS0005J05S (40.20000, -105.6000)</p>
+Lind #1, WA</p>
 <p>Time to compare<br />
 2017 Jan 1-31 &amp; Jul 1-31</p>
+<div id="sample-code" class="section level2">
+<h2>Sample code</h2>
 <div id="method-1.-era-5" class="section level3">
 <h3>Method 1. ERA-5</h3>
+<p><strong><em>Getting data for air temperature in Lind, WA (-118.57°, 47°) for January 1-31 in 2017</em></strong></p>
+<p>From <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form">this page</a>, check in <strong>2m temperature</strong>, 2017, January 1-31, 0:00-23:00.</p>
+<p>Any extent is fine as long as (-118.57°, 47°) is included.</p>
+<pre><code>library(raster)
+library(MALDIquant)
+
+db &lt;- brick(PATH_TO_FILE)
+df &lt;- rasterToPoints(db) %&gt;% as.data.frame()
+lon &lt;- sort(df$x)[match.closest(-118.57, sort(df$x))]
+lat &lt;- sort(df$y)[match.closest(47, sort(df$y))]
+array &lt;- df[df$x == lon &amp; df$y == lat, ]
+
+offset &lt;- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+
+vals &lt;- c()
+for (i in (1 + offset) : dim(array)[2]) {
+  vals &lt;- c(vals, array[, 2 + i])  # adding 2 because the first two columns are x and y.
+}
+
+days &lt;- c()
+for (i in 1:31) {
+  days &lt;- c(days, paste0(&quot;2017-01-&quot;, i))
+}
+
+df &lt;- data.frame(&quot;Date&quot; = rep(days, each = 24),
+                 &quot;Hour&quot; = 0:23)
+df &lt;- cbind(df[1 : (31 * 24 - offset), ], &quot;Data&quot; = vals - 273.15)
+
+df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)
+</code></pre>
 </div>
-<div id="method-2.-gridmet" class="section level3">
-<h3>Method 2. GRIDMET</h3>
+<div id="method-2.-gldas" class="section level3">
+<h3>Method 2. GLDAS</h3>
+<p><strong><em>Getting data for surface temperatures in Nunn, CO (-104.73°, 40.87°) for June 1-31 in 2017</em></strong></p>
+<p>From <a href="https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS">this page</a>, download files in netCDF format for <strong>AvgSurfT_inst</strong>, 2017, June 1-31.<br />
+Any extent is fine as long as (-104.73°, 40.87°) is included.</p>
+<pre><code>library(ncdf4)
+library(MALDIquant)
+library(magrittr)
+
+array &lt;- c()
+for (day in 1:31) {
+  for (hour in seq(from = 0, to = 21, by = 3)) {
+    char_day &lt;- ifelse(day &lt; 10, paste0(&quot;0&quot;, day), day)
+    char_hour &lt;- ifelse(hour &lt; 10, paste0(&quot;0&quot;, hour), hour)
+    filename &lt;- paste0(&quot;GLDAS_NOAH025_3H.A201701&quot;, char_day, &quot;.&quot;, char_hour, &quot;00.021.nc4.SUB.nc4&quot;)
+    
+    nc &lt;- nc_open(filename)
+    ncvar &lt;- ncvar_get(nc, varid = &quot;AvgSurfT_inst&quot;)
+    
+    lonInd &lt;- match.closest(-104.73, nc$dim$lon$vals)
+    lat &lt;- sort(nc$dim$lat$vals)[match.closest(40.87, sort(nc$dim$lat$vals))]
+    latInd &lt;- match(lat, nc$dim$lat$vals)
+    val &lt;- ncvar[lonInd, latInd]
+    
+    array &lt;- c(array, val)
+  }
+}
+array &lt;- array - 273.15 # Converting from kelvin to celcius
+
+offset &lt;- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+
+roundUp &lt;- ceiling(offset / 3)
+
+days &lt;- c()
+for (i in 1:31) {
+  days &lt;- c(days, paste0(&quot;2017-07-&quot;, i))
+}
+
+df &lt;- data.frame(Date = rep(days, each = 8), 
+                 Hour = seq(from = roundUp * 3 - offset, to = 21 + (roundUp * 3 - offset), by = 3))
+
+df &lt;- cbind(df[1 : (31 * 8 - roundUp), ], &quot;Data&quot; = array[(1 + roundUp) : length(array)])
+
+df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)</code></pre>
 </div>
-<div id="method-3.-noaa-ncdc" class="section level3">
-<h3>Method 3. NOAA NCDC</h3>
-<pre><code>ncdc(datasetid = &#39;GHCND&#39;, 
-     stationid = &quot;GHCND:USW00024234&quot;, 
-     token = &quot;MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq&quot;, 
-     startdate = &quot;2017-07-01&quot;, 
-     enddate = &quot;2017-07-31&quot;,
-     datatypeid = &quot;TMAX&quot;)</code></pre>
+<div id="method-3.-gridmet" class="section level3">
+<h3>Method 3. GRIDMET</h3>
+<p><strong><em>Getting data for Daily maximum temperature in Lind, WA (-118.57°, 47°) for May 1-31 in 2019</em></strong></p>
+<pre><code>library(AOI)
+library(climateR)
+library(MALDIquant)
+library(raster)
+library(magrittr)
+
+AOI = aoi_get(state = &quot;WA&quot;, county = &quot;adams&quot;)
+p = getGridMET(AOI, param = &quot;tmax&quot;, startDate = paste0(&quot;2017-05-01&quot;), endDate = paste0(&quot;2017-05-31&quot;))
+r = raster::brick(p)
+  
+array &lt;- c()
+for (i in 1:31) {
+  df &lt;- rasterToPoints(r[[i]]) %&gt;% as.data.frame()
+  x &lt;- sort(df$x)[match.closest(-118.57, sort(df$x))]
+  y &lt;- sort(df$y)[match.closest(47, sort(df$y))]
+  array &lt;- c(array, df[df$x == x &amp; df$y == y, 3])  
+  # columns are [&quot;x&quot;, &quot;y&quot;, &quot;data&quot;] so 3 corresponds to the data. 
+}
+
+days &lt;- c()
+for (i in 1:31) {
+  days &lt;- c(days, paste0(&quot;2017-05-&quot;, i))
+}
+
+df &lt;- data.frame(Date = as.Date(days), 
+                 Data = array - 273.15)</code></pre>
+</div>
+<div id="method-4.-noaa-ncdc" class="section level3">
+<h3>Method 4. NOAA NCDC</h3>
+<p><strong><em>Getting data for minimum air temperatures in Maricao Forest, Puerto Rico (-67°, 18.15°) for March 1-31 in 2017</em></strong></p>
+<p>First, get a station id.</p>
+<pre><code>library(rnoaa)
+library(magrittr)
+
+ncdc_stations(extent = c(18.1, -67.1, 18.2, -66.9), token = &quot;YOUR_TOKEN&quot;, limit = 50, datasetid = &quot;GHCND&quot;)</code></pre>
+<p>You get a list of stations in the extent to pick from.<br />
+Then obtain the data.</p>
+<pre><code>id = &quot;GHCND:RQC00665908&quot;
+
+data &lt;- ncdc(datasetid = &#39;GHCND&#39;, 
+        stationid = id, 
+        token = &quot;MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq&quot;, 
+        startdate = paste0(&quot;2017-03-01&quot;), 
+        enddate = paste0(&quot;2017-03-31&quot;),
+        datatypeid = &quot;TMIN&quot;)
+
+data &lt;- data / 10 # Converting units
+  
+days &lt;- c()
+for (i in 1:31) {
+  days &lt;- c(days, paste0(&quot;2017-03-&quot;, i))
+}
+
+df &lt;- data$data[, c(&quot;date&quot;, &quot;value&quot;)] %&gt;% 
+  as.data.frame() %&gt;% 
+  set_colnames(c(&quot;Date&quot;, &quot;Data&quot;))
+</code></pre>
+</div>
+<div id="method-5.-microclimus" class="section level3">
+<h3>Method 5. microclimUS</h3>
+<p><strong><em>Getting data for soil temperature 1 m below ground (0% shade) in Lind, WA (-118.57°, 47°) for June 1-31 in 2015</em></strong></p>
+<p>Download <strong>soil100cm_0pctShade.zip</strong> from <a href="https://knb.ecoinformatics.org/view/doi:10.5063/F1B56H16">here</a>.</p>
+<pre><code>nc &lt;- nc_open(PATH_TO_FILE)
+
+ncvar &lt;- ncvar_get(nc)
+
+lonInd &lt;- match.closest(-118.57, nc$dim$longitude$vals)
+lat &lt;- sort(nc$dim$latitude$vals)[match.closest(47, sort(nc$dim$latitude$vals))]
+latInd &lt;- match(lat, nc$dim$latitude$vals)
+  
+vals &lt;- c()
+extra &lt;- 24 * 151 # The data are ordered from January to December. June 1st is day 151 in 2015.
+for (i in 1 : (24 * 31)) {
+  vals &lt;- c(vals, ncvar[lonInd, latInd, i + extra])
+}
+  
+days &lt;- c()
+for (i in 1:31) {
+  days &lt;- c(days, paste0(&quot;2015-06-&quot;, i))
+}
+
+df &lt;- data.frame(&quot;Date&quot; = rep(days, each = 24), 
+                 &quot;Hour&quot; = 0:23,
+                 &quot;Data&quot; = vals / 10)  # Converting units
+
+df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)</code></pre>
+</div>
+<div id="method-6.-microclim" class="section level3">
+<h3>Method 6. microclim</h3>
+<p><strong><em>Getting solar radiation in Maricao Forest, Puerto Rico (-67°, 18.15°) for January, 2017</em></strong></p>
+<p>Download <strong>solar_radiation_Wm2.zip</strong> from <a href="https://figshare.com/collections/microclim_Global_estimates_of_hourly_microclimate_based_on_long_term_monthly_climate_averages/878253">here</a>.</p>
+<pre><code>nc &lt;- nc_open(PATH_TO_FILE)
+ncvar &lt;- ncvar_get(nc)
+# dimension: (lon, lat, hour) = (2159, 852, 24)
+  
+lonInd &lt;- match.closest(-67, nc$dim$longitude$vals)
+lat &lt;- sort(nc$dim$latitude$vals)[match.closest(18.15, sort(nc$dim$latitude$vals))]
+latInd &lt;- match(lat, nc$dim$latitude$vals)
+  
+array &lt;- c()
+for (i in 1:24) {
+  array &lt;- c(array, ncvar[lonInd, latInd, i])
+}
+  
+dates &lt;- rep(paste0(&quot;2017-01-15&quot;), 24)
+  
+df &lt;- data.frame(&quot;Date&quot; = dates, 
+                 &quot;Hour&quot; = rep(0:23), 
+                 &quot;Data&quot; = array)
+  
+df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)</code></pre>
+</div>
 </div>
 </div>
 

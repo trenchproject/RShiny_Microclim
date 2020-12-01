@@ -6,7 +6,7 @@ library(plotly)
 library(data.table)
 library(shinycssloaders)
 
-variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
+variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
 
 shinyUI <- fluidPage(
   theme = shinytheme("united"),
@@ -26,7 +26,7 @@ shinyUI <- fluidPage(
       radioGroupButtons("season", "Season", choices = c("Summer" = 7, "Winter" = 1), selected = 7, status = "danger", size = "sm"),
       
       radioGroupButtons("loc", "Location", choices = c("Washington" = "WA", "Colorado" = "CO", "Puerto Rico" = "PR"), selected = "WA", status = "danger", size = "sm"),
-      
+      br(),
       htmlOutput("info")
     ),
     

@@ -22,14 +22,11 @@
 # 16      pet_grass    pet   daily_mean_reference_evapotranspiration_grass                           mm
 # 17            vpd    vpd               daily_mean_vapor_pressure_deficit                          kPa
 
-
-# Function: fullGRID("var")
-
 library(AOI)
 library(climateR)
 library(MALDIquant)
 library(raster)
-
+library(magrittr)
 
 grabGRID <- function(param, loc, month) {
   days <- c()

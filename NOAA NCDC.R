@@ -6,9 +6,6 @@
 # SNOW: Snowfall (mm)
 # SNWD: Snow depth (mm)
 
-
-# Function: fullNOAA("var")
-
 library(rnoaa)
 library(magrittr)
 

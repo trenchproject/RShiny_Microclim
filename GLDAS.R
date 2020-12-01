@@ -11,14 +11,24 @@
 # }
 # or, https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS
 # "time_bnds"     
-# "Lwnet_tavg" Net longwave radiation flux (W m-2)           
-# "AvgSurfT_inst" Average surface skin temperature (K)        
+# "Lwnet_tavg" Net longwave radiation flux (W m-2) 
+# "AvgSurfT_inst" Average surface skin temperature (K) 
 # "SnowDepth_inst" Snow depth (m) 
 # "SoilTMP40_100cm_inst" Soil temperature (40-100 cm underground) (K)
 # "Wind_f_inst" Wind speed (m s-1)         
 # "Tair_f_inst" Air temperature (K)
 
-# Function: fullGLDAS("var")
+
+# "time_bnds"             
+# "Swnet_tavg"            
+# "Lwnet_tavg"            
+# "Snowf_tavg"           
+# "AvgSurfT_inst"    
+# "SnowDepth_inst"
+# "SoilTMP40_100cm_inst"  
+# "SoilTMP100_200cm_inst"
+# "Wind_f_inst"           
+# "Tair_f_inst"
 
 library(ncdf4)
 library(MALDIquant)
@@ -29,18 +39,20 @@ locs <- data.frame(row.names = c("WA", "PR", "CO"),
                    "lat" = c(47.0022, 18.15110, 40.8066), 
                    "offset" = c(-8, -4, -7))
 
-# 
+# loc = "WA"
 # 303.86
 # 
-# nc2 <- nc_open("GLDAS7-temp/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4")
-# ncvar2 <- ncvar_get(nc2)
+# nc2 <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170701.0000.021.nc4.SUB.nc4")
+# ncvar2 <- ncvar_get(nc2, var = "Tair_f_inst")
 # val2 <- ncvar2[lonInd, latInd]
 # var = "Tair_f_inst"
 # 
 # filename <- "G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170701.1200.021.nc4.SUB.nc4"
+# nc <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170711.1200.021.nc4.SUB.nc4")
+# 
 # nc <- nc_open(filename)
 # nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
-# 
+
 
 valGLDAS <- function(nc, var, loc) {
   ncvar <- ncvar_get(nc, varid = var)
@@ -51,15 +63,18 @@ valGLDAS <- function(nc, var, loc) {
   
   val <- ncvar[lonInd, latInd]
   
-  if (var %in% c("AvgSurfT_inst", "Tair_f_inst")) {
+  if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
     val <- val- 273.15
   }
-
+  # if (var %in% c("Swnet_tavg", "Lwnet_tavg")) {
+  #   val <- -val
+  # }
   return (val)
 }
 
 
 grabGLDAS <- function(var, loc, month) {
+  
   days <- c()
   for (i in 1:31) {
     days <- c(days, paste0("2017-0", month, "-", i))
@@ -72,21 +87,26 @@ grabGLDAS <- function(var, loc, month) {
       char_day <- ifelse(day < 10, paste0("0", day), day)
       char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
       
-      filename <- paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
-      nc <- nc_open(filename)
+      filename <- paste0("GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
       
+      # filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+      nc <- nc_open(filename)
+
       val <- valGLDAS(nc, var, loc)
       array <- c(array, val)
     }
   }
+  
+  offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+  
+  roundUp <- ceiling(offset / 3)
 
   df <- data.frame(Date = rep(days, each = 8), 
-                   Hour = seq(from = 0, to = 21, by = 3), 
-                   Data = array)
+                   Hour = seq(from = roundUp * 3 - offset, to = 21 + (roundUp * 3 - offset), by = 3))
+  
+  df <- cbind(df[1 : (31 * 8 - roundUp), ], "Data" = array[(1 + roundUp) : length(array)])
   
   df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
   return (df)
 }
-
-
