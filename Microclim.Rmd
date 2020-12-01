@@ -3,58 +3,305 @@ title: "Dataset comparison"
 output: html_document
 ---
 
-# Microclim Datasets
+## Microclim Datasets
 
 | |**Horizontal coverage**|**Horizontal resolution**|**Vertical coverage**|**Vertical resolution**|**Temporal Coverage**|**Temporal resolution**|**Variables**
 :-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
 ERA-5 Land|Global|0.1° x 0.1°|2m above - 289cm below|0-7cm, 7-28cm, 28-100cm, 100-289cm|1981-now|hourly|Wind,dewpoint, temp, evap, soil water, snow, many variables: etc
-GLDAS 2.0|Global|0.25° x 0.25°|Surface - 200cm below|10cm, 40cm, 100cm, 200cm|1948-01-01 - 2014-12-31|3-Hourly|Many (see list below)
-GLDAS 2.1|Global|0.25° x 0.25°|Surface - 200cm below|10cm, 40cm, 100cm, 200cm|2000-01-01 - 3-months behind current|3-Hourly|Many (see list below)
-GRIDMET|US only|0.04° x 0.04°|Surface|Surface|1979 - yesterday|Daily|Precip,. Max/Min humidity, max/min temp, mean evap.
-NicheMapR/Microclima|Global|30m coarsest, 3m finest|5cm above - 75cm below|1 cm |1957 - now|Hourly|Temp, Radiation, Wind speed, Humidity (time-series, not gridded):Soil moisture, Snow cover
+GLDAS 2.0|Global|0.25° x 0.25°|Surface - 200cm below|10cm, 40cm, 100cm, 200cm|1948 - 2014|3-Hourly|Many (see list below)
+GLDAS 2.1|Global|0.25° x 0.25°|Surface - 200cm below|10cm, 40cm, 100cm, 200cm|2000 - 3-months behind current|3-Hourly|Many (see list below)
+GRIDMET|US only|0.04° x 0.04°|Surface|Surface|1979 - yesterday|Daily|Precip, Max/Min humidity, max/min temp, mean evap.
+NicheMapR/Microclima|Global|30m coarsest, 3m finest|5cm above - 75cm below|1 cm|1957 - now|Hourly|Temp, Radiation, Wind speed, Humidity (time-series, not gridded):Soil moisture, Snow cover
 NOAA NCDC|Global|One location (lat, lon)|Surface|Surface|Varies|Varies|Precip, min/max temp, snowfall and depth, etc dep. On location
-SNODAS|US only|1km x 1km|Surface|Surface|Sept 2003 - now|Daily |Snow variables
-microclim|Global|15km x15km|surface to 1m depth|0, 2.5, 5, 10, 15, 20, 30, 50, 100, 200cm|1 day each month of 1 year|Hourly for 1 day|air temperature, wind speed, relative humidity, solar radiation, sky radiation and substrate temperatures from the surface to 1m depth
+SNODAS|US only|1km x 1km|Surface|Surface|Sep. 2003 - now|Daily |Snow variables
+microclim|Global|15km x 15km|surface to 1m depth|0, 2.5, 5, 10, 15, 20, 30, 50, 100, 200cm|1 day each month of 1 year|Hourly for 1 day|air temperature, wind speed, relative humidity, solar radiation, sky radiation and substrate temperatures from the surface to 1m below
 microclimUS|US only|4km x 4km|2m above - 2m below|Below at [0, 2.5, 5, 10, 15, 20, 30, 50, 100 and 200cm] at [0, 50, 75 and 90%] shade. Above at 1cm and 200cm |1979 - 2017|Hourly|solar zenith angle, solar radiation, sky radiant temperature, air temp, wind speed, relative humidity, snow depth, soil temperature at specific depths, soil water potential at specific depths, soil moisture at specific depths, soil humidity at specific depths
 
-## ERA-5
+### Method 0. SCAN
 
-## GRIDMET
+### Method 1. ERA-5
 
-## NOAA NCDC
+### Method 2. GLDAS
 
+### Method 3. GRIDMET
+
+### Method 4. NOAA NCDC
 Go to this website and enter your email to get a token.
-Install rnoaa package in Rstudio. devtools::install_github("ropensci/rnoaa")
+Install rnoaa package in Rstudio. ```devtools::install_github("ropensci/rnoaa")```
 Search for a weather station in your area of interest by running ncdc_stations() function. 
 Example:
 ncdc_stations(extent = c(47.5204, -122.2047, 47.6139, -122.1065), token = “token_received”)
 In the $data section, you can get a list of stations within the extent. Mindate and maxdate are the period during which the data are collected, which is an important variable to look for.
 Choose a station and copy the station ID. Run the ncdc() function with the station ID and your preferred period and data type.
 
+### Method 5. microclimUS
 
-# Microclimate dataset Comparison
+### Method 6. microclim
+
+
+
+## Microclimate dataset Comparison
 
 Three locations:  
-Burnt mountain GHCND:USS0021B63S (47.04000, -121.9400)  
-on NCDC: MARICAO 2 SSW GHCND:RQC00665908 (18.15110, -66.98880) on SCAN: Maricao Forest (18.15, -67.00)  
-Wild basin GHCND:USS0005J05S (40.20000, -105.6000)
+Lind #1, WA
+Nunn #1, CO
+Maricao Forest, Puerto Rico
 
 
 Time to compare  
 2017 Jan 1-31 & Jul 1-31
 
-### Method 1. ERA-5
+shiny app
 
 
-### Method 2. GRIDMET
+## Sample code
 
+### Method 0. SCAN
+***Getting data for maximum air temperature in Nunn, CO (-104.73°, 40.87°) for January 1-31 in 2017*** 
 
-### Method 3. NOAA NCDC
+From [this page](https://www.wcc.nrcs.usda.gov/scan/), go to "Daily SCAN Standard Report - Period of Record", and select COLORADO, then Nunn #1 and view.
+Download the file and process the text file as described above.
+
 ```
-ncdc(datasetid = 'GHCND', 
-     stationid = "GHCND:USW00024234", 
-     token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-     startdate = "2017-07-01", 
-     enddate = "2017-07-31",
-     datatypeid = "TMAX")
+library(magrittr)
+library(utils)
+
+scan <- read.delim(PATH_TO_TEXTFILE)
+
+scan$Date <- as.Date(scan$Date)
+
+data <- scan[scan$Date >= as.Date("2017-07-01") & scan$Date <= as.Date("2017-07-31")),]
+
+vals <- data[, varIndex]
+vals <- (vals - 32) / 1.8 # Convert degF to degC
+
+days <- c()
+for (i in 1:31) {
+  days <- c(days, paste0("2017-07-", i))
+}
+
+df <- data.frame("Date" = as.Date(days), 
+                 "Data" = vals)
+```
+
+
+### Method 1. ERA-5
+***Getting data for air temperature in Lind, WA (-118.57°, 47°) for January 1-31 in 2017***  
+
+
+From [this page](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form), 
+check in **2m temperature**, 2017, January 1-31, 0:00-23:00.
+
+Any extent is fine as long as (-118.57°, 47°) is included.
+
+```
+library(raster)
+library(MALDIquant)
+
+db <- brick(PATH_TO_GRIBFILE)
+df <- rasterToPoints(db) %>% as.data.frame()
+lon <- sort(df$x)[match.closest(-118.57, sort(df$x))]
+lat <- sort(df$y)[match.closest(47, sort(df$y))]
+array <- df[df$x == lon & df$y == lat, ]
+
+offset <- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+
+vals <- c()
+for (i in (1 + offset) : dim(array)[2]) {
+  vals <- c(vals, array[, 2 + i])  # adding 2 because the first two columns are x and y.
+}
+
+days <- c()
+for (i in 1:31) {
+  days <- c(days, paste0("2017-01-", i))
+}
+
+df <- data.frame("Date" = rep(days, each = 24),
+                 "Hour" = 0:23)
+df <- cbind(df[1 : (31 * 24 - offset), ], "Data" = vals - 273.15)
+
+df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+
+```
+
+### Method 2. GLDAS
+***Getting data for surface temperatures in Nunn, CO (-104.73°, 40.87°) for June 1-31 in 2017***
+
+From [this page](https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS),
+download files in netCDF format for **AvgSurfT_inst**, 2017, June 1-31.  
+Any extent is fine as long as (-104.73°, 40.87°) is included.
+
+```
+library(ncdf4)
+library(MALDIquant)
+library(magrittr)
+
+array <- c()
+for (day in 1:31) {
+  for (hour in seq(from = 0, to = 21, by = 3)) {
+    char_day <- ifelse(day < 10, paste0("0", day), day)
+    char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+    filename <- paste0("GLDAS_NOAH025_3H.A201701", char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+    
+    nc <- nc_open(filename)
+    ncvar <- ncvar_get(nc, varid = "AvgSurfT_inst")
+    
+    lonInd <- match.closest(-104.73, nc$dim$lon$vals)
+    lat <- sort(nc$dim$lat$vals)[match.closest(40.87, sort(nc$dim$lat$vals))]
+    latInd <- match(lat, nc$dim$lat$vals)
+    val <- ncvar[lonInd, latInd]
+    
+    array <- c(array, val)
+  }
+}
+array <- array - 273.15 # Converting from kelvin to celcius
+
+offset <- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+
+roundUp <- ceiling(offset / 3)
+
+days <- c()
+for (i in 1:31) {
+  days <- c(days, paste0("2017-07-", i))
+}
+
+df <- data.frame(Date = rep(days, each = 8), 
+                 Hour = seq(from = roundUp * 3 - offset, to = 21 + (roundUp * 3 - offset), by = 3))
+
+df <- cbind(df[1 : (31 * 8 - roundUp), ], "Data" = array[(1 + roundUp) : length(array)])
+
+df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+```
+
+
+### Method 3. GRIDMET
+***Getting data for daily maximum temperature in Lind, WA (-118.57°, 47°) for May 1-31 in 2019***
+
+```
+library(AOI)
+library(climateR)
+library(MALDIquant)
+library(raster)
+library(magrittr)
+
+AOI = aoi_get(state = "WA", county = "adams")
+p = getGridMET(AOI, param = "tmax", startDate = paste0("2017-05-01"), endDate = paste0("2017-05-31"))
+r = raster::brick(p)
+  
+array <- c()
+for (i in 1:31) {
+  df <- rasterToPoints(r[[i]]) %>% as.data.frame()
+  x <- sort(df$x)[match.closest(-118.57, sort(df$x))]
+  y <- sort(df$y)[match.closest(47, sort(df$y))]
+  array <- c(array, df[df$x == x & df$y == y, 3])  
+  # columns are ["x", "y", "data"] so 3 corresponds to the data. 
+}
+
+days <- c()
+for (i in 1:31) {
+  days <- c(days, paste0("2017-05-", i))
+}
+
+df <- data.frame(Date = as.Date(days), 
+                 Data = array - 273.15)
+```
+
+
+### Method 4. NOAA NCDC
+***Getting data for minimum air temperatures in Maricao Forest, Puerto Rico (-67°, 18.15°) for March 1-31 in 2017***  
+
+
+First, get a station id.
+```
+library(rnoaa)
+library(magrittr)
+
+ncdc_stations(extent = c(18.1, -67.1, 18.2, -66.9), token = "YOUR_TOKEN", limit = 50, datasetid = "GHCND")
+```
+You get a list of stations in the extent to pick from.  
+Then obtain the data.
+
+```
+id = "GHCND:RQC00665908"
+
+data <- ncdc(datasetid = 'GHCND', 
+        stationid = id, 
+        token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+        startdate = paste0("2017-03-01"), 
+        enddate = paste0("2017-03-31"),
+        datatypeid = "TMIN")
+
+data <- data / 10 # Converting units
+  
+days <- c()
+for (i in 1:31) {
+  days <- c(days, paste0("2017-03-", i))
+}
+
+df <- data$data[, c("date", "value")] %>% 
+  as.data.frame() %>% 
+  set_colnames(c("Date", "Data"))
+
+```
+
+
+### Method 5. microclimUS
+***Getting data for soil temperature 1 m below ground (0% shade) in Lind, WA (-118.57°, 47°) for June 1-31 in 2015***  
+
+Download **soil100cm_0pctShade.zip** from [here](https://knb.ecoinformatics.org/view/doi:10.5063/F1B56H16).
+
+```
+nc <- nc_open(PATH_TO_NCFILE)
+
+ncvar <- ncvar_get(nc)
+
+lonInd <- match.closest(-118.57, nc$dim$longitude$vals)
+lat <- sort(nc$dim$latitude$vals)[match.closest(47, sort(nc$dim$latitude$vals))]
+latInd <- match(lat, nc$dim$latitude$vals)
+  
+vals <- c()
+extra <- 24 * 151 # The data are ordered from January to December. June 1st is day 151 in 2015.
+for (i in 1 : (24 * 31)) {
+  vals <- c(vals, ncvar[lonInd, latInd, i + extra])
+}
+  
+days <- c()
+for (i in 1:31) {
+  days <- c(days, paste0("2015-06-", i))
+}
+
+df <- data.frame("Date" = rep(days, each = 24), 
+                 "Hour" = 0:23,
+                 "Data" = vals / 10)  # Converting units
+
+df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+```
+
+### Method 6. microclim
+***Getting solar radiation in Maricao Forest, Puerto Rico (-67°, 18.15°) for January, 2017***  
+
+
+Download **solar_radiation_Wm2.zip** from [here](https://figshare.com/collections/microclim_Global_estimates_of_hourly_microclimate_based_on_long_term_monthly_climate_averages/878253).
+
+```
+nc <- nc_open(PATH_TO_NCFILE)
+ncvar <- ncvar_get(nc)
+# dimension: (lon, lat, hour) = (2159, 852, 24)
+  
+lonInd <- match.closest(-67, nc$dim$longitude$vals)
+lat <- sort(nc$dim$latitude$vals)[match.closest(18.15, sort(nc$dim$latitude$vals))]
+latInd <- match(lat, nc$dim$latitude$vals)
+  
+array <- c()
+for (i in 1:24) {
+  array <- c(array, ncvar[lonInd, latInd, i])
+}
+  
+dates <- rep(paste0("2017-01-15"), 24)
+  
+df <- data.frame("Date" = dates, 
+                 "Hour" = rep(0:23), 
+                 "Data" = array)
+  
+df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
 ```
