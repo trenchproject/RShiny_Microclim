@@ -19,44 +19,15 @@ microclimUS|US only|4km x 4km|2m above - 2m below|Below at [0, 2.5, 5, 10, 15, 2
 
 ### Method 0. SCAN
 
-### Method 1. ERA-5
+1. Go to [SCAN](https://www.wcc.nrcs.usda.gov/scan/).
 
-### Method 2. GLDAS
+2. Select the data type you want under **Data reports**.
 
-### Method 3. GRIDMET
+3. Select a state and a station from the list and hit "View".
 
-### Method 4. NOAA NCDC
-Go to this website and enter your email to get a token.
-Install rnoaa package in Rstudio. ```devtools::install_github("ropensci/rnoaa")```
-Search for a weather station in your area of interest by running ncdc_stations() function. 
-Example:
-ncdc_stations(extent = c(47.5204, -122.2047, 47.6139, -122.1065), token = “token_received”)
-In the $data section, you can get a list of stations within the extent. Mindate and maxdate are the period during which the data are collected, which is an important variable to look for.
-Choose a station and copy the station ID. Run the ncdc() function with the station ID and your preferred period and data type.
+4. After the loading is complete, you will see the data. Right click on the page to save the data as a text file and open it. Notice that the file starts with the data documentation that are in #. Save the data documentation elsewhere if needed and manually delete all the lines with #. Save the file. 
 
-### Method 5. microclimUS
-
-### Method 6. microclim
-
-
-
-## Microclimate dataset Comparison
-
-Three locations:  
-Lind #1, WA
-Nunn #1, CO
-Maricao Forest, Puerto Rico
-
-
-Time to compare  
-2017 Jan 1-31 & Jul 1-31
-
-shiny app
-
-
-## Sample code
-
-### Method 0. SCAN
+**Code example**
 ***Getting data for maximum air temperature in Nunn, CO (-104.73°, 40.87°) for January 1-31 in 2017*** 
 
 From [this page](https://www.wcc.nrcs.usda.gov/scan/), go to "Daily SCAN Standard Report - Period of Record", and select COLORADO, then Nunn #1 and view.
@@ -86,8 +57,94 @@ df <- data.frame("Date" = as.Date(days),
 
 
 ### Method 1. ERA-5
-***Getting data for air temperature in Lind, WA (-118.57°, 47°) for January 1-31 in 2017***  
 
+**Setup (macOS)**  
+
+1. Create an account [here](https://cds.climate.copernicus.eu/#!/home)
+
+2. Open a new terminal window
+
+3. Install python by running these three commands in the terminal
+```
+xcode-select --install
+
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+
+brew install python3
+```
+
+4. Create and then open a new file through these two commands in the 
+```
+touch ~/.cdsapirc
+
+open ~/.cdsapirc
+```
+5. Navigate to [this page](https://cds.climate.copernicus.eu/api-how-to) and ensure you’re logged in. Copy the two lines of text in the first black code box and paste them into your .cdsapirc file, then save and close the file. The first line is a current link to the API, the second is your unique UID and API key. 
+(If the second line is “key: {uid}:{api-key}”, refresh the page or open it in a different tab after ensuring you’re logged in.)
+
+
+6. Install the API by running the following command in the terminal
+```
+pip install cdsapi
+```
+Or if you have Anaconda, run
+```
+conda config --add channels conda-forge
+
+conda install cdsapi
+```
+7. Agree to the terms of use at the bottom of [this page](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form) to gain access to ERA-5 Land: 
+
+
+**Setup (Windows)**  
+
+1. Create an account [here](https://cds.climate.copernicus.eu/#!/home).
+
+2. Check the email to create a password.
+
+3. [Log in to CDS](https://cds.climate.copernicus.eu/user/66418) and click on “Search” on the top tab and “How to use the CDS API”.
+
+4. Copy the two lines (url and key) in the window under “Install the CDS API key”.
+
+5. Go to your C:Users\Users\Username folder.
+
+6. Create a new text document and open it.
+
+7. Paste the two lines you copied.
+
+8. Go to “File” -> “Save as” and name it “.cdsapirc” and select “All files” for text type.
+
+9. You can delete the original text file.
+
+10. Install the API by running the following command in the terminal
+```
+pip install cdsapi
+```
+Or if you have Anaconda, run
+```
+conda config --add channels conda-forge
+
+conda install cdsapi
+```
+
+11. Agree to the terms of use at the bottom of [this page](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form) to gain access to ERA-5 Land.
+
+**Call the API** 
+
+1. Go to [this page](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form).
+
+2. Select all variables you wish to include and temporal and spatial bounds. Select GRIB as the output. (My API call failed when using netCDF). [**Be aware that the time is in UTC.**]{color="red"} For example if you want data for January 1st at noon in WA (UTC-8), you have to download the data for January 1st at 8pm. 
+
+3. Scroll to the bottom of the page. Select “Show API request”. 
+
+4. Open a terminal window and start python with the command “python3”. You should see a “>>>” next to your cursor, indicating you are in a python environment.
+
+5. Copy the API request code from the “Show API request” box and paste it into your terminal window and run it to call the api and download your data.
+
+
+**Code example**
+
+***Getting data for air temperature in Lind, WA (-118.57°, 47°) for January 1-31 in 2017***  
 
 From [this page](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form), 
 check in **2m temperature**, 2017, January 1-31, 0:00-23:00.
@@ -124,7 +181,11 @@ df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y
 
 ```
 
+
 ### Method 2. GLDAS
+
+**Code example**
+
 ***Getting data for surface temperatures in Nunn, CO (-104.73°, 40.87°) for June 1-31 in 2017***
 
 From [this page](https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS),
@@ -175,6 +236,17 @@ df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y
 
 
 ### Method 3. GRIDMET
+Everything takes place on Rstudio.
+
+1. Get the AIO and climateR packages from github
+```devtools::install_github(c("mikejohnson51/AOI", "mikejohnson51/climateR"))```
+
+2. Run ```AOI = aoi_get()``` to get the AOI (area of interest).
+The area options are country name, country region such as Asia and North America, US states, US region, or US states + counties.
+
+3. Run ```getGridMET(AOI, param, startDate, endDate = NULL)``` where AOI is what you get from 2 and param is the variable of interest.
+
+
 ***Getting data for daily maximum temperature in Lind, WA (-118.57°, 47°) for May 1-31 in 2019***
 
 ```
@@ -208,6 +280,18 @@ df <- data.frame(Date = as.Date(days),
 
 
 ### Method 4. NOAA NCDC
+
+1. Go to [this website](https://www.ncdc.noaa.gov/cdo-web/token) and enter your email to get a token.
+
+2. Install rnoaa package in Rstudio. ```devtools::install_github("ropensci/rnoaa")```
+
+3. Search for a weather station in your area of interest by running ```ncdc_stations()``` function. In the $data section, you can get a list of stations within the extent. Mindate and maxdate are the period during which the data are collected, which is an important variable to look for.
+
+4. Choose a station and copy the station ID. Run the ```ncdc()``` function with the station ID and your preferred period and data type.
+
+
+**Code example**
+
 ***Getting data for minimum air temperatures in Maricao Forest, Puerto Rico (-67°, 18.15°) for March 1-31 in 2017***  
 
 
@@ -246,6 +330,23 @@ df <- data$data[, c("date", "value")] %>%
 
 
 ### Method 5. microclimUS
+
+1. From “Open Research” tab, click the link to the data.
+
+2. Select the data type you want to download and click “download” on the far right. 
+
+3. Open the zip folder and move the file of the year you are interested in to the same directory as your Rproject. 
+
+4. Install ncdf4 package in Rstudio. ```install.packages("ncdf4")``` 
+
+5. Open the file using ```nc <- nc_open("filename")``` and get the values using ```ncvar_get(nc)```.
+Pay attention to the dimension of the data. Oftentimes, it is arranged as array[longitude, latitude, time]. ```nc$dim$longitude$vals``` and ```nc$dim$latitude$vals``` let you see the values of longitude and latitude respectively, which is necessary to obtain the index of the coordinates you want.
+
+6. The units can be viewed by ```nc$var$[VARIABLE_NAME]$units``` or opening nc in the viewer.
+
+
+**Code example**
+
 ***Getting data for soil temperature 1 m below ground (0% shade) in Lind, WA (-118.57°, 47°) for June 1-31 in 2015***  
 
 Download **soil100cm_0pctShade.zip** from [here](https://knb.ecoinformatics.org/view/doi:10.5063/F1B56H16).
@@ -277,7 +378,19 @@ df <- data.frame("Date" = rep(days, each = 24),
 df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
 ```
 
-### Method 6. microclim
+
+### Method 6. [microclim](https://figshare.com/collections/microclim_Global_estimates_of_hourly_microclimate_based_on_long_term_monthly_climate_averages/878253)
+
+1. Select the dataset (zip file) you are looking for from the list and click it. 
+
+2. Click on the down arrow to download the data.
+
+3. Open the file using ```nc <- nc_open("filename")``` and get the values using ```ncvar_get(nc)```.
+Pay attention to the dimension of the data. Oftentimes, it is arranged as array[longitude, latitude, time]. ```nc$dim$longitude$vals``` and ```nc$dim$latitude$vals``` let you see the values of longitude and latitude respectively, which is necessary to obtain the index of the coordinates you want.
+
+
+**Code example**
+
 ***Getting solar radiation in Maricao Forest, Puerto Rico (-67°, 18.15°) for January, 2017***  
 
 
@@ -305,3 +418,38 @@ df <- data.frame("Date" = dates,
   
 df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
 ```
+
+## Method 7. USCRN
+
+**Code example**
+
+***Getting surface temperature in Lind, WA () for July***
+
+fulldf <- read.delim(PATH_TO_FILE)
+
+headers <- read.delim("HEADERS.txt", sep = "", header = T, skip = 1)
+
+colnames(fulldf) <- colnames(headers)
+
+time <- paste0(floor(fulldf$LST_TIME / 100), ":", fulldf$LST_TIME %% 100)
+
+df <- data.frame("Date" = as.POSIXct(paste(fulldf$LST_DATE, time), format = "%Y%m%d %H:%M"),
+                 "Data" = fulldf[, "SURFACE_TEMPERATURE"]) %>% na.omit()
+
+df <- df[df$Date >= as.Date(paste0("2017-07-01")) & 
+           df$Date <= as.Date(paste0("2017-07-31")), ]
+
+
+## Microclimate dataset Comparison
+
+Three locations:  
+Lind #1, WA
+Nunn #1, CO
+Maricao Forest, Puerto Rico
+
+
+Time to compare  
+2017 Jan 1-31 & Jul 1-31
+
+shiny app
+

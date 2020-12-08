@@ -414,8 +414,8 @@ summary {
 </div>
 
 
-<div id="microclim-datasets" class="section level1">
-<h1>Microclim Datasets</h1>
+<div id="microclim-datasets" class="section level2">
+<h2>Microclim Datasets</h2>
 <table>
 <colgroup>
 <col width="12%"></col>
@@ -456,7 +456,7 @@ summary {
 <td align="center">0.25° x 0.25°</td>
 <td align="center">Surface - 200cm below</td>
 <td align="center">10cm, 40cm, 100cm, 200cm</td>
-<td align="center">1948-01-01 - 2014-12-31</td>
+<td align="center">1948 - 2014</td>
 <td align="center">3-Hourly</td>
 <td align="center">Many (see list below)</td>
 </tr>
@@ -466,7 +466,7 @@ summary {
 <td align="center">0.25° x 0.25°</td>
 <td align="center">Surface - 200cm below</td>
 <td align="center">10cm, 40cm, 100cm, 200cm</td>
-<td align="center">2000-01-01 - 3-months behind current</td>
+<td align="center">2000 - 3-months behind current</td>
 <td align="center">3-Hourly</td>
 <td align="center">Many (see list below)</td>
 </tr>
@@ -478,14 +478,14 @@ summary {
 <td align="center">Surface</td>
 <td align="center">1979 - yesterday</td>
 <td align="center">Daily</td>
-<td align="center">Precip,. Max/Min humidity, max/min temp, mean evap.</td>
+<td align="center">Precip, Max/Min humidity, max/min temp, mean evap.</td>
 </tr>
 <tr class="odd">
 <td align="center">NicheMapR/Microclima</td>
 <td align="center">Global</td>
 <td align="center">30m coarsest, 3m finest</td>
 <td align="center">5cm above - 75cm below</td>
-<td align="center">1 cm </td>
+<td align="center">1 cm</td>
 <td align="center">1957 - now</td>
 <td align="center">Hourly</td>
 <td align="center">Temp, Radiation, Wind speed, Humidity (time-series, not gridded):Soil moisture, Snow cover</td>
@@ -506,19 +506,19 @@ summary {
 <td align="center">1km x 1km</td>
 <td align="center">Surface</td>
 <td align="center">Surface</td>
-<td align="center">Sept 2003 - now</td>
+<td align="center">Sep. 2003 - now</td>
 <td align="center">Daily </td>
 <td align="center">Snow variables</td>
 </tr>
 <tr class="even">
 <td align="center">microclim</td>
 <td align="center">Global</td>
-<td align="center">15km x15km</td>
+<td align="center">15km x 15km</td>
 <td align="center">surface to 1m depth</td>
 <td align="center">0, 2.5, 5, 10, 15, 20, 30, 50, 100, 200cm</td>
 <td align="center">1 day each month of 1 year</td>
 <td align="center">Hourly for 1 day</td>
-<td align="center">air temperature, wind speed, relative humidity, solar radiation, sky radiation and substrate temperatures from the surface to 1m depth</td>
+<td align="center">air temperature, wind speed, relative humidity, solar radiation, sky radiation and substrate temperatures from the surface to 1m below</td>
 </tr>
 <tr class="odd">
 <td align="center">microclimUS</td>
@@ -532,34 +532,104 @@ summary {
 </tr>
 </tbody>
 </table>
-<div id="era-5" class="section level2">
-<h2>ERA-5</h2>
+<div id="method-0.-scan" class="section level3">
+<h3>Method 0. SCAN</h3>
+<ol style="list-style-type: decimal">
+<li><p>Go to <a href="https://www.wcc.nrcs.usda.gov/scan/">SCAN</a>.</p></li>
+<li><p>Select the data type you want under <strong>Data reports</strong>.</p></li>
+<li><p>Select a state and a station from the list and hit “View”.</p></li>
+<li><p>After the loading is complete, you will see the data. Right click on the page to save the data as a text file and open it. Notice that the file starts with the data documentation that are in #. Save the data documentation elsewhere if needed and manually delete all the lines with #. Save the file.</p></li>
+</ol>
+<p><strong>Code example</strong> <strong><em>Getting data for maximum air temperature in Nunn, CO (-104.73°, 40.87°) for January 1-31 in 2017</em></strong></p>
+<p>From <a href="https://www.wcc.nrcs.usda.gov/scan/">this page</a>, go to “Daily SCAN Standard Report - Period of Record”, and select COLORADO, then Nunn #1 and view. Download the file and process the text file as described above.</p>
+<pre><code>library(magrittr)
+library(utils)
+
+scan &lt;- read.delim(PATH_TO_TEXTFILE)
+
+scan$Date &lt;- as.Date(scan$Date)
+
+data &lt;- scan[scan$Date &gt;= as.Date(&quot;2017-07-01&quot;) &amp; scan$Date &lt;= as.Date(&quot;2017-07-31&quot;)),]
+
+vals &lt;- data[, varIndex]
+vals &lt;- (vals - 32) / 1.8 # Convert degF to degC
+
+days &lt;- c()
+for (i in 1:31) {
+  days &lt;- c(days, paste0(&quot;2017-07-&quot;, i))
+}
+
+df &lt;- data.frame(&quot;Date&quot; = as.Date(days), 
+                 &quot;Data&quot; = vals)</code></pre>
 </div>
-<div id="gridmet" class="section level2">
-<h2>GRIDMET</h2>
-</div>
-<div id="noaa-ncdc" class="section level2">
-<h2>NOAA NCDC</h2>
-<p>Go to this website and enter your email to get a token. Install rnoaa package in Rstudio. devtools::install_github(“ropensci/rnoaa”) Search for a weather station in your area of interest by running ncdc_stations() function. Example: ncdc_stations(extent = c(47.5204, -122.2047, 47.6139, -122.1065), token = “token_received”) In the $data section, you can get a list of stations within the extent. Mindate and maxdate are the period during which the data are collected, which is an important variable to look for. Choose a station and copy the station ID. Run the ncdc() function with the station ID and your preferred period and data type.</p>
-</div>
-</div>
-<div id="microclimate-dataset-comparison" class="section level1">
-<h1>Microclimate dataset Comparison</h1>
-<p>Three locations:<br />
-Lind #1, WA</p>
-<p>Time to compare<br />
-2017 Jan 1-31 &amp; Jul 1-31</p>
-<div id="sample-code" class="section level2">
-<h2>Sample code</h2>
 <div id="method-1.-era-5" class="section level3">
 <h3>Method 1. ERA-5</h3>
+<p><strong>Setup (macOS)</strong></p>
+<ol style="list-style-type: decimal">
+<li><p>Create an account <a href="https://cds.climate.copernicus.eu/#!/home">here</a></p></li>
+<li><p>Open a new terminal window</p></li>
+<li><p>Install python by running these three commands in the terminal</p></li>
+</ol>
+<pre><code>xcode-select --install
+
+/bin/bash -c &quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)&quot;
+
+brew install python3</code></pre>
+<ol start="4" style="list-style-type: decimal">
+<li>Create and then open a new file through these two commands in the</li>
+</ol>
+<pre><code>touch ~/.cdsapirc
+
+open ~/.cdsapirc</code></pre>
+<ol start="5" style="list-style-type: decimal">
+<li><p>Navigate to <a href="https://cds.climate.copernicus.eu/api-how-to">this page</a> and ensure you’re logged in. Copy the two lines of text in the first black code box and paste them into your .cdsapirc file, then save and close the file. The first line is a current link to the API, the second is your unique UID and API key. (If the second line is “key: {uid}:{api-key}”, refresh the page or open it in a different tab after ensuring you’re logged in.)</p></li>
+<li><p>Install the API by running the following command in the terminal</p></li>
+</ol>
+<pre><code>pip install cdsapi</code></pre>
+<p>Or if you have Anaconda, run</p>
+<pre><code>conda config --add channels conda-forge
+
+conda install cdsapi</code></pre>
+<ol start="7" style="list-style-type: decimal">
+<li>Agree to the terms of use at the bottom of <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form">this page</a> to gain access to ERA-5 Land:</li>
+</ol>
+<p><strong>Setup (Windows)</strong></p>
+<ol style="list-style-type: decimal">
+<li><p>Create an account <a href="https://cds.climate.copernicus.eu/#!/home">here</a>.</p></li>
+<li><p>Check the email to create a password.</p></li>
+<li><p><a href="https://cds.climate.copernicus.eu/user/66418">Log in to CDS</a> and click on “Search” on the top tab and “How to use the CDS API”.</p></li>
+<li><p>Copy the two lines (url and key) in the window under “Install the CDS API key”.</p></li>
+<li><p>Go to your C:Usersfolder.</p></li>
+<li><p>Create a new text document and open it.</p></li>
+<li><p>Paste the two lines you copied.</p></li>
+<li><p>Go to “File” -&gt; “Save as” and name it “.cdsapirc” and select “All files” for text type.</p></li>
+<li><p>You can delete the original text file.</p></li>
+<li><p>Install the API by running the following command in the terminal</p></li>
+</ol>
+<pre><code>pip install cdsapi</code></pre>
+<p>Or if you have Anaconda, run</p>
+<pre><code>conda config --add channels conda-forge
+
+conda install cdsapi</code></pre>
+<ol start="11" style="list-style-type: decimal">
+<li>Agree to the terms of use at the bottom of <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form">this page</a> to gain access to ERA-5 Land.</li>
+</ol>
+<p><strong>Call the API</strong></p>
+<ol style="list-style-type: decimal">
+<li><p>Go to <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form">this page</a>.</p></li>
+<li><p>Select all variables you wish to include and temporal and spatial bounds. Select GRIB as the output. (My API call failed when using netCDF). <span color="red"><strong>Be aware that the time is in UTC.</strong></span> For example if you want data for January 1st at noon in WA (UTC-8), you have to download the data for January 1st at 8pm.</p></li>
+<li><p>Scroll to the bottom of the page. Select “Show API request”.</p></li>
+<li><p>Open a terminal window and start python with the command “python3”. You should see a “&gt;&gt;&gt;” next to your cursor, indicating you are in a python environment.</p></li>
+<li><p>Copy the API request code from the “Show API request” box and paste it into your terminal window and run it to call the api and download your data.</p></li>
+</ol>
+<p><strong>Code example</strong></p>
 <p><strong><em>Getting data for air temperature in Lind, WA (-118.57°, 47°) for January 1-31 in 2017</em></strong></p>
 <p>From <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=form">this page</a>, check in <strong>2m temperature</strong>, 2017, January 1-31, 0:00-23:00.</p>
 <p>Any extent is fine as long as (-118.57°, 47°) is included.</p>
 <pre><code>library(raster)
 library(MALDIquant)
 
-db &lt;- brick(PATH_TO_FILE)
+db &lt;- brick(PATH_TO_GRIBFILE)
 df &lt;- rasterToPoints(db) %&gt;% as.data.frame()
 lon &lt;- sort(df$x)[match.closest(-118.57, sort(df$x))]
 lat &lt;- sort(df$y)[match.closest(47, sort(df$y))]
@@ -586,6 +656,7 @@ df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:0
 </div>
 <div id="method-2.-gldas" class="section level3">
 <h3>Method 2. GLDAS</h3>
+<p><strong>Code example</strong></p>
 <p><strong><em>Getting data for surface temperatures in Nunn, CO (-104.73°, 40.87°) for June 1-31 in 2017</em></strong></p>
 <p>From <a href="https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS">this page</a>, download files in netCDF format for <strong>AvgSurfT_inst</strong>, 2017, June 1-31.<br />
 Any extent is fine as long as (-104.73°, 40.87°) is included.</p>
@@ -631,7 +702,13 @@ df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:0
 </div>
 <div id="method-3.-gridmet" class="section level3">
 <h3>Method 3. GRIDMET</h3>
-<p><strong><em>Getting data for Daily maximum temperature in Lind, WA (-118.57°, 47°) for May 1-31 in 2019</em></strong></p>
+<p>Everything takes place on Rstudio.</p>
+<ol style="list-style-type: decimal">
+<li><p>Get the AIO and climateR packages from github <code>devtools::install_github(c(&quot;mikejohnson51/AOI&quot;, &quot;mikejohnson51/climateR&quot;))</code></p></li>
+<li><p>Run <code>AOI = aoi_get()</code> to get the AOI (area of interest). The area options are country name, country region such as Asia and North America, US states, US region, or US states + counties.</p></li>
+<li><p>Run <code>getGridMET(AOI, param, startDate, endDate = NULL)</code> where AOI is what you get from 2 and param is the variable of interest.</p></li>
+</ol>
+<p><strong><em>Getting data for daily maximum temperature in Lind, WA (-118.57°, 47°) for May 1-31 in 2019</em></strong></p>
 <pre><code>library(AOI)
 library(climateR)
 library(MALDIquant)
@@ -661,6 +738,13 @@ df &lt;- data.frame(Date = as.Date(days),
 </div>
 <div id="method-4.-noaa-ncdc" class="section level3">
 <h3>Method 4. NOAA NCDC</h3>
+<ol style="list-style-type: decimal">
+<li><p>Go to <a href="https://www.ncdc.noaa.gov/cdo-web/token">this website</a> and enter your email to get a token.</p></li>
+<li><p>Install rnoaa package in Rstudio. <code>devtools::install_github(&quot;ropensci/rnoaa&quot;)</code></p></li>
+<li><p>Search for a weather station in your area of interest by running <code>ncdc_stations()</code> function. In the $data section, you can get a list of stations within the extent. Mindate and maxdate are the period during which the data are collected, which is an important variable to look for.</p></li>
+<li><p>Choose a station and copy the station ID. Run the <code>ncdc()</code> function with the station ID and your preferred period and data type.</p></li>
+</ol>
+<p><strong>Code example</strong></p>
 <p><strong><em>Getting data for minimum air temperatures in Maricao Forest, Puerto Rico (-67°, 18.15°) for March 1-31 in 2017</em></strong></p>
 <p>First, get a station id.</p>
 <pre><code>library(rnoaa)
@@ -692,9 +776,18 @@ df &lt;- data$data[, c(&quot;date&quot;, &quot;value&quot;)] %&gt;%
 </div>
 <div id="method-5.-microclimus" class="section level3">
 <h3>Method 5. microclimUS</h3>
+<ol style="list-style-type: decimal">
+<li><p>From “Open Research” tab, click the link to the data.</p></li>
+<li><p>Select the data type you want to download and click “download” on the far right.</p></li>
+<li><p>Open the zip folder and move the file of the year you are interested in to the same directory as your Rproject.</p></li>
+<li><p>Install ncdf4 package in Rstudio. <code>install.packages(&quot;ncdf4&quot;)</code></p></li>
+<li><p>Open the file using <code>nc &lt;- nc_open(&quot;filename&quot;)</code> and get the values using <code>ncvar_get(nc)</code>. Pay attention to the dimension of the data. Oftentimes, it is arranged as array[longitude, latitude, time]. <code>nc$dim$longitude$vals</code> and <code>nc$dim$latitude$vals</code> let you see the values of longitude and latitude respectively, which is necessary to obtain the index of the coordinates you want.</p></li>
+<li><p>The units can be viewed by <code>nc$var$[VARIABLE_NAME]$units</code> or opening nc in the viewer.</p></li>
+</ol>
+<p><strong>Code example</strong></p>
 <p><strong><em>Getting data for soil temperature 1 m below ground (0% shade) in Lind, WA (-118.57°, 47°) for June 1-31 in 2015</em></strong></p>
 <p>Download <strong>soil100cm_0pctShade.zip</strong> from <a href="https://knb.ecoinformatics.org/view/doi:10.5063/F1B56H16">here</a>.</p>
-<pre><code>nc &lt;- nc_open(PATH_TO_FILE)
+<pre><code>nc &lt;- nc_open(PATH_TO_NCFILE)
 
 ncvar &lt;- ncvar_get(nc)
 
@@ -721,9 +814,10 @@ df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:0
 </div>
 <div id="method-6.-microclim" class="section level3">
 <h3>Method 6. microclim</h3>
+<p><strong>Code example</strong></p>
 <p><strong><em>Getting solar radiation in Maricao Forest, Puerto Rico (-67°, 18.15°) for January, 2017</em></strong></p>
 <p>Download <strong>solar_radiation_Wm2.zip</strong> from <a href="https://figshare.com/collections/microclim_Global_estimates_of_hourly_microclimate_based_on_long_term_monthly_climate_averages/878253">here</a>.</p>
-<pre><code>nc &lt;- nc_open(PATH_TO_FILE)
+<pre><code>nc &lt;- nc_open(PATH_TO_NCFILE)
 ncvar &lt;- ncvar_get(nc)
 # dimension: (lon, lat, hour) = (2159, 852, 24)
   
@@ -745,6 +839,13 @@ df &lt;- data.frame(&quot;Date&quot; = dates,
 df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)</code></pre>
 </div>
 </div>
+<div id="microclimate-dataset-comparison" class="section level2">
+<h2>Microclimate dataset Comparison</h2>
+<p>Three locations:<br />
+Lind #1, WA Nunn #1, CO Maricao Forest, Puerto Rico</p>
+<p>Time to compare<br />
+2017 Jan 1-31 &amp; Jul 1-31</p>
+<p>shiny app</p>
 </div>
 
 

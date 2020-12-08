@@ -87,9 +87,9 @@ grabGLDAS <- function(var, loc, month) {
       char_day <- ifelse(day < 10, paste0("0", day), day)
       char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
       
-      # filename <- paste0("GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+      filename <- paste0("GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
       
-      filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+      # filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
       nc <- nc_open(filename)
 
       val <- valGLDAS(nc, var, loc)

@@ -16,6 +16,8 @@ shinyUI <- fluidPage(
   titlePanel("Microclim"),
   hr(),
   
+  includeHTML("intro.html"),
+  
   sidebarLayout(
     sidebarPanel(
       pickerInput("var", "Variable", choices = variables,

@@ -5,6 +5,7 @@ source("GRIDMET.R", local = TRUE)
 source("NOAA NCDC.R", local = TRUE)
 source("microclimUS.R", local = TRUE)
 source("microclim.R", local = TRUE)
+source("USCRN.R", local = TRUE)
 
 
 grabAnyData <- function(methods, inputVar, loc, month) {
@@ -22,6 +23,8 @@ grabAnyData <- function(methods, inputVar, loc, month) {
     data <- grabmicroUS(inputVar, loc, month)
   } else if (methods == "microclim") {
     data <- grabmicro(inputVar, loc, month)
+  } else if (methods == "USCRN") {
+    data <- grabUSCRN(inputVar, loc, month)
   }
   return (data)
 }
@@ -37,30 +40,30 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "microclima" = c(NA, NA, NA, NA, NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, NA),
-                     "microclim" = c("TA1cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, NA))
+                     "microclim" = c("TA1cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, NA),
+                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", NA, NA))
 
 nameDf <- data.frame(row.names = variables, 
                      "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", NA),
-                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", NA),
-                     "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly soil temperature 40-100 cm", "3-hourly net longwave radiation flux", "3-hourly average wind speed", NA),
+                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", NA),
+                     "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", NA),
                      "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", NA),
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "SNOW"),
                      "microclima" = c(NA, NA, NA, NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA),
-                     "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA),
-                     "microclim" = c("Air temperature 1 cm above ground (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m", "Solar radiation", "Wind speed 1 cm above ground", NA))
+                     "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA),
+                     "microclim" = c("Air temperature 1 cm above ground (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA),
+                     "USCRN" = c("Average infrared surface temperature", "Air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", NA))
 
-
-methods <- c("SCAN", "ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclima", "SNODAS", "microclimUS", "microclim")
-
+methods <- colnames(varsDf)
 
 
 shinyServer <- function(input, output, session) {
   
   output$methodsOutput <- renderUI({
     index <- which(is.na(varsDf[input$var, ]))
-    pickerInput("methods", "Methods", choices = methods[c(-1, -index)], selected = methods[c(-1, -index)][1],
-                options = list(style = "btn-success"))
+    pickerInput("methods", "Methods", choices = methods[-index], selected = methods[-index][c(1, 2)], multiple = T,
+                options = list(style = "btn-success", `actions-box` = TRUE))
 
   })
   
@@ -77,25 +80,22 @@ shinyServer <- function(input, output, session) {
     }
     month <- ifelse(input$season == 1, "January", "July")
     
-    HTML("<b><u>Data showing</u></b>
-         <br><b>SCAN:</b> ", nameDf[input$var, "SCAN"],
-         "<br><b>", input$methods, ":</b> ", nameDf[input$var, input$methods],
+    text <- ""
+    for (method in input$methods) {
+      text <- paste0(text, "<br><b>", method, ":</b> ", nameDf[input$var, method])
+    }
+    HTML("<b><u>Data showing</u></b>",
+         text,
          "<br><br><b>Station name:</b> ", station, 
          "<br><b>Location:</b> ", loc,
-         "<br><b>Month:</b> ", month, "1st - 31st")
+         "<br><b>Time:</b> ", month, "1st - 31st")
   })
   
   
   output$plot <- renderPlotly({
     validate(
-      need(input$methods, "")
+      need(input$methods, "Select methods")
     )
-    
-    varSCAN <- varsDf[input$var, "SCAN"]
-    dfSCAN <- grabSCAN(varSCAN, input$loc, input$season)
-    
-    inputVar <- varsDf[input$var, input$methods]
-    df <- grabAnyData(input$methods, inputVar, input$loc, input$season)
     
     if (input$var == "Wind speed") {
       unit <- "(m/s)"
@@ -106,26 +106,30 @@ shinyServer <- function(input, output, session) {
     } else {
       unit <- "(°C)"
     }
+    
+    colors <- c('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
     p <- plot_ly() %>%
-      add_lines(x = dfSCAN$Date, y = dfSCAN$Data, name = "SCAN") %>%
-      add_lines(x = df$Date, y = df$Data, name = input$methods) %>%
       layout(xaxis = list(title = "Date"),
              yaxis = list(title = paste(input$var, unit)))
-    
+    i = 0
+    for (method in input$methods) {
+      i = i + 1
+      inputVar <- varsDf[input$var, method]
+      df <- grabAnyData(method, inputVar, input$loc, input$season)
+      p <- p %>% add_lines(x = df$Date, y = df$Data, name = method, line = list(color = colors[i]))
+    }
     
     # Adding Tmin when Air temperature is selected
     if (input$var == "Air temperature") {
-      varSCAN <- varsDf["Tmin", "SCAN"]
-      df <- grabAnyData("SCAN", varSCAN, input$loc, input$season)
-      p <- p %>%
-        add_lines(x = df$Date, y = df$Data, name = "SCAN Tmin")
-      
-      inputVar <- varsDf["Tmin", input$methods]
-      
-      if (!is.na(inputVar)) {
-        df <- grabAnyData(input$methods, inputVar, input$loc, input$season)
-        p <- p %>%
-          add_lines(x = df$Date, y = df$Data, name = paste(input$methods, "Tmin"))
+      i = 0
+      for (method in input$methods) {
+        i = i + 1
+        inputVar <- varsDf["Tmin", method]
+        if (!is.na(inputVar)) {
+          df <- grabAnyData(method, inputVar, input$loc, input$season)
+          p <- p %>%
+            add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
+        }
       }
     }
 
