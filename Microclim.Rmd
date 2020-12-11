@@ -423,8 +423,9 @@ df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y
 
 **Code example**
 
-***Getting surface temperature in Lind, WA () for July***
+***Getting surface temperature in Lind, WA () for July, 2017***
 
+```
 fulldf <- read.delim(PATH_TO_FILE)
 
 headers <- read.delim("HEADERS.txt", sep = "", header = T, skip = 1)
@@ -438,7 +439,7 @@ df <- data.frame("Date" = as.POSIXct(paste(fulldf$LST_DATE, time), format = "%Y%
 
 df <- df[df$Date >= as.Date(paste0("2017-07-01")) & 
            df$Date <= as.Date(paste0("2017-07-31")), ]
-
+```
 
 ## Microclimate dataset Comparison
 

@@ -813,7 +813,12 @@ df &lt;- data.frame(&quot;Date&quot; = rep(days, each = 24),
 df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)</code></pre>
 </div>
 <div id="method-6.-microclim" class="section level3">
-<h3>Method 6. microclim</h3>
+<h3>Method 6. <a href="https://figshare.com/collections/microclim_Global_estimates_of_hourly_microclimate_based_on_long_term_monthly_climate_averages/878253">microclim</a></h3>
+<ol style="list-style-type: decimal">
+<li><p>Select the dataset (zip file) you are looking for from the list and click it.</p></li>
+<li><p>Click on the down arrow to download the data.</p></li>
+<li><p>Open the file using <code>nc &lt;- nc_open(&quot;filename&quot;)</code> and get the values using <code>ncvar_get(nc)</code>. Pay attention to the dimension of the data. Oftentimes, it is arranged as array[longitude, latitude, time]. <code>nc$dim$longitude$vals</code> and <code>nc$dim$latitude$vals</code> let you see the values of longitude and latitude respectively, which is necessary to obtain the index of the coordinates you want.</p></li>
+</ol>
 <p><strong>Code example</strong></p>
 <p><strong><em>Getting solar radiation in Maricao Forest, Puerto Rico (-67°, 18.15°) for January, 2017</em></strong></p>
 <p>Download <strong>solar_radiation_Wm2.zip</strong> from <a href="https://figshare.com/collections/microclim_Global_estimates_of_hourly_microclimate_based_on_long_term_monthly_climate_averages/878253">here</a>.</p>
@@ -838,6 +843,24 @@ df &lt;- data.frame(&quot;Date&quot; = dates,
   
 df$Date &lt;- format(as.POSIXct(paste0(df$Date, &quot; &quot;, df$Hour, &quot;:00&quot;)), format = &quot;%Y-%m-%d %H:%M&quot;)</code></pre>
 </div>
+</div>
+<div id="method-7.-uscrn" class="section level2">
+<h2>Method 7. USCRN</h2>
+<p><strong>Code example</strong></p>
+<p><strong><em>Getting surface temperature in Lind, WA () for July, 2017</em></strong></p>
+<pre><code>fulldf &lt;- read.delim(PATH_TO_FILE)
+
+headers &lt;- read.delim(&quot;HEADERS.txt&quot;, sep = &quot;&quot;, header = T, skip = 1)
+
+colnames(fulldf) &lt;- colnames(headers)
+
+time &lt;- paste0(floor(fulldf$LST_TIME / 100), &quot;:&quot;, fulldf$LST_TIME %% 100)
+
+df &lt;- data.frame(&quot;Date&quot; = as.POSIXct(paste(fulldf$LST_DATE, time), format = &quot;%Y%m%d %H:%M&quot;),
+                 &quot;Data&quot; = fulldf[, &quot;SURFACE_TEMPERATURE&quot;]) %&gt;% na.omit()
+
+df &lt;- df[df$Date &gt;= as.Date(paste0(&quot;2017-07-01&quot;)) &amp; 
+           df$Date &lt;= as.Date(paste0(&quot;2017-07-31&quot;)), ]</code></pre>
 </div>
 <div id="microclimate-dataset-comparison" class="section level2">
 <h2>Microclimate dataset Comparison</h2>

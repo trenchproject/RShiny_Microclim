@@ -1,11 +1,11 @@
-source("SCAN.R", local = TRUE)
-source("ERA5.R", local = TRUE)
-source("GLDAS.R", local = TRUE)
-source("GRIDMET.R", local = TRUE)
-source("NOAA NCDC.R", local = TRUE)
-source("microclimUS.R", local = TRUE)
-source("microclim.R", local = TRUE)
-source("USCRN.R", local = TRUE)
+source("R/SCAN.R", local = TRUE)
+source("R/ERA5.R", local = TRUE)
+source("R/GLDAS.R", local = TRUE)
+source("R/GRIDMET.R", local = TRUE)
+source("R/NOAA NCDC.R", local = TRUE)
+source("R/microclimUS.R", local = TRUE)
+source("R/microclim.R", local = TRUE)
+source("R/USCRN.R", local = TRUE)
 
 
 grabAnyData <- function(methods, inputVar, loc, month) {
@@ -40,7 +40,7 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "microclima" = c(NA, NA, NA, NA, NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, NA),
-                     "microclim" = c("TA1cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, NA),
+                     "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, NA),
                      "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", NA, NA))
 
 nameDf <- data.frame(row.names = variables, 
@@ -52,7 +52,7 @@ nameDf <- data.frame(row.names = variables,
                      "microclima" = c(NA, NA, NA, NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA),
-                     "microclim" = c("Air temperature 1 cm above ground (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA),
+                     "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA),
                      "USCRN" = c("Average infrared surface temperature", "Air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", NA))
 
 methods <- colnames(varsDf)
