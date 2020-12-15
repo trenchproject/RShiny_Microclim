@@ -48,3 +48,16 @@ grabmicroUS <- function(var, loc, month) {
   return (df)
 }
 
+mapmicroUS <- function(var, month, date, hour) {
+  
+  stack <- raster::stack(paste0("Data/microclimUS/", var, "_2017.nc"))
+  
+  AOI = aoi_get(state = "CO")
+  # Stacks by hour
+  # 8760 (24 * 365)
+  extra <- ifelse(month == 1, 0, 24 * 181)
+  
+  raster <- crop(stack[[(date - 1) * 24 + (hour + 1) + extra]], AOI) / 10
+  
+  return (raster)
+}

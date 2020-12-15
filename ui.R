@@ -5,6 +5,8 @@ library(shinythemes)
 library(plotly)
 library(data.table)
 library(shinycssloaders)
+library(leaflet)
+library(viridis)
 
 variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
 
@@ -17,6 +19,9 @@ shinyUI <- fluidPage(
   hr(),
   
   includeHTML("intro.html"),
+  
+  hr(),
+  h3("Temporal comparison"),
   
   sidebarLayout(
     sidebarPanel(
@@ -34,6 +39,37 @@ shinyUI <- fluidPage(
     
     mainPanel(
       plotlyOutput("plot") %>% withSpinner(type = 7)
+    )
+  ),
+  
+  hr(),
+  h3("Spatial comparison"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      pickerInput("mapVar", "Variable", choices = variables[-6],
+                  options = list(style = "btn-success")),
+      
+      fluidRow(
+        column(6, radioGroupButtons("month", "Month", choices = c("January" = 1, "June" = 7), selected = 7, status = "danger", size = "sm")),
+        column(6, radioGroupButtons("date", "Date", choices = 1:7, selected = 1, status = "danger", size = "sm"))
+      ),
+      
+      radioGroupButtons("hour", "Hour", choices = 0:23, selected = 0, status = "danger", size = "sm"),
+      
+      hr(),
+      
+      uiOutput("mapMethodsOutput1"),
+      uiOutput("mapMethodsOutput2"),
+    ),
+    
+    mainPanel(
+      h4("Method 1"),
+      leafletOutput("map1") %>% withSpinner(type = 7),
+      br(),
+      h4("Method 2"),
+      leafletOutput("map2") %>% withSpinner(type = 7)
+     
     )
   )
 

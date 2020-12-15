@@ -62,8 +62,6 @@ grabERA <- function(varIndex, loc, month) {
       vals2 <- c(vals2, df[, 2 + 2 + i * 6])
     }
     
-    offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
-
     # The data for July comes after the data for January in the data frame. Each month has 24 hours and 31 days of data.
     if (month == 1) {
       vals2 <- vals2[(1 + offset) : 744]
@@ -87,3 +85,34 @@ grabERA <- function(varIndex, loc, month) {
   
   return (df)
 }
+
+
+mapERA <- function(varIndex, month, date, hour) {
+  brickERA <- brick("COmap_ERA.grib")
+  # 1/1 - 1/7 + 7/1 - 7/7
+  # 2016 layers (2 months * 7 days * 24 hours * 6 variables)
+  
+  monthIndex <- ifelse(month == 1, 0, 7)
+  offset = 7
+  
+  raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
+  
+  
+  if (varIndex == 1) {  # For wind speed, we want to consider the combined wind speed.
+
+    raster2 <- brick[[2 + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
+    
+    raster <- sqrt(raster^2 + raster2^2)
+  }
+
+  if (varIndex %in% c(3, 4, 5)) {
+    raster <- raster - 273.15
+  }
+  
+  if (varIndex == 6) {
+    raster <- raster / 3600
+  }
+  
+  return (raster)
+}
+

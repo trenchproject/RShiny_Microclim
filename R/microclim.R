@@ -10,6 +10,9 @@
 
 # For outside of US
 
+library(ncdf4)
+library(raster)
+
 grabmicro <- function(var, loc, month) {
   
   nc <- nc_open(paste0("Data/microclim/", var, "_", month, ".nc"))
@@ -35,3 +38,16 @@ grabmicro <- function(var, loc, month) {
   
   return(df)
 }
+
+
+mapmicro <- function(var, month, hour) {
+  
+  AOI = aoi_get(state = "CO")
+  
+  stack <- raster::stack(paste0("Data/microclim/", var, "_", month, ".nc"))
+  
+  raster <- crop(stack[[hour + 1]], AOI)
+  
+  return (raster)
+}
+
