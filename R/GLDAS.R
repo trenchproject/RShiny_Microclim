@@ -29,10 +29,12 @@
 # "SoilTMP100_200cm_inst"
 # "Wind_f_inst"           
 # "Tair_f_inst"
+# "Tmin" (for map)
 
 library(ncdf4)
 library(MALDIquant)
 library(magrittr)
+library(AOI)
 
 locs <- data.frame(row.names = c("WA", "PR", "CO"), 
                    "lon" = c(-118.5657, -66.98880, -104.7552), 
@@ -64,7 +66,7 @@ valGLDAS <- function(nc, var, loc) {
   val <- ncvar[lonInd, latInd]
   
   if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
-    val <- val- 273.15
+    val <- val - 273.15
   }
   # if (var %in% c("Swnet_tavg", "Lwnet_tavg")) {
   #   val <- -val
@@ -110,3 +112,84 @@ grabGLDAS <- function(var, loc, month) {
   
   return (df)
 }
+
+
+
+
+# mapGLDAS <- function(var, month, date, hour) {
+#   
+#   hour <- hour + 7
+#   if (hour > 23) {
+#     date <- date + 1
+#     hour <- hour - 24
+#   }
+#   char_date <- ifelse(date < 10, paste0("0", date), date)
+#   char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+#   
+#   filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
+#   
+#   AOI = aoi_get(state = "CO")
+#   
+#   raster <- raster(filename, varname = var) %>%
+#     crop(AOI)
+#   
+#   if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
+#     raster <- raster - 273.15
+#   }
+#   
+#   return (raster)
+# }
+
+mapGLDAS <- function(var, month, date) {
+  
+  if (var %in% c("Tair_f_inst", "Tmin")) {
+    max <- -1000
+    min <- 1000
+    for (hour in seq(from = 0, to = 21, by = 3)) {
+      
+      date <- ifelse(hour < 9, date + 1, date)
+      
+      char_date <- ifelse(date < 10, paste0("0", date), date)
+      char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+      filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
+      AOI = aoi_get(state = "CO")
+      
+      raster <- raster(filename, varname = "Tair_f_inst") %>%
+        crop(AOI)
+      
+      max <- max(raster, max)
+      min <- min(raster, min)
+    }
+    
+    if (var == "Tmin") {
+      raster <- min
+    } else {
+      raster <- max
+    }
+  } else {
+    ave <- 0
+    for (hour in seq(from = 0, to = 21, by = 3)) {
+      
+      date <- ifelse(hour < 9, date + 1, date)
+      
+      char_date <- ifelse(date < 10, paste0("0", date), date)
+      char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+      filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
+      AOI = aoi_get(state = "CO")
+      
+      raster <- raster(filename, varname = var) %>%
+        crop(AOI)
+      
+      ave <- ave + raster
+      
+    }
+    raster <- ave / 8
+  }
+  
+  if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
+    raster <- raster - 273.15
+  }
+  
+  return (raster)
+}
+

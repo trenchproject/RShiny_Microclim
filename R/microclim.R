@@ -7,6 +7,7 @@
 # SOLR
 # D100cm_soil_0
 # D0cm_soil_0
+# Tmin (for map)
 
 # For outside of US
 
@@ -40,13 +41,52 @@ grabmicro <- function(var, loc, month) {
 }
 
 
-mapmicro <- function(var, month, hour) {
+# mapmicro <- function(var, month, hour) {
+#   
+#   AOI = aoi_get(state = "CO")
+#   
+#   stack <- raster::stack(paste0("Data/microclim/", var, "_", month, ".nc"))
+#   
+#   raster <- crop(stack[[hour + 1]], AOI)
+#   
+#   return (raster)
+# }
+
+
+mapmicro <- function(var, month) {
   
   AOI = aoi_get(state = "CO")
   
-  stack <- raster::stack(paste0("Data/microclim/", var, "_", month, ".nc"))
+  varName <- ifelse(var == "Tmin", "TA120cm", var)
   
-  raster <- crop(stack[[hour + 1]], AOI)
+  stack <- raster::stack(paste0("Data/microclim/", varName, "_", month, ".nc"))
+  
+  if (var %in% c("TA120cm", "Tmin")) {
+    max = -100
+    min = 100
+    
+    for (hour in 0:23) {
+      raster <- crop(stack[[hour + 1]], AOI)
+      
+      max <- max(raster, max)
+      min <- min(raster, min)
+    }
+    
+    if (var == "Tmin") {
+      raster <- min
+    } else {
+      raster <- max
+    }
+  } else {
+    ave = 0
+    for (hour in 0:23) {
+      raster <- crop(stack[[hour + 1]], AOI)
+      
+      ave = ave + raster
+    }
+    
+    raster <- ave / 24
+  }
   
   return (raster)
 }

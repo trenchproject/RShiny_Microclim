@@ -29,17 +29,17 @@ grabAnyData <- function(methods, inputVar, loc, month) {
   return (data)
 }
 
-grabMapData <- function(methods, inputVar, month, date, hour) {
+grabMapData <- function(methods, inputVar, month, date) {
   if (methods == "ERA5") {
-    data <- mapERA(inputVar, month, date, hour)
+    data <- mapERA(inputVar, month, date)
   } else if (methods == "GLDAS") {
-    data <- mapGLDAS(inputVar, month, date, hour)
+    data <- mapGLDAS(inputVar, month, date)
   } else if (methods == "GRIDMET") {
     data <- mapGRID(inputVar, month, date)
   } else if (methods == "microclimUS") {
-    data <- mapmicroUS(inputVar, month, date, hour)
+    data <- mapmicroUS(inputVar, month, date)
   } else if (methods == "microclim") {
-    data <- mapmicro(inputVar, month, hour)
+    data <- mapmicro(inputVar, month)
   }
   return (data)
 }
@@ -48,14 +48,14 @@ variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m 
 
 varsDf <- data.frame(row.names = c(variables, "Tmin"), 
                      "SCAN" = c(18, 3, 22, 9, 8, NA, 4),
-                     "ERA5" = c(4, 3, 5, 6, 1, NA, NA),
-                     "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", NA, NA),
+                     "ERA5" = c(4, 3, 5, 6, 1, NA, 7),
+                     "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", NA, "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", NA, "tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "SNOW", "TMIN"),
                      "microclima" = c(NA, NA, NA, NA, NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA),
-                     "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, NA),
-                     "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, NA),
+                     "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "Tmin"),
+                     "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "Tmin"),
                      "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", NA, NA))
 
 nameDf <- data.frame(row.names = variables, 
@@ -140,7 +140,7 @@ shinyServer <- function(input, output, session) {
       for (method in input$methods) {
         i = i + 1
         inputVar <- varsDf["Tmin", method]
-        if (!is.na(inputVar)) {
+        if (method %in% c("SCAN", "GRIDMET", "NOAH_NCDC")) {
           df <- grabAnyData(method, inputVar, input$loc, input$season)
           p <- p %>%
             add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
@@ -182,7 +182,7 @@ shinyServer <- function(input, output, session) {
     )
     
     inputVar1 <- varsDf[input$mapVar, input$mapMethods1]
-    rasterData1 <- grabMapData(input$mapMethods1, inputVar1, input$month, as.numeric(input$date), as.numeric(input$hour))
+    rasterData1 <- grabMapData(input$mapMethods1, inputVar1, input$month, as.numeric(input$date))
     
   })
   
@@ -190,49 +190,28 @@ shinyServer <- function(input, output, session) {
     validate(
       need(input$mapMethods2, "")
     )
-    
-    inputVar2 <- varsDf[input$mapVar, input$mapMethods2]
-    rasterData2 <- grabMapData(input$mapMethods2, inputVar2, input$month, as.numeric(input$date), as.numeric(input$hour))
-    
-  })
-  
-  
-  output$map1 <- renderLeaflet({
-    raster <- rasterData1()
-    
-    if (input$mapVar == "Wind speed") {
-      unit <- "(m/s)"
-    } else if (input$mapVar == "Radiation") {
-      unit <- HTML("(W/m<sup>2</sup>)")
-    } else {
-      unit <- "(°C)"
-    }
-    
-    pal <- colorNumeric(palette = viridis(5),
-                        domain = c(min(minValue(raster), minValue(rasterData2())), max(maxValue(raster), maxValue(rasterData2()))),
-                        na.color = "transparent"
-    )
-    
-    leaflet() %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      addRasterImage(x = raster, colors = pal, group = "Climatic variable", opacity = 1) %>%
-      setView(lng = -105.5, lat = 39, zoom = 6) %>%
-      addLegend(pal = pal,
-                opacity = 1,
-                values = c(minValue(raster), maxValue(raster)),
-                position = "bottomright",
-                title = paste(input$mapVar), unit)
-  })
-  
-  
-  output$map2 <- renderLeaflet({
 
-    raster <- rasterData2()
+    inputVar2 <- varsDf[input$mapVar, input$mapMethods2]
+    rasterData2 <- grabMapData(input$mapMethods2, inputVar2, input$month, as.numeric(input$date))
+
+  })
+  
+  rasterdif <- reactive({
+    raster1 <- rasterData1()
+    raster2 <- rasterData2()
     
-    pal <- colorNumeric(palette = viridis(5),
-                        domain = c(min(minValue(rasterData1()), minValue(raster)), max(maxValue(rasterData1()), maxValue(raster))),
-                        na.color = "transparent"
-    )
+    if (res(raster1)[1] > res(raster2)[1]) {
+      rasterdif <- abs(resample(raster2, raster1) - raster1)
+    } else {
+      rasterdif <- abs(resample(raster1, raster2) - raster2)
+    }
+    rasterdif
+  })
+  
+  
+  output$mymap <- renderLeaflet({
+    raster1 <- rasterData1()
+    raster2 <- rasterData2()
     
     if (input$mapVar == "Wind speed") {
       unit <- "(m/s)"
@@ -242,14 +221,72 @@ shinyServer <- function(input, output, session) {
       unit <- "(°C)"
     }
     
+    min <- min(minValue(raster1), minValue(raster2))
+    max <- max(maxValue(raster1), maxValue(raster2))
+
+    pal <- colorNumeric(palette = viridis(5),
+                        domain = c(min, max),
+                        na.color = "transparent")
+    
+    paldif <- colorNumeric(palette = viridis(5),
+                           domain = c(minValue(rasterdif()), maxValue(rasterdif())),
+                           na.color = "transparent")
+    
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      addRasterImage(x = raster, colors = pal, group = "Climatic variable", opacity = 1) %>%
+      addRasterImage(x = raster1, colors = pal, group = input$mapMethods1, opacity = 1) %>%
+      addRasterImage(x = raster2, colors = pal, group = input$mapMethods2, opacity = 1) %>%
+      addRasterImage(x = rasterdif(), colors = paldif, group = "Difference", opacity = 1) %>%
       setView(lng = -105.5, lat = 39, zoom = 6) %>%
+      addLayersControl(baseGroups = c(input$mapMethods1, input$mapMethods2, "Difference")) %>%
       addLegend(pal = pal,
                 opacity = 1,
-                values = c(minValue(raster), maxValue(raster)),
+                values = c(min, max),
                 position = "bottomright",
-                title = paste(input$mapVar), unit)
+                title = paste(input$mapVar, unit))
   })
+  
+  observeEvent(input$mymap_groups, {
+    
+
+    raster1 <- rasterData1()
+    raster2 <- rasterData2()
+    
+    if (input$mapVar == "Wind speed") {
+      unit <- "(m/s)"
+    } else if (input$mapVar == "Radiation") {
+      unit <- HTML("(W/m<sup>2</sup>)")
+    } else {
+      unit <- "(°C)"
+    }
+    
+    min <- min(minValue(raster1), minValue(raster2))
+    max <- max(maxValue(raster1), maxValue(raster2))
+    
+    pal <- colorNumeric(palette = viridis(5),
+                        domain = c(min, max),
+                        na.color = "transparent")
+    
+    paldif <- colorNumeric(palette = viridis(5),
+                           domain = c(minValue(rasterdif()), maxValue(rasterdif())),
+                           na.color = "transparent")
+    
+    if (input$mymap_groups == "Difference") {
+      leafletProxy('mymap') %>% clearControls() %>%
+        addLegend(pal = paldif, 
+                  opacity = 1,
+                  values = c(minValue(rasterdif()), maxValue(rasterdif())),
+                  group = "Difference",
+                  position = "bottomright",
+                  title = paste("Difference", unit))
+    } else {
+      leafletProxy('mymap') %>% clearControls() %>%
+        addLegend(pal = pal,
+                  opacity = 1,
+                  values = c(min, max),
+                  position = "bottomright",
+                  title = paste(input$mapVar, unit))
+    }
+  })
+
 }

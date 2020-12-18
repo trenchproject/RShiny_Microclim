@@ -12,6 +12,7 @@ library(MALDIquant)
 # soil100cm_0pctShade
 # TA1cm_0pctShade: Air temp 1cm height (degC * 10)
 # SOLR: Solar radiation (horizontal ground) W/m^2 * 10
+# Tmin (for map)
 
 grabmicroUS <- function(var, loc, month) {
   
@@ -48,16 +49,55 @@ grabmicroUS <- function(var, loc, month) {
   return (df)
 }
 
-mapmicroUS <- function(var, month, date, hour) {
+# mapmicroUS <- function(var, month, date, hour) {
+#   
+#   stack <- raster::stack(paste0("Data/microclimUS/", var, "_2017.nc"))
+#   
+#   AOI = aoi_get(state = "CO")
+#   # Stacks by hour
+#   # 8760 (24 * 365)
+#   extra <- ifelse(month == 1, 0, 24 * 181)
+#   
+#   raster <- crop(stack[[(date - 1) * 24 + (hour + 1) + extra]], AOI) / 10
+#   
+#   return (raster)
+# }
+
+mapmicroUS <- function(var, month, date) {
   
-  stack <- raster::stack(paste0("Data/microclimUS/", var, "_2017.nc"))
+  varName <- ifelse(var == "Tmin", "TA200cm", var)
+
+  stack <- raster::stack(paste0("Data/microclimUS/", varName, "_2017.nc"))
   
   AOI = aoi_get(state = "CO")
   # Stacks by hour
   # 8760 (24 * 365)
   extra <- ifelse(month == 1, 0, 24 * 181)
   
-  raster <- crop(stack[[(date - 1) * 24 + (hour + 1) + extra]], AOI) / 10
+  
+  if (var %in% c("TA200cm", "Tmin")) {
+    max <- -1000
+    min <- 1000
+    
+    for (hour in 0:23) {
+      raster <- crop(stack[[(date - 1) * 24 + (hour + 1) + extra]], AOI) / 10
+      max <- max(raster, max)
+      min <- min(raster, min)
+    }
+    
+    if (var == "Tmin") {
+      raster <- min
+    } else {
+      raster <- max
+    }
+  } else {
+    ave = 0
+    for (hour in 0:23) {
+      raster <- crop(stack[[(date - 1) * 24 + (hour + 1) + extra]], AOI) / 10
+      ave <- ave + raster
+    }
+    raster <- ave / 24
+  }
   
   return (raster)
 }

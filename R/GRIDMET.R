@@ -62,6 +62,7 @@ grabGRID <- function(param, loc, month) {
 
 
 mapGRID <- function(param, month, date) {
+  
   AOI = aoi_get(state = "CO")
   char_date <- ifelse(date < 10, paste0("0", date), date)
 
