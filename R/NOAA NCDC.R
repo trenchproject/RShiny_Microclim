@@ -27,45 +27,6 @@ library(magrittr)
 
 #_____________________________________________________________________________________
 
-getData <- function(loc, month, para) {
-  if (loc == "WA") {
-    id = "GHCND:USC00454679"
-  } else if (loc == "PR") {
-    id = "GHCND:RQC00665908"
-  } else if (loc == "CO") {
-    id = "GHCND:USW00094074"
-  }
-  data <- ncdc(datasetid = 'GHCND', 
-             stationid = id, 
-             token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-             startdate = paste0("2017-0", month, "-01"), 
-             enddate = paste0("2017-0", month, "-31"),
-             datatypeid = para)
-  if (para %in% c("TMAX", "TMIN")) {
-    data$data[, "value"] <- data$data[, "value"] / 10
-  }
-  df <- data$data[, c("date", "value")] %>% as.data.frame()
-  colnames(df)[1] <- "Date"
-  df$Month <- month
-  return (df)
-}
-
-getDataNOAA <- function(loc, para) {
-  df <- rbind(getData(loc, 1, para), getData(loc, 7, para))
-  colnames(df)[2] <- loc
-  #df$date <- format(as.Date(df$date), format = "%Y-%m-%d")
-  return (df)
-}
-
-fullNOAA <- function(var) {
-  return (getDataNOAA("WA", var) %>% 
-            merge(getDataNOAA("PR", var), by = c("Date", "Month"), all = T) %>% 
-            merge(getDataNOAA("CO", var), by = c("Date", "Month"), all = T))
-}
-
-
-
-
 grabNOAA <- function(var, loc, month) {
   
   days <- c()

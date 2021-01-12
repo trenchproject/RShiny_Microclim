@@ -6,6 +6,7 @@ source("R/NOAA NCDC.R", local = TRUE)
 source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
 source("R/USCRN.R", local = TRUE)
+source("cicerone.R", local= TRUE)
 
 
 grabAnyData <- function(methods, inputVar, loc, month) {
@@ -75,9 +76,22 @@ methods <- colnames(varsDf)
 
 shinyServer <- function(input, output, session) {
   
+  observeEvent(input$tour1, guide1$init()$start())
+  
+  observeEvent(input$reset1, {
+    reset("page")
+  })
+  
+  observeEvent(input$tour2, guide2$init()$start())
+  
+  observeEvent(input$reset2, {
+    reset("page")
+  })
+  
+  
   output$methodsOutput <- renderUI({
     index <- which(is.na(varsDf[input$var, ]))
-    pickerInput("methods", "Methods", choices = methods[-index], selected = methods[-index][c(1, 2)], multiple = T,
+    pickerInput("methods", "Datasets", choices = methods[-index], selected = methods[-index][c(1, 2)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
 
   })
@@ -103,13 +117,13 @@ shinyServer <- function(input, output, session) {
          text,
          "<br><br><b>Station name:</b> ", station, 
          "<br><b>Location:</b> ", loc,
-         "<br><b>Time:</b> ", month, "1st - 31st")
+         "<br><b>Time:</b> ", month, "1st - 31st, 2017")
   })
   
   
   output$plot <- renderPlotly({
     validate(
-      need(input$methods, "Select methods")
+      need(input$methods, "Select datasets")
     )
     
     if (input$var == "Wind speed") {
@@ -140,7 +154,7 @@ shinyServer <- function(input, output, session) {
       for (method in input$methods) {
         i = i + 1
         inputVar <- varsDf["Tmin", method]
-        if (method %in% c("SCAN", "GRIDMET", "NOAH_NCDC")) {
+        if (method %in% c("SCAN", "GRIDMET", "NOAA_NCDC")) {
           df <- grabAnyData(method, inputVar, input$loc, input$season)
           p <- p %>%
             add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
@@ -165,13 +179,13 @@ shinyServer <- function(input, output, session) {
   
   output$mapMethodsOutput1 <- renderUI({
     index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 6, 7, 10)
-    pickerInput("mapMethods1", "Method 1", choices = methods[c(-index)], selected = methods[c(-index)][1], 
+    pickerInput("mapMethods1", "Dataset 1", choices = methods[c(-index)], selected = methods[c(-index)][1], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
   output$mapMethodsOutput2 <- renderUI({
     index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 6, 7, 10)
-    pickerInput("mapMethods2", "Method 2", choices = methods[c(-index)], selected = methods[c(-index)][2], 
+    pickerInput("mapMethods2", "Dataset 2", choices = methods[c(-index)], selected = methods[c(-index)][2], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
 

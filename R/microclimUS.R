@@ -101,3 +101,8 @@ mapmicroUS <- function(var, month, date) {
   
   return (raster)
 }
+
+
+raster <- raster::stack(paste0("Data/microclimUS/TA200cm_2017.nc"))
+raster[[1]]
+rasterVis::levelplot(raster[[1]])
