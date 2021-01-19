@@ -13,6 +13,8 @@
 
 # CO: Nunn (-104.76, 40.81)
 # WA: Spokane (-117.53, 47.42)
+# TX: Panther Junction (-103.21, 29.35)
+
 
 grabUSCRN <- function(var, loc, month) {
   
@@ -32,3 +34,4 @@ grabUSCRN <- function(var, loc, month) {
  
   return (df) 
 }
+

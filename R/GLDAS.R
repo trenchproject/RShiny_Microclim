@@ -36,10 +36,11 @@ library(MALDIquant)
 library(magrittr)
 library(AOI)
 
-locs <- data.frame(row.names = c("WA", "PR", "CO"), 
-                   "lon" = c(-118.5657, -66.98880, -104.7552), 
-                   "lat" = c(47.0022, 18.15110, 40.8066), 
-                   "offset" = c(-8, -4, -7))
+locs <- data.frame(row.names = c("WA", "CO", "TX"), 
+                   "lon" = c(-117.53, -104.7552, -103.2), 
+                   "lat" = c(47.42, 40.8066, 29.3), 
+                   "offset" = c(-8, -7, -6))
+
 
 # loc = "WA"
 # 303.86
@@ -54,6 +55,7 @@ locs <- data.frame(row.names = c("WA", "PR", "CO"),
 # 
 # nc <- nc_open(filename)
 # nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
+
 
 
 valGLDAS <- function(nc, var, loc) {
@@ -112,8 +114,6 @@ grabGLDAS <- function(var, loc, month) {
   
   return (df)
 }
-
-
 
 
 # mapGLDAS <- function(var, month, date, hour) {

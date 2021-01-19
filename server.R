@@ -48,7 +48,7 @@ grabMapData <- function(methods, inputVar, month, date) {
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
 
 varsDf <- data.frame(row.names = c(variables, "Tmin"), 
-                     "SCAN" = c(18, 3, 22, 9, 8, NA, 4),
+                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", NA, NA),
                      "ERA5" = c(4, 3, 5, 6, 1, NA, 7),
                      "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", NA, "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", NA, "tmin"),
@@ -57,10 +57,10 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "Tmin"),
-                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", NA, NA))
+                     "SCAN" = c(18, 3, 22, 9, 8, NA, 4))
 
 nameDf <- data.frame(row.names = variables, 
-                     "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", NA),
+                     "USCRN" = c("Average infrared surface temperature", "Air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", NA),
                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", NA),
                      "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", NA),
                      "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", NA),
@@ -69,7 +69,7 @@ nameDf <- data.frame(row.names = variables,
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA),
-                     "USCRN" = c("Average infrared surface temperature", "Air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", NA))
+                     "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", NA))
 
 methods <- colnames(varsDf)
 
@@ -98,14 +98,14 @@ shinyServer <- function(input, output, session) {
   
   output$info <- renderText({
     if (input$loc == "WA") {
-      station <- "Lind #1 (-118.57°, 47°)"
-      loc <- "Adams county, WA 1640ft"
+      station <- "Spokane 17 SSW (47.42°, -117.53°)"
+      loc <- "Spokane county, WA 691m"
     } else if (input$loc == "CO") {
-      station <- "Nunn #1 (-104.73°, 40.87°)"
-      loc <- "Weld county, CO 5900ft"
-    } else if (input$loc == "PR") {
-      station <- "Maricao Forest (-67°, 18.15°)"
-      loc <- "Mayaguez, Puerto Rico 2450ft"
+      station <- "Nunn 7 NNE (40.81°, -104.76°)"
+      loc <- "Weld county, CO 1643m"
+    } else if (input$loc == "TX") {
+      station <- "Panther Junction 2 N (29.35°, -103.21°)"
+      loc <- "Brewster county, TX 1140m"
     }
     month <- ifelse(input$season == 1, "January", "July")
     
@@ -171,6 +171,20 @@ shinyServer <- function(input, output, session) {
     
     p
     
+  })
+  
+  
+  output$minimap <- renderLeaflet({
+    
+    x = c(-117.53, -104.7552, -103.2)
+    y = c(47.42, 40.8066, 29.3)
+    text = c("Spokane, WA", "Nunn, CO", "Panther junction, TX")
+    names(x) = names(y) = names(text) = c("WA", "CO", "TX")
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      addMarkers(lng = x[input$loc], lat = y[input$loc], popup = HTML(text[input$loc])) %>%
+      setView(lng = -97.5, lat = 39, zoom = 2.5)
   })
   
   #______________________________________________________________________________________

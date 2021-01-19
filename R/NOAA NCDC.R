@@ -25,6 +25,19 @@ library(magrittr)
 
 
 
+# WA SPOKANE 17 SSW GHCND:USW00004136 (47.41740, -117.5867)
+# ncdc_stations(extent = c(47.4, -117.6, 47.5, -117.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+
+
+# CO NUNN 7 NNE GHCND:USW00094074 (40.8066, -104.7552)
+# ncdc_stations(extent = c(40.7, -104.8, 40.9, -104.7), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+
+
+# TX PANTHER JUNCTION GHCND:USC00416792 (29.3, -103.2)
+# ncdc_stations(extent = c(29.3, -103.3, 29.4, -103.1), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+
+
+
 #_____________________________________________________________________________________
 
 grabNOAA <- function(var, loc, month) {
@@ -36,11 +49,12 @@ grabNOAA <- function(var, loc, month) {
   
   if (loc == "WA") {
     id = "GHCND:USC00454679"
-  } else if (loc == "PR") {
-    id = "GHCND:RQC00665908"
   } else if (loc == "CO") {
     id = "GHCND:USW00094074"
+  } else if (loc == "TX") {
+    id = "GHCND:USC00416792"
   }
+  
   data <- ncdc(datasetid = 'GHCND', 
                stationid = id, 
                token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 

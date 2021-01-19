@@ -16,10 +16,11 @@ library(MALDIquant)
 
 grabmicroUS <- function(var, loc, month) {
   
-  locs <- data.frame(row.names = c("WA", "PR", "CO"), 
-                     "lon" = c(-118.5657, -66.98880, -104.7552), 
-                     "lat" = c(47.0022, 18.15110, 40.8066), 
-                     "offset" = c(-8, -4, -7))
+  locs <- data.frame(row.names = c("WA", "CO", "TX"), 
+                     "lon" = c(-117.53, -104.7552, -103.2), 
+                     "lat" = c(47.42, 40.8066, 29.3), 
+                     "offset" = c(-8, -7, -6))
+  
   
   nc <- nc_open(paste0("Data/microclimUS/", var, "_2017.nc"))
   
@@ -102,7 +103,3 @@ mapmicroUS <- function(var, month, date) {
   return (raster)
 }
 
-
-raster <- raster::stack(paste0("Data/microclimUS/TA200cm_2017.nc"))
-raster[[1]]
-rasterVis::levelplot(raster[[1]])

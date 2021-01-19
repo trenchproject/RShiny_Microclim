@@ -10,6 +10,20 @@
 # one_loc <- df[df$x == lon & df$y == lat, ]
 # write.csv(one_loc, paste0(loc, "_ERA.csv"), row.names = F)
 
+
+
+
+# db <- brick(paste0("ERA_WA2.grib"))
+# # 8928 (6 variables * 2 months * 31 days * 24 hours)
+# 
+# df <- rasterToPoints(db) %>% as.data.frame()
+# lon <- sort(df$x)[match.closest(locs[loc, "lon"], sort(df$x))]
+# lat <- sort(df$y)[match.closest(locs[loc, "lat"], sort(df$y))]
+# 
+# one_loc <- df[df$x == lon & df$y == lat, ]
+# write.csv(one_loc, paste0(loc, "_ERA.csv"), row.names = F)
+
+
 # Variables
 
 # 1. 10m_u_component_of_wind (m/s)
@@ -28,10 +42,10 @@ library(MALDIquant)
 
 
 grabERA <- function(varIndex, loc, month) {
-  locs <- data.frame(row.names = c("WA", "PR", "CO"), 
-                     "lon" = c(-118.5657, -66.98880, -104.7552), 
-                     "lat" = c(47.0022, 18.15110, 40.8066), 
-                     "offset" = c(-8, -4, -7))
+  locs <- data.frame(row.names = c("WA", "CO", "TX"), 
+                     "lon" = c(-117.53, -104.7552, -103.2), 
+                     "lat" = c(47.42, 40.8066, 29.3), 
+                     "offset" = c(-8, -7, -6))
   
   df <- fread(paste0("Data/ERA/", loc, "_ERA.csv")) %>% as.data.frame()
   
