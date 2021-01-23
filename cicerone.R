@@ -10,8 +10,8 @@ guide1 <- Cicerone$
     el = "plot-wrapper",
     title = "Plot comparing datasets",
     description = HTML("This plot visualizes how different datasets measure the values of certain variables in a month.
-                       <br>Right now, the plot shows the air temperature records from USCRN and ERA5 in July 2017 at a location in WA.
-                       As you can see, the general trend of the temperature fluctuation matches between the two datasets, yet there are some notable discrepancies in the values.
+                       <br>Right now, the plot shows the air temperature records from SCAN and ERA5 in July 2017 at a location in WA.
+                       Note that the ERA5 dataset contains hourly air temperatures while the SCAN dataset only collects daily Tmax and Tmin.                       As you can see, the general trend of the temperature fluctuation matches between the two datasets, yet there are some notable discrepancies in the values.
                        <br>Let's see a plot with different variables. Hit next."),
     position = "left"
   )$
@@ -25,7 +25,7 @@ guide1 <- Cicerone$
     el = "methodsOutput",
     title = "Datasets to show on the plot",
     description = HTML("Here, you will see a list of avialable datasets that collect the variable you selected above.
-                       The first two on the list are automatically selected as default. Deselect <b>USCRN</b>, select <b>ERA5</b> and <b>GLDAS</b>, and hit next."),
+                       The first two on the list are automatically selected as default. Deselect <b>SCAN</b>, select <b>ERA5</b> and <b>GLDAS</b> and hit next."),
     position = "right"
   )$
   step(

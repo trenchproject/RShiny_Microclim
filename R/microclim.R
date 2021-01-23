@@ -7,6 +7,7 @@
 # SOLR
 # D100cm_soil_0
 # D0cm_soil_0
+# RH120cm
 # Tmin (for map)
 
 # For outside of US

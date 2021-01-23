@@ -50,18 +50,20 @@ library(magrittr)
 library(utils)
 
 grabSCAN <- function(varIndex, loc, month) {
-  scan <- read.delim(paste0("Data/SCAN/", loc, "_scan.txt"), sep = ",")
+  scan <- read.delim(paste0("Data/SCAN/SCAN_", loc, "_", month, ".txt"), sep = ",")
   
-  scan$Date <- as.Date(scan$Date)
+  # scan$Date <- as.Date(scan$Date)
   
-  data <- scan[scan$Date >= as.Date(paste0("2017-0", month, "-01")) & scan$Date <= as.Date(paste0("2017-0", month, "-31")),]
+  # data <- scan[scan$Date >= as.Date(paste0("2017-0", month, "-01")) & scan$Date <= as.Date(paste0("2017-0", month, "-31")),]
   
-  vals <- data[, varIndex]
+  vals <- scan[, varIndex]
   
   if (varIndex %in% c(3, 4, 18:22)) {
     vals <- (vals - 32) / 1.8 # degF to degC
   } else if (varIndex %in% c(7, 8)) {
     vals <- vals * 0.44704  # mi/hr to m/s
+  } else if (varIndex == 5) { # in to mm
+    vals <- vals * 25.4
   }
   
   days <- c()
@@ -69,7 +71,11 @@ grabSCAN <- function(varIndex, loc, month) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  df <- data.frame("Date" = as.Date(days), 
-                   "Data" = vals)
+  df <- data.frame("Date" = rep(days, each = 24), 
+                   "Hour" = 0:23)
+  df <- cbind(df, "Data" = vals)
+  
+  df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+  
   return (df)
 }

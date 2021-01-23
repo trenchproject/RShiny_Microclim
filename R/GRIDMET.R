@@ -35,12 +35,13 @@ grabGRID <- function(param, loc, month) {
   }
   
   if (loc == "WA") {
-    AOI = aoi_get(state = "WA", county = "spokane")
+    AOI = aoi_get(state = "WA", county = "adams")
   } else if (loc == "CO") {
     AOI = aoi_get(state = "CO", county = "weld")
-  } else if (loc == "TX") {
-    AOI = aoi_get(state = "TX", county = "brewster")
   }
+  # } else if (loc == "TX") {
+  #   AOI = aoi_get(state = "TX", county = "brewster")
+  # }
   
   p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
   r = raster::brick(p)

@@ -36,8 +36,6 @@ library(magrittr)
 # TX PANTHER JUNCTION GHCND:USC00416792 (29.3, -103.2)
 # ncdc_stations(extent = c(29.3, -103.3, 29.4, -103.1), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
-
-
 #_____________________________________________________________________________________
 
 grabNOAA <- function(var, loc, month) {
@@ -51,10 +49,9 @@ grabNOAA <- function(var, loc, month) {
     id = "GHCND:USC00454679"
   } else if (loc == "CO") {
     id = "GHCND:USW00094074"
-  } else if (loc == "TX") {
-    id = "GHCND:USC00416792"
+  } else if (loc == "PR") {
+    id = "GHCND:RQC00665908"
   }
-  
   data <- ncdc(datasetid = 'GHCND', 
                stationid = id, 
                token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
@@ -62,7 +59,7 @@ grabNOAA <- function(var, loc, month) {
                enddate = paste0("2017-0", month, "-31"),
                datatypeid = var)
   
-  if (var %in% c("TMAX", "TMIN")) {
+  if (var %in% c("TMAX", "TMIN", "PRCP")) {
     data$data[, "value"] <- data$data[, "value"] / 10
   }
   

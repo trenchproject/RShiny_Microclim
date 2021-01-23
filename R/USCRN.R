@@ -1,11 +1,11 @@
 # USCRN
 
 # Variables
-# "AIR_TEMPERATURE"    
-# "PRECIPITATION"
+# "AIR_TEMPERATURE" C
+# "PRECIPITATION" mm
 # "SOLAR_RADIATION": Average global solar radiation received, in watts/meter^2
-# "SURFACE_TEMPERATURE"       
-# "RELATIVE_HUMIDITY"
+# "SURFACE_TEMPERATURE" C    
+# "RELATIVE_HUMIDITY" %
 # "SOIL_MOISTURE_5"    
 # "SOIL_TEMPERATURE_5": Average soil temperature at 5 cm below the surface, in degrees C.
 # "WETNESS"        
@@ -13,6 +13,7 @@
 
 # CO: Nunn (-104.76, 40.81)
 # WA: Spokane (-117.53, 47.42)
+
 # TX: Panther Junction (-103.21, 29.35)
 
 

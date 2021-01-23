@@ -45,32 +45,27 @@ grabMapData <- function(methods, inputVar, month, date) {
   return (data)
 }
 
-variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Snow")
+variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture")
 
-varsDf <- data.frame(row.names = c(variables, "Tmin"), 
-                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", NA, NA),
-                     "ERA5" = c(4, 3, 5, 6, 1, NA, 7),
-                     "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", NA, "Tmin"),
-                     "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", NA, "tmin"),
-                     "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "SNOW", "TMIN"),
-                     "microclima" = c(NA, NA, NA, NA, NA, NA, NA),
-                     "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA),
-                     "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "Tmin"),
-                     "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "Tmin"),
-                     "SCAN" = c(18, 3, 22, 9, 8, NA, 4))
+varsDf <- data.frame(row.names = c(variables, "Tmin"),
+                     "SCAN" = c(18, 3, 22, 9, 8, 5, 6, NA, 4),
+                     "ERA5" = c(4, 3, 5, 6, 1, 7, NA, NA, 8),
+                     "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "Tmin"),
+                     "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, "tmin"),
+                     "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "TMIN"),
+                     "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", "Tmin"),
+                     "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, "Tmin"),
+                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA))
 
 nameDf <- data.frame(row.names = variables, 
-                     "USCRN" = c("Average infrared surface temperature", "Air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", NA),
-                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", NA),
-                     "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", NA),
-                     "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", NA),
-                     "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "SNOW"),
-                     "microclima" = c(NA, NA, NA, NA, NA, NA),
-                     "SNODAS" = c(NA, NA, NA, NA, NA, NA),
-                     "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA),
-                     "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA),
-                     "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", NA))
-
+                     "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", "Precipitation increment", "Hourly mean humidity", NA),
+                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA),
+                     "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", NA, "3-hourly average soil moisture 40-100 cm below ground"),
+                     "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", "Daily precipitation amount", NA, NA),
+                     "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Precipitation", NA, NA),
+                     "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)"),
+                     "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA),
+                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity"))
 methods <- colnames(varsDf)
 
 
@@ -90,23 +85,24 @@ shinyServer <- function(input, output, session) {
   
   
   output$methodsOutput <- renderUI({
-    index <- which(is.na(varsDf[input$var, ]))
-    pickerInput("methods", "Datasets", choices = methods[-index], selected = methods[-index][c(1, 2)], multiple = T,
+    index <- which(!is.na(varsDf[input$var, ]))
+    pickerInput("methods", "Datasets", choices = methods[index], selected = methods[index][c(1, 2)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
 
   })
   
   output$info <- renderText({
     if (input$loc == "WA") {
-      station <- "Spokane 17 SSW (47.42°, -117.53°)"
-      loc <- "Spokane county, WA 691m"
+      station <- "Lind #1 (-118.57°, 47°)"
+      loc <- "Adams county, WA 1640ft"
     } else if (input$loc == "CO") {
-      station <- "Nunn 7 NNE (40.81°, -104.76°)"
-      loc <- "Weld county, CO 1643m"
-    } else if (input$loc == "TX") {
-      station <- "Panther Junction 2 N (29.35°, -103.21°)"
-      loc <- "Brewster county, TX 1140m"
+      station <- "Nunn #1 (-104.73°, 40.87°)"
+      loc <- "Weld county, CO 5900ft"
+    } else if (input$loc == "PR") {
+      station <- "Maricao Forest (-67°, 18.15°)"
+      loc <- "Mayaguez, Puerto Rico 2450ft"
     }
+    
     month <- ifelse(input$season == 1, "January", "July")
     
     text <- ""
@@ -130,11 +126,13 @@ shinyServer <- function(input, output, session) {
       unit <- "(m/s)"
     } else if (input$var == "Radiation") {
       unit <- HTML("(W/m<sup>2</sup>)")
-    } else if (input$var == "Snow") {
-      unit <- "(m)"
+    } else if (input$var == "Precipitation") {
+      unit <- "(mm)"
+    } else if (input$var %in% c("Relative humidity", "Soil moisture")){
+      unit <- "(%)"
     } else {
       unit <- "(°C)"
-    }
+    } 
     
     colors <- c('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
     p <- plot_ly() %>%
@@ -154,7 +152,7 @@ shinyServer <- function(input, output, session) {
       for (method in input$methods) {
         i = i + 1
         inputVar <- varsDf["Tmin", method]
-        if (method %in% c("SCAN", "GRIDMET", "NOAA_NCDC")) {
+        if (method %in% c("GRIDMET", "NOAA_NCDC")) {
           df <- grabAnyData(method, inputVar, input$loc, input$season)
           p <- p %>%
             add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
@@ -176,10 +174,10 @@ shinyServer <- function(input, output, session) {
   
   output$minimap <- renderLeaflet({
     
-    x = c(-117.53, -104.7552, -103.2)
-    y = c(47.42, 40.8066, 29.3)
-    text = c("Spokane, WA", "Nunn, CO", "Panther junction, TX")
-    names(x) = names(y) = names(text) = c("WA", "CO", "TX")
+    x = c(-117.53, -104.7552, -66.98880)
+    y = c(47.42, 40.8066, 18.15110)
+    text = c("Spokane, WA", "Nunn, CO", "Maricao forest, Puerto Rico")
+    names(x) = names(y) = names(text) = c("WA", "CO", "PR")
     
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
@@ -192,13 +190,14 @@ shinyServer <- function(input, output, session) {
   # -109, -102, 37, 41
   
   output$mapMethodsOutput1 <- renderUI({
-    index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 6, 7, 10)
+    # USCRN, NOAA, 
+    index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
     pickerInput("mapMethods1", "Dataset 1", choices = methods[c(-index)], selected = methods[c(-index)][1], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
   output$mapMethodsOutput2 <- renderUI({
-    index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 6, 7, 10)
+    index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
     pickerInput("mapMethods2", "Dataset 2", choices = methods[c(-index)], selected = methods[c(-index)][2], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })

@@ -15,20 +15,13 @@
 # "AvgSurfT_inst" Average surface skin temperature (K) 
 # "SnowDepth_inst" Snow depth (m) 
 # "SoilTMP40_100cm_inst" Soil temperature (40-100 cm underground) (K)
+# "SoilTMP100_200cm_inst" Soil temperature (100-200 cm underground) (K)
 # "Wind_f_inst" Wind speed (m s-1)         
 # "Tair_f_inst" Air temperature (K)
-
-
-# "time_bnds"             
-# "Swnet_tavg"            
-# "Lwnet_tavg"            
-# "Snowf_tavg"           
-# "AvgSurfT_inst"    
-# "SnowDepth_inst"
-# "SoilTMP40_100cm_inst"  
-# "SoilTMP100_200cm_inst"
-# "Wind_f_inst"           
-# "Tair_f_inst"
+# "Qair_f_inst" Specific humidity (kg/kg)
+# "Rainf_f_tavg" Total precipitation rate (kg m-2 s-1)
+# "SoilMoi40_100cm_inst" = Soil moisture content (40-100 cm underground) (kg m-2)
+# SoilMoi100_200cm_inst = Soil moisture content (100-200 cm underground) (kg m-2)
 # "Tmin" (for map)
 
 library(ncdf4)
@@ -36,15 +29,12 @@ library(MALDIquant)
 library(magrittr)
 library(AOI)
 
-locs <- data.frame(row.names = c("WA", "CO", "TX"), 
-                   "lon" = c(-117.53, -104.7552, -103.2), 
-                   "lat" = c(47.42, 40.8066, 29.3), 
-                   "offset" = c(-8, -7, -6))
+locs <- data.frame(row.names = c("WA", "CO", "PR"), 
+                   "lon" = c(-118.5657, -104.7552, -66.98880), 
+                   "lat" = c(47.0022, 40.8066, 18.15110), 
+                   "offset" = c(-8, -7, -4))
 
 
-# loc = "WA"
-# 303.86
-# 
 # nc2 <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170701.0000.021.nc4.SUB.nc4")
 # ncvar2 <- ncvar_get(nc2, var = "Tair_f_inst")
 # val2 <- ncvar2[lonInd, latInd]
@@ -57,7 +47,6 @@ locs <- data.frame(row.names = c("WA", "CO", "TX"),
 # nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
 
 
-
 valGLDAS <- function(nc, var, loc) {
   ncvar <- ncvar_get(nc, varid = var)
   
@@ -67,8 +56,10 @@ valGLDAS <- function(nc, var, loc) {
   
   val <- ncvar[lonInd, latInd]
   
-  if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
+  if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) { # K to C
     val <- val - 273.15
+  } else if (var == "Rainf_f_tavg") {  # kg/m^2 s to mm
+    val <- val * 60 * 60 * 3
   }
   # if (var %in% c("Swnet_tavg", "Lwnet_tavg")) {
   #   val <- -val
