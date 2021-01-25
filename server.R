@@ -65,7 +65,7 @@ nameDf <- data.frame(row.names = variables,
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Precipitation", NA, NA),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)"),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA),
-                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity"))
+                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA))
 methods <- colnames(varsDf)
 
 
