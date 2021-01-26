@@ -60,7 +60,9 @@ valGLDAS <- function(nc, var, loc) {
     val <- val - 273.15
   } else if (var == "Rainf_f_tavg") {  # kg/m^2 s to mm
     val <- val * 60 * 60 * 3
-  }
+  } else if (var == "SnowDepth_inst") { # m to mm
+    val <- val * 1000
+  } 
   # if (var %in% c("Swnet_tavg", "Lwnet_tavg")) {
   #   val <- -val
   # }

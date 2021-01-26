@@ -58,9 +58,9 @@ grabERA <- function(varIndex, loc, month) {
     vals <- vals - 273.15
   } else if (varIndex == 7) { # J/m^2 to 
     vals <- vals / 3600
-  } else if (varIndex == 8) { # m to mm
+  } else if (varIndex %in% c(8, 5)) { # m to mm
     vals <- vals * 1000
-  } else if (varIndex == 1) {  # For wind speed, we want to consider the combined wind speed.
+    } else if (varIndex == 1) {  # For wind speed, we want to consider the combined wind speed.
     vals2 <- c()
     for (i in 0:1487) {
       vals2 <- c(vals2, df[, 2 + 2 + i * 8])
