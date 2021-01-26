@@ -11,17 +11,18 @@
 # write.csv(one_loc, paste0(loc, "_ERA.csv"), row.names = F)
 
 
-
 # Variables
 
 # 1. 10m_u_component_of_wind (m/s)
 # 2. 10m_v_component_of_wind
 # 3. 2m_temperature (K)
 # 4. skin_temperature (surface temperature)
-# 5. soil_temperature_level_3 (28-100cm)
-# 6. surface_net_solar_radiation (J/m^2)
-# 7. total precipitation (m)
-# 8. tmin (for the map)
+# 5. Snow depth (m)
+# 6. soil_temperature_level_3 (28-100cm)
+# 7. surface_net_solar_radiation (J/m^2)
+# 8. total precipitation (m)
+
+# 9. tmin (for the map)
 
 
 # Test:
@@ -29,6 +30,7 @@
 library(raster)
 library(magrittr)
 library(MALDIquant)
+library(data.table)
 
 
 grabERA <- function(varIndex, loc, month) {
@@ -36,12 +38,12 @@ grabERA <- function(varIndex, loc, month) {
                      "lon" = c(-118.5657, -104.7552, -66.98880), 
                      "lat" = c(47.0022, 40.8066, 18.15110), 
                      "offset" = c(-8, -7, -4))
-  
+
   df <- fread(paste0("Data/ERA/", loc, "_ERA.csv")) %>% as.data.frame()
   
   vals <- c()
   for (i in 0:1487) {  # 1488 = 2 months * 31 days * 24 hours
-    vals <- c(vals, df[, 2 + varIndex + i * 7])  # adding 2 because the first two columns are x and y. After that, the selected variable shows up every 7 columns.
+    vals <- c(vals, df[, 2 + varIndex + i * 8])  # adding 2 because the first two columns are x and y. After that, the selected variable shows up every 8 columns.
   }
   
   offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
@@ -52,16 +54,16 @@ grabERA <- function(varIndex, loc, month) {
     vals <- vals[(745 + offset) : 1488]
   }
   
-  if (varIndex %in% c(3, 4, 5)) { # K to C
+  if (varIndex %in% c(3, 4, 6)) { # K to C
     vals <- vals - 273.15
-  } else if (varIndex == 6) { # J/m^2 to 
+  } else if (varIndex == 7) { # J/m^2 to 
     vals <- vals / 3600
-  } else if (varIndex == 7) { # m to mm
+  } else if (varIndex == 8) { # m to mm
     vals <- vals * 1000
   } else if (varIndex == 1) {  # For wind speed, we want to consider the combined wind speed.
     vals2 <- c()
     for (i in 0:1487) {
-      vals2 <- c(vals2, df[, 2 + 2 + i * 7])
+      vals2 <- c(vals2, df[, 2 + 2 + i * 8])
     }
     
     # The data for July comes after the data for January in the data frame. Each month has 24 hours and 31 days of data.

@@ -48,8 +48,8 @@ grabMapData <- function(methods, inputVar, month, date) {
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture")
 
 varsDf <- data.frame(row.names = c(variables, "Tmin"),
-                     "SCAN" = c(18, 3, 22, 9, 8, 5, 6, NA, 4),
-                     "ERA5" = c(4, 3, 5, 6, 1, 7, NA, NA, 8),
+                     "SCAN" = c(18, 3, 22, 9, 8, 5, 6, 17, 4),
+                     "ERA5" = c(4, 3, 6, 7, 1, 8, NA, NA, 9),
                      "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, "tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "TMIN"),
@@ -85,6 +85,7 @@ shinyServer <- function(input, output, session) {
   
   
   output$methodsOutput <- renderUI({
+    
     index <- which(!is.na(varsDf[input$var, ]))
     pickerInput("methods", "Datasets", choices = methods[index], selected = methods[index][c(1, 2)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
@@ -142,8 +143,11 @@ shinyServer <- function(input, output, session) {
     for (method in input$methods) {
       i = i + 1
       inputVar <- varsDf[input$var, method]
-      df <- grabAnyData(method, inputVar, input$loc, input$season)
-      p <- p %>% add_lines(x = df$Date, y = df$Data, name = method, line = list(color = colors[i]))
+      
+      if (!is.na(inputVar)) {
+        df <- grabAnyData(method, inputVar, input$loc, input$season)
+        p <- p %>% add_lines(x = df$Date, y = df$Data, name = method, line = list(color = colors[i]))
+      }
     }
     
     # Adding Tmin when Air temperature is selected
@@ -159,13 +163,6 @@ shinyServer <- function(input, output, session) {
         }
       }
     }
-    
-    # if (input$var == "Suraface temperature" && input$methods %in% "GRIDMET") {
-    #   df <- grabAnyData("GRIDMET", "tmin", input$loc, input$season)
-    #   p <- p %>%
-    #     add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
-    #   
-    # }
     
     p
     
