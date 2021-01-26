@@ -47,6 +47,8 @@ grabNOAA <- function(var, loc, month) {
   
   if (loc == "WA") {
     id = "GHCND:USC00454679"
+  } else if (loc == "CO" && var == "SNWD") {
+    id = "GHCND:US1COWE0345"
   } else if (loc == "CO") {
     id = "GHCND:USW00094074"
   } else if (loc == "PR") {
@@ -61,6 +63,17 @@ grabNOAA <- function(var, loc, month) {
   
   if (var %in% c("TMAX", "TMIN", "PRCP")) {
     data$data[, "value"] <- data$data[, "value"] / 10
+  } else if (loc == "PR" || (loc == "CO" && month == 7) ) {
+    # Case for summer in CO, and summer/winter in PR
+    # wherein there is no snow data. Values set to 0.
+    data <- ncdc(datasetid = 'GHCND', 
+                 stationid = "GHCND:USC00454679", 
+                 token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+                 startdate = paste0("2017-0", month, "-01"), 
+                 enddate = paste0("2017-0", month, "-31"),
+                 datatypeid = var)
+    
+    data$data[, "value"] <- 0
   }
   
   df <- data$data[, c("date", "value")] %>% as.data.frame() %>% magrittr::set_colnames(c("Date", "Data"))

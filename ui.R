@@ -11,7 +11,7 @@ library(shinyBS)
 library(shinyjs)
 library(cicerone)
 
-variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture")
+variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
 
 variables2 <- c("Maximum air temperature" = "Air temperature", "Minimum air temperature" = "Tmin", "Average surface temperature" = "Surface temperature", "Average soil temperature (1 m deep)" = "Soil temperature (1 m deep)", "Daily average radiation" = "Radiation", "Average wind speed" = "Wind speed")
