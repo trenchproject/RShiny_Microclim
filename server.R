@@ -5,6 +5,7 @@ source("R/GRIDMET.R", local = TRUE)
 source("R/NOAA NCDC.R", local = TRUE)
 source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
+source("R/SNODAS.R", local = TRUE)
 source("R/USCRN.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 
@@ -26,6 +27,8 @@ grabAnyData <- function(methods, inputVar, loc, month) {
     data <- grabmicro(inputVar, loc, month)
   } else if (methods == "USCRN") {
     data <- grabUSCRN(inputVar, loc, month)
+  } else if (methods == "SNODAS") {
+    data <- grabSNODAS(inputVar, loc, month)
   }
   return (data)
 }
@@ -55,7 +58,8 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
-                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA))
+                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
+                     "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA))
 
 nameDf <- data.frame(row.names = variables, 
                      "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", "Precipitation increment", "Hourly mean humidity", NA, NA),
@@ -65,7 +69,8 @@ nameDf <- data.frame(row.names = variables,
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Precipitation", NA, NA, "Snow Depth"),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
-                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA))
+                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
+                     "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"))
 methods <- colnames(varsDf)
 
 

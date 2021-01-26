@@ -1,38 +1,21 @@
 # SNODAS
-# devtools::install_github("seandavi/GEOquery")
-# 
-# library(GEOquery)
-# 
-# getwd()
-# setwd("C:/Users/Yutaro/Documents/RShiny_Microclim")
-# snow <- untar("SNODAS_20201201.tar")
-# 
-# untar("SNODAS_20170101.tar")
-# gunzip("us_ssmv01025SlL00T0024TTNATS2017010105DP001.txt.gz")
-# gunzip("us_ssmv01025SlL00T0024TTNATS2020120105DP001.dat.gz", remove = F)
-# 
-# zz <- gzfile("us_ssmv11050lL00T0024TTNATS2020120105DP000.txt.gz")
-# dat=read.csv(zz,header=F)
-# 
-# zz <- gunzip("us_ssmv11044bS__T0024TTNATS2020120105DP000.dat.gz", remove = F, overwrite = T)
-# 
-# 
-# zz <- gzfile("us_ssmv11050lL00T0024TTNATS2020120105DP000.dat.gz")
-# 
-# 
-# data <- read.table("us_ssmv01025SlL00T0024TTNATS2020120105DP001.dat")
-# 
-# readLines("us_ssmv11044bS__T0024TTNATS2020120105DP000.dat", n=10)
-# 
-# read.delim("us_ssmv11044bS__T0024TTNATS2020120105DP000.dat")
-# 
-# read.delim("us_ssmv01025SlL00T0024TTNATS2020120105DP001.dat")
-# 
-# read.delim("us_ssmv01025SlL00T0024TTNATS2017010105DP001.dat")
-# 
-# text <- read.delim("us_ssmv01025SlL00T0024TTNATS2017010105DP001.txt")
-# 
-# csv <- read.csv("us_ssmv01025SlL00T0024TTNATS2017010105DP001.csv")
-# 
-# read.table("us_ssmv01025SlL00T0024TTNATS2017010105DP001.dat")
 
+# Variables
+# "POSIXct" = Date
+# "SNEQV"   = Snow Water Equivalent (mm)
+# "SNOWH"   = Snow Depth (mm)
+
+# Import
+library(readr)
+
+grabSNODAS <- function(var, loc, month) {
+  
+  if(month==1) m = "January"
+  else         m = "July"
+  
+  import = read_csv(paste0("Data/SNODAS/snodas",m,loc,".csv"))
+  
+  df <- data.frame(Date = import$POSIXct, 
+                   Data = import$SNOWH)
+  return (df)
+}
