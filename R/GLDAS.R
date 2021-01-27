@@ -28,6 +28,7 @@ library(ncdf4)
 library(MALDIquant)
 library(magrittr)
 library(AOI)
+library(humidity)
 
 locs <- data.frame(row.names = c("WA", "CO", "PR"), 
                    "lon" = c(-118.5657, -104.7552, -66.98880), 
@@ -46,6 +47,7 @@ locs <- data.frame(row.names = c("WA", "CO", "PR"),
 # nc <- nc_open(filename)
 # nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
 
+grabGLDAS("Qair_f_inst", "WA", 1)
 
 valGLDAS <- function(nc, var, loc) {
   ncvar <- ncvar_get(nc, varid = var)
@@ -77,6 +79,11 @@ grabGLDAS <- function(var, loc, month) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
+  
+  # var <- "Qair_f_inst"
+  # loc = "WA"
+  # month = 1
+  # 
   array <- c()
   for (day in 1:31) {
     for (hour in seq(from = 0, to = 21, by = 3)) {
@@ -92,6 +99,26 @@ grabGLDAS <- function(var, loc, month) {
       val <- valGLDAS(nc, var, loc)
       array <- c(array, val)
     }
+  }
+  
+  if (var == "Qair_f_inst") {  # Convert specific humidity to relative humidity
+    arrayTemp <- c()
+    for (day in 1:31) {
+      for (hour in seq(from = 0, to = 21, by = 3)) {
+        
+        char_day <- ifelse(day < 10, paste0("0", day), day)
+        char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+        
+        filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        
+        # filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        nc <- nc_open(filename)
+        
+        val <- valGLDAS(nc, "Tair_f_inst", loc)
+        arrayTemp <- c(arrayTemp, val)
+      }
+    }
+    array <- SH2RH(q = array, t = arrayTemp, isK = FALSE)
   }
   
   offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
