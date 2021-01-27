@@ -21,7 +21,7 @@
 # "Qair_f_inst" Specific humidity (kg/kg)
 # "Rainf_f_tavg" Total precipitation rate (kg m-2 s-1)
 # "SoilMoi40_100cm_inst" = Soil moisture content (40-100 cm underground) (kg m-2)
-# SoilMoi100_200cm_inst = Soil moisture content (100-200 cm underground) (kg m-2)
+# "SoilMoi100_200cm_inst" = Soil moisture content (100-200 cm underground) (kg m-2)
 # "Tmin" (for map)
 
 library(ncdf4)

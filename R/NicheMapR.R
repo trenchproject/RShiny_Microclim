@@ -3,6 +3,25 @@
 # install_github('mrke/NicheMapR')
 # install_github('ilyamaclean/microclima')
 
+
+# for (loc in c("WA", "CO", "PR")) {
+#   for (month in c(1, 7)) {
+#     lonlat <- c(locs[loc, "lon"], locs[loc, "lat"]) # (longitude, latitude)
+#     dstart <- paste0("01/0", month, "/2017") # start date
+#     dfinish <- paste0("31/0", month, "/2017") # end date
+# 
+#     DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
+# 
+#     micro <- micro_ncep(loc = lonlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
+#                         runmoist = 0, runshade = 0)
+# 
+#     filename <- paste0("NicheR_", loc, "_", month, ".RData")
+# 
+#     save(micro, file = filename)
+#   }
+# }
+
+
 library(RNCEP)
 library(elevatr)
 library(devtools)
@@ -46,7 +65,7 @@ library(microclima)
 
 # metout
 # TAREF - air temperature (°C) at reference height (specified by 'Refhyt', 2m default)
-# RH - relative humidity (%) at local height (specified by 'Usrhyt' variable)
+# 6 RH - relative humidity (%) at reference height (specified by 'Refhyt', 2m default)
 # VREF - wind speed (m/s) at reference height (specified by 'Refhyt', 2m default)
 # SOLR - solar radiation (W/m2) (unshaded, adjusted for slope, aspect and horizon angle)
 # SNOWDEP - predicted snow depth (cm)
@@ -54,24 +73,6 @@ library(microclima)
 # soil
 # D0cm - soil temperature (°C) at 0cm -> surface temperature
 # D100cm - soil temperature (°C) at 100cm
-
-
-for (loc in c("WA", "CO", "PR")) {
-  for (month in c(1, 7)) {
-    lonlat <- c(locs[loc, "lon"], locs[loc, "lat"]) # (longitude, latitude)
-    dstart <- paste0("01/0", month, "/2017") # start date
-    dfinish <- paste0("31/0", month, "/2017") # end date
-    
-    DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
-    
-    micro <- micro_ncep(loc = lonlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
-                        runmoist = 0, runshade = 0)
-    
-    filename <- paste0("NicheR_", loc, "_", month, ".RData")
-    
-    save(micro, file = filename)
-  }
-}
 
 
 grabNicheR <- function(var, loc, month) {
@@ -96,14 +97,22 @@ grabNicheR <- function(var, loc, month) {
     vals <- micro$metout[, var]
   }
   
+  if (var == "SNOWDEP") { # cm to mm
+    vals <- vals * 10 
+  }
+  
   days <- c()
   for (i in 1:31) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  df <- data.frame("Date" = rep(days, each = 24), 
-                   "Hour" = 0:23,
-                   "Data" = vals)
+  offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+  
+  
+  df <- data.frame("Date" = rep(days, each = 24)[1 : (24 * 31 - offset)],
+                   "Hour" = rep(0 : 23, 31)[1 : (24 * 31 - offset)],
+                   "Data" = vals[(offset + 1) : (24 * 31)])
+  
   
   df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
