@@ -53,7 +53,7 @@ grabMapData <- function(methods, inputVar, month, date) {
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
 varsDf <- data.frame(row.names = c(variables, "Tmin"),
-                     "SCAN" = c(18, 3, 22, 9, 8, 5, 6, 17, NA, 4),
+                     "SCAN" = c(18, 3, 22, 7, 10, 5, 6, 17, NA, 4),
                      "ERA5" = c(4, 3, 6, 7, 1, 8, NA, NA, 5, 9),
                      "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "SnowDepth_inst", "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, NA, "tmin"),
@@ -65,16 +65,16 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
 nameDf <- data.frame(row.names = variables, 
-                     "SCAN" = c("Daily average soil temperature 2 in below ground", "Daily Tmax and Tmin", "Daily average soil temperature 1 m below ground", "Daily average solar radiation", "Daily average wind speed", "Precipitation increment", "Hourly mean humidity", NA, NA),
-                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Snow depth"),
-                     "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", NA, "3-hourly average soil moisture 40-100 cm below ground", "Snow depth"),
+                     "SCAN" = c("Hourly average soil temperature 2 in below ground", "Hourly maximum air temperature", "Hourly average soil temperature 1 m below ground", "Hourly average solar radiation", "Hourly average wind speed", "Precipitation increment", "Hourly average humidity", "Hourly average xsoil moisture 1 m below ground", NA),
+                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
+                     "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", "3-hourly relative humidity", "3-hourly average soil moisture 40-100 cm below ground", "3-hourly snow depth"),
                      "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", "Daily precipitation amount", NA, NA, NA),
-                     "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Precipitation", NA, NA, "Snow Depth"),
+                     "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Daily precipitation", NA, NA, "Daily snow Depth"),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
                      "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
-                     "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperatures at 2 m above ground", "Hourly soil temperature at 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed at 2 m above ground", NA, "Hourly relative humidity at 2 m above ground", NA, "Hourly predicted snow depth"))
+                     "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 methods <- colnames(varsDf)
 
 
@@ -154,8 +154,10 @@ shinyServer <- function(input, output, session) {
       inputVar <- varsDf[input$var, method]
       
       if (!is.na(inputVar)) {
-        df <- grabAnyData(method, inputVar, input$loc, input$season)
-        p <- p %>% add_lines(x = df$Date, y = df$Data, name = method, line = list(color = colors[i]))
+        if (input$loc != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
+          df <- grabAnyData(method, inputVar, input$loc, input$season)
+          p <- p %>% add_lines(x = df$Date, y = df$Data, name = method, line = list(color = colors[i]))
+        }
       }
     }
     
@@ -165,10 +167,12 @@ shinyServer <- function(input, output, session) {
       for (method in input$methods) {
         i = i + 1
         inputVar <- varsDf["Tmin", method]
-        if (method %in% c("GRIDMET", "NOAA_NCDC")) {
-          df <- grabAnyData(method, inputVar, input$loc, input$season)
-          p <- p %>%
-            add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
+        if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
+          if (input$loc != "PR" || !method == "GRIDMET") { # gridMET doesn't have data for PR
+            df <- grabAnyData(method, inputVar, input$loc, input$season)
+            p <- p %>%
+              add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
+          }
         }
       }
     }

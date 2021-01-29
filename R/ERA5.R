@@ -17,7 +17,7 @@
 # 2. 10m_v_component_of_wind
 # 3. 2m_temperature (K)
 # 4. skin_temperature (surface temperature)
-# 5. Snow depth (m)
+# 5. Snow depth: Instantaneous grib-box average of the snow thickness on the ground (excluding snow on canopy).
 # 6. soil_temperature_level_3 (28-100cm)
 # 7. surface_net_solar_radiation (J/m^2)
 # 8. total precipitation (m)
@@ -56,7 +56,7 @@ grabERA <- function(varIndex, loc, month) {
   
   if (varIndex %in% c(3, 4, 6)) { # K to C
     vals <- vals - 273.15
-  } else if (varIndex == 7) { # J/m^2 to 
+  } else if (varIndex == 7) { # J/m^2 to W/m^2
     vals <- vals / 3600
   } else if (varIndex %in% c(8, 5)) { # m to mm
     vals <- vals * 1000

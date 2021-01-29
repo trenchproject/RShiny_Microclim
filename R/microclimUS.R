@@ -13,7 +13,7 @@ library(MALDIquant)
 # TA1cm_0pctShade: Air temp 1cm height (degC * 10)
 # SOLR: Solar radiation (horizontal ground) W/m^2 * 10
 # RH200cm: Humidity 
-# moist100cm_0pctShade: Soil moisture
+# moist100cm_0pctShade: Soil moisture (% * 10)
 
 # Tmin (for map)
 
@@ -23,7 +23,6 @@ grabmicroUS <- function(var, loc, month) {
                      "lon" = c(-118.5657, -104.7552, -66.98880), 
                      "lat" = c(47.0022, 40.8066, 18.15110), 
                      "offset" = c(-8, -7, -4))
-  
   
   nc <- nc_open(paste0("Data/microclimUS/", var, "_2017.nc"))
   

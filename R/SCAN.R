@@ -1,28 +1,30 @@
 # SCAN
 
 # Variables:
-# [1] "Date"                                                        
-# [2] "Station.Id"                                                  
-# [3] "Air.Temperature.Maximum..degF."                              
-# [4] "Air.Temperature.Minimum..degF."                              
-# [5] "Precipitation.Increment..in."                                
-# [6] "Relative.Humidity..pct..Mean.of.Hourly.Values"               
-# [7] "Wind.Speed.Maximum..mph..Max.of.Hourly.Values"               
-# [8] "Wind.Speed.Average..mph..Mean.of.Hourly.Values"              
-# [9] "Solar.Radiation.Average..watt.m2..Mean.of.Hourly.Values"     
-# [10] "Solar.Radiation.langley.Total..langley."                     
-# [11] "Vapor.Pressure...Partial..inch_Hg..Mean.of.Hourly.Values"    
-# [12] "Vapor.Pressure...Saturated..inch_Hg..Mean.of.Hourly.Values"  
-# [13] "Soil.Moisture.Percent..2in..pct..Mean.of.Hourly.Values"      
-# [14] "Soil.Moisture.Percent..4in..pct..Mean.of.Hourly.Values"      
-# [15] "Soil.Moisture.Percent..8in..pct..Mean.of.Hourly.Values"      
-# [16] "Soil.Moisture.Percent..20in..pct..Mean.of.Hourly.Values"     
-# [17] "Soil.Moisture.Percent..40in..pct..Mean.of.Hourly.Values"     
-# [18] "Soil.Temperature.Observed..2in..degF..Mean.of.Hourly.Values" 
-# [19] "Soil.Temperature.Observed..4in..degF..Mean.of.Hourly.Values" 
-# [20] "Soil.Temperature.Observed..8in..degF..Mean.of.Hourly.Values" 
-# [21] "Soil.Temperature.Observed..20in..degF..Mean.of.Hourly.Values"
-# [22] "Soil.Temperature.Observed..40in..degF..Mean.of.Hourly.Values"
+
+# [1] "Date"                                    
+# [2] "Station.Id"                              
+# [3] "Air.Temperature.Maximum..degF."         
+# [4] "Air.Temperature.Minimum..degF."          
+# [5] "Precipitation.Increment..in."            
+# [6] "Relative.Humidity..pct."                
+# [7] "Solar.Radiation.Average..watt.m2."       
+# [8] "Solar.Radiation.langley.Total..langley." 
+# [9] "Wind.Speed.Maximum..mph."               
+# [10] "Wind.Speed.Average..mph."                
+# [11] "Vapor.Pressure...Partial..inch_Hg."      
+# [12] "Vapor.Pressure...Saturated..inch_Hg."   
+# [13] "Soil.Moisture.Percent..2in..pct."        
+# [14] "Soil.Moisture.Percent..4in..pct."        
+# [15] "Soil.Moisture.Percent..8in..pct."       
+# [16] "Soil.Moisture.Percent..20in..pct."       
+# [17] "Soil.Moisture.Percent..40in..pct."       
+# [18] "Soil.Temperature.Observed..2in..degF."  
+# [19] "Soil.Temperature.Observed..4in..degF."   
+# [20] "Soil.Temperature.Observed..8in..degF."   
+# [21] "Soil.Temperature.Observed..20in..degF." 
+# [22] "Soil.Temperature.Observed..40in..degF." 
+
 
 # Element Name                   Value Type  Function Type  Function Duration  Base Data  Measurement Units    Sensor Depth  Element Code  Description                                              
 # Air Temperature Maximum        Value       None           Day                N/A        Degrees fahrenheit   N/A           TMAX          Maximum air temperature - sub-hourly sampling frequency  
@@ -60,7 +62,7 @@ grabSCAN <- function(varIndex, loc, month) {
   
   if (varIndex %in% c(3, 4, 18:22)) {
     vals <- (vals - 32) / 1.8 # degF to degC
-  } else if (varIndex %in% c(7, 8)) {
+  } else if (varIndex %in% c(9, 10)) {
     vals <- vals * 0.44704  # mi/hr to m/s
   } else if (varIndex == 5) { # in to mm
     vals <- vals * 25.4

@@ -54,12 +54,14 @@ grabNOAA <- function(var, loc, month) {
   } else if (loc == "PR") {
     id = "GHCND:RQC00665908"
   }
+  
   data <- ncdc(datasetid = 'GHCND', 
                stationid = id, 
                token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
                startdate = paste0("2017-0", month, "-01"), 
                enddate = paste0("2017-0", month, "-31"),
-               datatypeid = var)
+               datatypeid = var,
+               add_units = T)
   
   if (var %in% c("TMAX", "TMIN", "PRCP")) {
     data$data[, "value"] <- data$data[, "value"] / 10

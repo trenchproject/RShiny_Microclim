@@ -64,7 +64,9 @@ valGLDAS <- function(nc, var, loc) {
     val <- val * 60 * 60 * 3
   } else if (var == "SnowDepth_inst") { # m to mm
     val <- val * 1000
-  } 
+  } else if (var == "SoilMoi40_100cm_inst") { # kg/m^3 to % (Soil density =~ 1.6 g/cm^3 = 1600 kg/m^3. The measurement is over 60 cm)
+    val <- 1600 / val / 0.6
+  }
   # if (var %in% c("Swnet_tavg", "Lwnet_tavg")) {
   #   val <- -val
   # }
@@ -79,11 +81,7 @@ grabGLDAS <- function(var, loc, month) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  
-  # var <- "Qair_f_inst"
-  # loc = "WA"
-  # month = 1
-  # 
+
   array <- c()
   for (day in 1:31) {
     for (hour in seq(from = 0, to = 21, by = 3)) {
@@ -119,6 +117,7 @@ grabGLDAS <- function(var, loc, month) {
       }
     }
     array <- SH2RH(q = array, t = arrayTemp, isK = FALSE)
+    array[array > 100] <- 100 # Maximum humidity is 100%
   }
   
   offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
