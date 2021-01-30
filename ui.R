@@ -85,7 +85,13 @@ shinyUI <- fluidPage(id = "page",
                      id = "plot-wrapper",
                    
                      plotlyOutput("plot") %>% withSpinner(type = 7)
-                   )
+                   ),
+                   
+                   h4("Show stats"),
+                   
+                   uiOutput("datasetComparison"),
+                   
+                   htmlOutput("stats")
                  )
                )
         ),

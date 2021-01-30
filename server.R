@@ -182,6 +182,57 @@ shinyServer <- function(input, output, session) {
   })
   
   
+  output$datasetComparison <- renderUI({
+    validate(
+      need(input$methods, "")
+    )
+    
+    
+
+    checkboxGroupButtons("statsOption", "Datasets to compare", choices = input$methods, status = "success", 
+                         checkIcon = list(yes = icon("ok", lib = "glyphicon")))
+
+  })
+  
+  output$stats <- renderText({
+    validate(
+      need(length(input$statsOption) == 2, "Select two datasets")
+    )
+    # hourly: SCAN, ERA5, microclimUS, NicheMapR
+    # 3-hourly: GLDAS
+    # daily: gridMET, NOAA NCDC, SNODAS
+    # sub-hourly: USCRN
+    
+    data1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
+    data2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
+    
+    setDT(data1)
+    setDT(data2)
+    merge <- data1[data2, on = "Date"] %>% 
+      na.omit() %>% 
+      as.data.frame()
+    
+    result <- cor.test(x = merge[, "Data"], y = merge[, "i.Data"], method = "pearson")
+    
+    HTML("Pearson correlation coefficient (r): ", signif(unname(result$estimate), digits = 2))
+         #"<br>p-value: ", signif(result$p.value, digits = 3)
+    
+   # a <- grabSCAN(3, "WA", 7)
+   # b <- grabERA(3, "WA", 7)
+   # setDT(a)
+   # setDT(b)
+   # c <- b[a, on = "Date"] %>% na.omit() %>% as.data.frame()
+   # c[, "Data"]
+   # 
+   # result <- cor.test(x = c[, "Data"], y = c[, "i.Data"], method = "pearson")
+   # result$conf.int
+   # result$p.value
+   # result$
+   #  cor <- result$estimate
+   # unname(cor)
+  })
+  
+  
   output$minimap <- renderLeaflet({
     
     x = c(-117.53, -104.7552, -66.98880)
