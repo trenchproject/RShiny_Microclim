@@ -186,50 +186,46 @@ shinyServer <- function(input, output, session) {
     validate(
       need(input$methods, "")
     )
-    
-    
 
-    checkboxGroupButtons("statsOption", "Datasets to compare", choices = input$methods, status = "success", 
+    checkboxGroupButtons("statsOption", "Select two datasets to see their relatedness", choices = input$methods, status = "success", 
                          checkIcon = list(yes = icon("ok", lib = "glyphicon")))
-
   })
   
   output$stats <- renderText({
     validate(
       need(length(input$statsOption) == 2, "Select two datasets")
     )
+    # Have to figure out what to do with 3-hourly and daily values. take the average?
+    
     # hourly: SCAN, ERA5, microclimUS, NicheMapR
     # 3-hourly: GLDAS
     # daily: gridMET, NOAA NCDC, SNODAS
     # sub-hourly: USCRN
     
-    data1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
-    data2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
+    df1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
+    df2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
     
-    setDT(data1)
-    setDT(data2)
-    merge <- data1[data2, on = "Date"] %>% 
+    colnames(df1)[colnames(df1) == "Data"] <- "Data1"
+    colnames(df2)[colnames(df2) == "Data"] <- "Data2"
+    
+    setDT(df1)
+    setDT(df2)
+    
+    merge <- df1[df2, on = "Date"] %>% 
       na.omit() %>% 
       as.data.frame()
     
-    result <- cor.test(x = merge[, "Data"], y = merge[, "i.Data"], method = "pearson")
+    data1 <- merge$Data1
+    data2 <- merge$Data2
     
-    HTML("Pearson correlation coefficient (r): ", signif(unname(result$estimate), digits = 2))
-         #"<br>p-value: ", signif(result$p.value, digits = 3)
-    
-   # a <- grabSCAN(3, "WA", 7)
-   # b <- grabERA(3, "WA", 7)
-   # setDT(a)
-   # setDT(b)
-   # c <- b[a, on = "Date"] %>% na.omit() %>% as.data.frame()
-   # c[, "Data"]
-   # 
-   # result <- cor.test(x = c[, "Data"], y = c[, "i.Data"], method = "pearson")
-   # result$conf.int
-   # result$p.value
-   # result$
-   #  cor <- result$estimate
-   # unname(cor)
+    PCC <- cor.test(x = data1, y = data2, method = "pearson") # Pearson correlation coefficient
+    bias <- abs((sum(data1) - sum(data2)) / length(data1))
+    RMSE <- sum((data1 - data2)^2) / length(data1) # Root mean square error
+      
+    HTML("<b>Pearson correlation coefficient:</b> ", signif(unname(PCC$estimate), digits = 2),
+         "<br><b>Bias:</b> ", round(bias, digits = 2),
+         "<br><b>RMSE:</b> ", round(RMSE, digits = 2))
+
   })
   
   

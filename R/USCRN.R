@@ -16,9 +16,11 @@
 
 # TX: Panther Junction (-103.21, 29.35)
 
-
 grabUSCRN <- function(var, loc, month) {
   
+  # var = "AIR_TEMPERATURE"
+  # loc = "WA"
+  # month = 1
   fulldf <- read.delim(paste0("Data/CRN/", loc, "_CRN.txt"), sep = "", header = F)
   
   headers <- read.delim("Data/CRN/HEADERS.txt", sep = "", header = T, skip = 1)
@@ -26,13 +28,12 @@ grabUSCRN <- function(var, loc, month) {
   colnames(fulldf) <- colnames(headers)
   
   time <- paste0(floor(fulldf$LST_TIME / 100), ":", fulldf$LST_TIME %% 100)
-  
-  df <- data.frame("Date" = as.POSIXct(paste(fulldf$LST_DATE, time), format = "%Y%m%d %H:%M"),
+  df <- data.frame("Date" = format(as.POSIXct(paste(fulldf$LST_DATE, time), format = "%Y%m%d %H:%M"), format = "%Y-%m-%d %H:%M"),
                    "Data" = fulldf[, var]) %>% na.omit()
   
   df <- df[df$Date >= as.Date(paste0("2017-0", month, "-01")) & 
              df$Date <= as.Date(paste0("2017-0", month, "-31")), ]
- 
+
   return (df) 
 }
 
