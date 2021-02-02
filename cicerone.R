@@ -3,7 +3,7 @@ guide1 <- Cicerone$
   step(
     el = "viz-wrapper",
     title = "Temporal comparison tour",
-    description = HTML("Welcome to the guided tour for temporal comparison. We will be going over how to visualize data collected by different methods over 31 days.
+    description = HTML("Welcome to the guided tour for temporal comparison. We will be going over how to visualize data collected by different datasets over 31 days.
                        <br>Hit next to start the tour.")
   )$
   step(
@@ -11,21 +11,26 @@ guide1 <- Cicerone$
     title = "Plot comparing datasets",
     description = HTML("This plot visualizes how different datasets measure the values of certain variables in a month.
                        <br>Right now, the plot shows the air temperature records from SCAN and ERA5 in July 2017 at a location in WA.
-                       Note that the ERA5 dataset contains hourly air temperatures while the SCAN dataset only collects daily Tmax and Tmin.                       As you can see, the general trend of the temperature fluctuation matches between the two datasets, yet there are some notable discrepancies in the values.
-                       <br>Let's see a plot with different variables. Hit next."),
+                       As you can see, the general trend of the temperature fluctuation matches between the two datasets but SCAN tends to record lower temperatures at night.
+                       Let's see how different the data are. Hit next."),
     position = "left"
+  )$
+  step(
+    el = "stats-wrapper",
+    title = "Statistics",
+    description = HTML("Here, you can see how close the data are from ")
   )$
   step(
     el = "var-wrapper",
     title = "Variable to plot",
-    description = HTML("Here, you can select the variables for which you are looking to get the data. Select <b>Surface temperature</b> and hit next."),
+    description = HTML("Here, you can select the variables for which you are looking to get the data. Select <b>Wind speed</b> and hit next."),
     position = "right"
   )$
   step(
     el = "methodsOutput",
     title = "Datasets to show on the plot",
     description = HTML("Here, you will see a list of avialable datasets that collect the variable you selected above.
-                       The first two on the list are automatically selected as default. Deselect <b>SCAN</b>, select <b>ERA5</b> and <b>GLDAS</b> and hit next."),
+                       The first two on the list are automatically selected as default. Deselect <b>ERA5</b>, select <b>SCAN</b> and <b>GRIDMET</b> and hit next."),
     position = "right"
   )$
   step(
@@ -37,13 +42,19 @@ guide1 <- Cicerone$
   step(
     el = "info",
     title = "Display of data info",
-    description = HTML("Here shows the details of the plotted data. You can see that ERA5 has hourly temperatures but GLDAS has 3-hourly temperatures.
+    description = HTML("Here shows the details of the plotted data. You can see that SCAN has hourly values but GRIDMET records daily. 
+                       Each dataset collects data differently, so be sure to check this section when plotting data.
                        <br>Information on data collection site can be viewed here as well.")
+  )$
+  step(
+    el = "minimap",
+    title = "Map",
+    description = HTML("This map shows the location of the selected station. ")
   )$
   step(
     el = "plot-wrapper",
     title = "New plot",
-    description = HTML("Here's the new plot! It seems that the daily surface temperature fluctuation has a very similar frequency between the two datasets but ERA5 tends to recored a higher maximum surface temperature.")
+    description = HTML("Here's the new plot! At quick glance, there seems to be a huge difference between the two datasets but remember that GRIDMET records daily values, which are plotted at midnight for the following day.")
   )$
   step(
     el = "viz-wrapper",
@@ -59,7 +70,7 @@ guide2 <- Cicerone$
   step(
     el = "viz-wrapper",
     title = "Spatial comparison tour",
-    description = HTML("Welcome to the guided tour for spatial comparison. ")
+    description = HTML("Welcome to the guided tour for spatial comparison.")
   )$
   step(
     el = "map-wrapper",

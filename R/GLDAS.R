@@ -47,8 +47,6 @@ locs <- data.frame(row.names = c("WA", "CO", "PR"),
 # nc <- nc_open(filename)
 # nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
 
-grabGLDAS("Qair_f_inst", "WA", 1)
-
 valGLDAS <- function(nc, var, loc) {
   ncvar <- ncvar_get(nc, varid = var)
   

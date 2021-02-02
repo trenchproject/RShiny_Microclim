@@ -17,10 +17,7 @@
 # TX: Panther Junction (-103.21, 29.35)
 
 grabUSCRN <- function(var, loc, month) {
-  
-  # var = "AIR_TEMPERATURE"
-  # loc = "WA"
-  # month = 1
+
   fulldf <- read.delim(paste0("Data/CRN/", loc, "_CRN.txt"), sep = "", header = F)
   
   headers <- read.delim("Data/CRN/HEADERS.txt", sep = "", header = T, skip = 1)

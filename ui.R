@@ -91,10 +91,15 @@ shinyUI <- fluidPage(id = "page",
                    hr(),
                    
                    h4("Statistics"),
-                   
+
                    uiOutput("datasetComparison"),
                    
-                   htmlOutput("stats")
+                   htmlOutput("stats"),
+                   
+                   hr(),
+                   
+                   includeHTML("stats.html"),
+                   
                  )
                )
         ),

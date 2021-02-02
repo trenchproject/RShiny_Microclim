@@ -60,7 +60,7 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
-                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
+                     #"USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
@@ -72,7 +72,7 @@ nameDf <- data.frame(row.names = variables,
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Daily precipitation", NA, NA, "Daily snow Depth"),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
-                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
+                     #"USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 methods <- colnames(varsDf)
@@ -131,7 +131,7 @@ shinyServer <- function(input, output, session) {
     validate(
       need(input$methods, "Select datasets")
     )
-    
+  
     if (input$var == "Wind speed") {
       unit <- "(m/s)"
     } else if (input$var == "Radiation") {
@@ -205,6 +205,16 @@ shinyServer <- function(input, output, session) {
     df1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
     df2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
     
+    if (input$statsOption[1] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS") || input$statsOption[2] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
+      df1$Date <- as.Date(df1$Date)
+      df1 <- aggregate(df1$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
+      df2$Date <- as.Date(df2$Date) 
+      df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
+      
+    } else if (input$statsOption == "GLDAS") {
+
+    }
+
     colnames(df1)[colnames(df1) == "Data"] <- "Data1"
     colnames(df2)[colnames(df2) == "Data"] <- "Data2"
     
@@ -231,9 +241,9 @@ shinyServer <- function(input, output, session) {
   
   output$minimap <- renderLeaflet({
     
-    x = c(-117.53, -104.7552, -66.98880)
-    y = c(47.42, 40.8066, 18.15110)
-    text = c("Spokane, WA", "Nunn, CO", "Maricao forest, Puerto Rico")
+    x = c(-118.5657, -104.7552, -66.98880)
+    y = c(47.0022, 40.8066, 18.15110)
+    text = c("Lind, WA", "Nunn, CO", "Maricao forest, Puerto Rico")
     names(x) = names(y) = names(text) = c("WA", "CO", "PR")
     
     leaflet() %>%
@@ -332,7 +342,6 @@ shinyServer <- function(input, output, session) {
   
   observeEvent(input$mymap_groups, {
     
-
     raster1 <- rasterData1()
     raster2 <- rasterData2()
     
