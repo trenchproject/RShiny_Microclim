@@ -6,7 +6,7 @@ source("R/NOAA NCDC.R", local = TRUE)
 source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
 source("R/SNODAS.R", local = TRUE)
-source("R/USCRN.R", local = TRUE)
+#source("R/USCRN.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 
@@ -25,8 +25,8 @@ grabAnyData <- function(methods, inputVar, loc, month) {
     data <- grabmicroUS(inputVar, loc, month)
   } else if (methods == "microclim") {
     data <- grabmicro(inputVar, loc, month)
-  } else if (methods == "USCRN") {
-    data <- grabUSCRN(inputVar, loc, month)
+  # } else if (methods == "USCRN") {
+  #   data <- grabUSCRN(inputVar, loc, month)
   } else if (methods == "SNODAS") {
     data <- grabSNODAS(inputVar, loc, month)
   } else if (methods == "NicheMapR") {
@@ -193,7 +193,7 @@ shinyServer <- function(input, output, session) {
   
   output$stats <- renderText({
     validate(
-      need(length(input$statsOption) == 2, "Select two datasets")
+      need(length(input$statsOption) == 2, "Select two datasets\n\n\n")
     )
     # Have to figure out what to do with 3-hourly and daily values. take the average?
     
@@ -210,10 +210,12 @@ shinyServer <- function(input, output, session) {
       df1 <- aggregate(df1$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
       df2$Date <- as.Date(df2$Date) 
       df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
-      
-    } else if (input$statsOption == "GLDAS") {
-
     }
+    
+    # Will have to work on
+    # } else if (input$statsOption[1] == "GLDAS" || input$statsOption[2] == "GLDAS") {
+    #   
+    # }
 
     colnames(df1)[colnames(df1) == "Data"] <- "Data1"
     colnames(df2)[colnames(df2) == "Data"] <- "Data2"

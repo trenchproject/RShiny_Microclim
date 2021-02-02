@@ -18,7 +18,12 @@ guide1 <- Cicerone$
   step(
     el = "stats-wrapper",
     title = "Statistics",
-    description = HTML("Here, you can see how close the data are from ")
+    description = HTML("Here, you can select two datasets and see how close the data are. 
+                       Click on both <b>SCAN</b> and <b>ERA5</b> to get a checkmark on each.
+                       <br>The Pearson correlation coefficient, statistical bias, and RMSE (Root mean squared error) are displayed. 
+                       The coefficient of 0.91 shows the strong relatedness. Additionally, the bias of 1.54 is pretty small, and so is the RMSE of 10.39, suggesting that the two datasets generally have similar values with little outliers.
+                       <br>Now let's see how to plot something else. Hit next."),
+    position = "left"
   )$
   step(
     el = "var-wrapper",
@@ -58,6 +63,14 @@ guide1 <- Cicerone$
   )$
   step(
     el = "viz-wrapper",
+    title = "Revisiting stats",
+    description = HTML("Click on both again to see the stats. The bias and RMSE are actually very very small. 
+                       When the two datasets have different recording frequency, one with the more frequent dataset is averaged to match the frequency of the other's.
+                       <br>In this case, the hourly SCAN data are averaged over each day to match the daily values from GRIDMET, which turned out to have very similar values."),
+    position = "left"
+  )$
+  step(
+    el = "viz-wrapper",
     title = "End of tour",
     description = HTML("That's it for the temporal comparison tour. Add other datasets to see which one has the best quality of data.")
   )
@@ -77,7 +90,8 @@ guide2 <- Cicerone$
     title = "Map comparing datasets",
     description = HTML("This map shows the state of Colorado and the maximum air temperature using the data from ERA5.
                        <br>On the top right corner, you can select to view the data from GLDAS to compare the resolution and the data accuracy.
-                       <br>Selecting \"Difference\" will adjust the two maps to the coarser resolution and visualizes the temperature difference between the two datasets.")
+                       <br>Selecting \"Difference\" will adjust the two maps to the coarser resolution and visualizes the temperature difference between the two datasets."),
+    position = "left"
   )$
   step(
     el = "var2-wrapper",
