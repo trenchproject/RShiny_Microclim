@@ -75,6 +75,7 @@ nameDf <- data.frame(row.names = variables,
                      #"USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
+
 methods <- colnames(varsDf)
 
 
@@ -92,6 +93,37 @@ shinyServer <- function(input, output, session) {
     reset("page")
   })
   
+  
+  #___________________________________________________________________________________
+  
+  
+  output$datasetOutput <- renderText({
+    
+    validate(
+      need(input$spaCov, "Select spatial coverage"),
+      need(input$tempRes, "Select temporal resolution")
+    )
+    
+    dataTable <- readxl::read_xlsx("DatasetTable.xlsx") %>% as.data.frame() %>%
+      filter(TempCovStart <= input$tempCov_start | is.na(TempCovStart)) %>%
+      filter(TempCovEnd >= input$tempCov_end | is.na(TempCovEnd)) %>%
+      filter(SpatCov %in% input$spaCov & TempRes %in% input$tempRes)
+    
+    for (var in input$varTable) {
+      dataTable <- dataTable[dataTable[, var] == "T", ]
+    }
+    
+    text <- ""
+    for (i in 1 : nrow(dataTable)) {
+      text <- paste0(text, dataTable$Dataset[i], ": ", dataTable$Text[i], "<br>")
+    }
+    
+    HTML(text)
+  })
+  
+  
+  #___________________________________________________________________________________
+  # Temporal comparison
   
   output$methodsOutput <- renderUI({
     
@@ -241,6 +273,49 @@ shinyServer <- function(input, output, session) {
   })
   
   
+  output$statsTable <- renderUI({
+    validate(
+      need(length(input$statsOption) == 2, "Select two datasets\n\n\n")
+    )
+    # Have to figure out what to do with 3-hourly and daily values. take the average?
+    
+    # hourly: SCAN, ERA5, microclimUS, NicheMapR
+    # 3-hourly: GLDAS
+    # daily: gridMET, NOAA NCDC, SNODAS
+    # sub-hourly: USCRN
+    
+    df1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
+    df2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
+    
+    if (input$statsOption[1] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS") || input$statsOption[2] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
+      df1$Date <- as.Date(df1$Date)
+      df1 <- aggregate(df1$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
+      df2$Date <- as.Date(df2$Date) 
+      df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
+    }
+    
+    # Will have to work on
+    # } else if (input$statsOption[1] == "GLDAS" || input$statsOption[2] == "GLDAS") {
+    #   
+    # }
+    
+    colnames(df1)[colnames(df1) == "Data"] <- "Data1"
+    colnames(df2)[colnames(df2) == "Data"] <- "Data2"
+    
+    setDT(df1)
+    setDT(df2)
+    
+    merge <- df1[df2, on = "Date"] %>% 
+      na.omit() %>% 
+      as.data.frame()
+    
+    data1 <- merge$Data1
+    data2 <- merge$Data2
+    
+    plot_correlation()
+  })
+  
+  
   output$minimap <- renderLeaflet({
     
     x = c(-118.5657, -104.7552, -66.98880)
@@ -260,128 +335,141 @@ shinyServer <- function(input, output, session) {
   
   output$mapMethodsOutput1 <- renderUI({
     # USCRN, NOAA, 
-    index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods1", "Dataset 1", choices = methods[c(-index)], selected = methods[c(-index)][1], 
+    # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
+    pickerInput("mapMethods1", "Dataset 1", choices = methods, selected = methods[1], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
   output$mapMethodsOutput2 <- renderUI({
-    index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods2", "Dataset 2", choices = methods[c(-index)], selected = methods[c(-index)][2], 
+    # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
+    pickerInput("mapMethods2", "Dataset 2", choices = methods, selected = methods[2], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
 
   
-  rasterData1 <- reactive({
-    validate(
-      need(input$mapMethods1, "")
-    )
-    
-    inputVar1 <- varsDf[input$mapVar, input$mapMethods1]
-    rasterData1 <- grabMapData(input$mapMethods1, inputVar1, input$month, as.numeric(input$date))
-    
-  })
-  
-  rasterData2 <- reactive({
-    validate(
-      need(input$mapMethods2, "")
-    )
-
-    inputVar2 <- varsDf[input$mapVar, input$mapMethods2]
-    rasterData2 <- grabMapData(input$mapMethods2, inputVar2, input$month, as.numeric(input$date))
-
-  })
-  
-  rasterdif <- reactive({
-    raster1 <- rasterData1()
-    raster2 <- rasterData2()
-    
-    if (res(raster1)[1] > res(raster2)[1]) {
-      rasterdif <- abs(resample(raster2, raster1) - raster1)
-    } else {
-      rasterdif <- abs(resample(raster1, raster2) - raster2)
-    }
-    rasterdif
-  })
-  
-  
   output$mymap <- renderLeaflet({
-    raster1 <- rasterData1()
-    raster2 <- rasterData2()
+    data <- read.delim("Data/SCANmap/SCAN_AshValley.txt", sep = ",")
     
-    if (input$mapVar == "Wind speed") {
-      unit <- "(m/s)"
-    } else if (input$mapVar == "Radiation") {
-      unit <- HTML("(W/m<sup>2</sup>)")
-    } else {
-      unit <- "(°C)"
-    }
-    
-    min <- min(minValue(raster1), minValue(raster2))
-    max <- max(maxValue(raster1), maxValue(raster2))
-
-    pal <- colorNumeric(palette = viridis(5),
-                        domain = c(min, max),
-                        na.color = "transparent")
-    
-    paldif <- colorNumeric(palette = viridis(5),
-                           domain = c(minValue(rasterdif()), maxValue(rasterdif())),
-                           na.color = "transparent")
+    stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
     
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      addRasterImage(x = raster1, colors = pal, group = input$mapMethods1, opacity = 1) %>%
-      addRasterImage(x = raster2, colors = pal, group = input$mapMethods2, opacity = 1) %>%
-      addRasterImage(x = rasterdif(), colors = paldif, group = "Difference", opacity = 1) %>%
-      setView(lng = -105.5, lat = 39, zoom = 6) %>%
-      addLayersControl(baseGroups = c(input$mapMethods1, input$mapMethods2, "Difference")) %>%
-      addLegend(pal = pal,
-                opacity = 1,
-                values = c(min, max),
-                position = "bottomright",
-                title = paste(input$mapVar, unit))
+      addCircleMarkers(data = stations, lng = ~Lon, lat = ~Lat,
+                       color = "navy",
+                       stroke = FALSE,
+                       fillOpacity = 0.5)
   })
   
-  observeEvent(input$mymap_groups, {
-    
-    raster1 <- rasterData1()
-    raster2 <- rasterData2()
-    
-    if (input$mapVar == "Wind speed") {
-      unit <- "(m/s)"
-    } else if (input$mapVar == "Radiation") {
-      unit <- HTML("(W/m<sup>2</sup>)")
-    } else {
-      unit <- "(°C)"
-    }
-    
-    min <- min(minValue(raster1), minValue(raster2))
-    max <- max(maxValue(raster1), maxValue(raster2))
-    
-    pal <- colorNumeric(palette = viridis(5),
-                        domain = c(min, max),
-                        na.color = "transparent")
-    
-    paldif <- colorNumeric(palette = viridis(5),
-                           domain = c(minValue(rasterdif()), maxValue(rasterdif())),
-                           na.color = "transparent")
-    
-    if (input$mymap_groups == "Difference") {
-      leafletProxy('mymap') %>% clearControls() %>%
-        addLegend(pal = paldif, 
-                  opacity = 1,
-                  values = c(minValue(rasterdif()), maxValue(rasterdif())),
-                  group = "Difference",
-                  position = "bottomright",
-                  title = paste("Difference", unit))
-    } else {
-      leafletProxy('mymap') %>% clearControls() %>%
-        addLegend(pal = pal,
-                  opacity = 1,
-                  values = c(min, max),
-                  position = "bottomright",
-                  title = paste(input$mapVar, unit))
-    }
-  })
+  # rasterData1 <- reactive({
+  #   validate(
+  #     need(input$mapMethods1, "")
+  #   )
+  #   
+  #   inputVar1 <- varsDf[input$mapVar, input$mapMethods1]
+  #   rasterData1 <- grabMapData(input$mapMethods1, inputVar1, input$month, as.numeric(input$date))
+  #   
+  # })
+  # 
+  # rasterData2 <- reactive({
+  #   validate(
+  #     need(input$mapMethods2, "")
+  #   )
+  # 
+  #   inputVar2 <- varsDf[input$mapVar, input$mapMethods2]
+  #   rasterData2 <- grabMapData(input$mapMethods2, inputVar2, input$month, as.numeric(input$date))
+  # 
+  # })
+  # 
+  # rasterdif <- reactive({
+  #   raster1 <- rasterData1()
+  #   raster2 <- rasterData2()
+  #   
+  #   if (res(raster1)[1] > res(raster2)[1]) {
+  #     rasterdif <- abs(resample(raster2, raster1) - raster1)
+  #   } else {
+  #     rasterdif <- abs(resample(raster1, raster2) - raster2)
+  #   }
+  #   rasterdif
+  # })
+  # 
+  # 
+  # output$mymap <- renderLeaflet({
+  #   raster1 <- rasterData1()
+  #   raster2 <- rasterData2()
+  #   
+  #   if (input$mapVar == "Wind speed") {
+  #     unit <- "(m/s)"
+  #   } else if (input$mapVar == "Radiation") {
+  #     unit <- HTML("(W/m<sup>2</sup>)")
+  #   } else {
+  #     unit <- "(°C)"
+  #   }
+  #   
+  #   min <- min(minValue(raster1), minValue(raster2))
+  #   max <- max(maxValue(raster1), maxValue(raster2))
+  # 
+  #   pal <- colorNumeric(palette = viridis(5),
+  #                       domain = c(min, max),
+  #                       na.color = "transparent")
+  #   
+  #   paldif <- colorNumeric(palette = viridis(5),
+  #                          domain = c(minValue(rasterdif()), maxValue(rasterdif())),
+  #                          na.color = "transparent")
+  #   
+  #   leaflet() %>%
+  #     addProviderTiles(providers$CartoDB.Positron) %>%
+  #     addRasterImage(x = raster1, colors = pal, group = input$mapMethods1, opacity = 1) %>%
+  #     addRasterImage(x = raster2, colors = pal, group = input$mapMethods2, opacity = 1) %>%
+  #     addRasterImage(x = rasterdif(), colors = paldif, group = "Difference", opacity = 1) %>%
+  #     setView(lng = -105.5, lat = 39, zoom = 6) %>%
+  #     addLayersControl(baseGroups = c(input$mapMethods1, input$mapMethods2, "Difference")) %>%
+  #     addLegend(pal = pal,
+  #               opacity = 1,
+  #               values = c(min, max),
+  #               position = "bottomright",
+  #               title = paste(input$mapVar, unit))
+  # })
+  # 
+  # observeEvent(input$mymap_groups, {
+  #   
+  #   raster1 <- rasterData1()
+  #   raster2 <- rasterData2()
+  #   
+  #   if (input$mapVar == "Wind speed") {
+  #     unit <- "(m/s)"
+  #   } else if (input$mapVar == "Radiation") {
+  #     unit <- HTML("(W/m<sup>2</sup>)")
+  #   } else {
+  #     unit <- "(°C)"
+  #   }
+  #   
+  #   min <- min(minValue(raster1), minValue(raster2))
+  #   max <- max(maxValue(raster1), maxValue(raster2))
+  #   
+  #   pal <- colorNumeric(palette = viridis(5),
+  #                       domain = c(min, max),
+  #                       na.color = "transparent")
+  #   
+  #   paldif <- colorNumeric(palette = viridis(5),
+  #                          domain = c(minValue(rasterdif()), maxValue(rasterdif())),
+  #                          na.color = "transparent")
+  #   
+  #   if (input$mymap_groups == "Difference") {
+  #     leafletProxy('mymap') %>% clearControls() %>%
+  #       addLegend(pal = paldif, 
+  #                 opacity = 1,
+  #                 values = c(minValue(rasterdif()), maxValue(rasterdif())),
+  #                 group = "Difference",
+  #                 position = "bottomright",
+  #                 title = paste("Difference", unit))
+  #   } else {
+  #     leafletProxy('mymap') %>% clearControls() %>%
+  #       addLegend(pal = pal,
+  #                 opacity = 1,
+  #                 values = c(min, max),
+  #                 position = "bottomright",
+  #                 title = paste(input$mapVar, unit))
+  #   }
+  # })
 
 }

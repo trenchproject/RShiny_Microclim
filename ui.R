@@ -10,9 +10,19 @@ library(viridis)
 library(shinyBS)
 library(shinyjs)
 library(cicerone)
+library(DataExplorer)
 
 variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
+variablesTable <- c("Air temperature" = "AirTemp", 
+                    "Surface temperature" = "SurfTemp", 
+                    "Soil temperature (1 m deep)" = "SoilTemp", 
+                    "Radiation", 
+                    "Wind speed" = "Wind", 
+                    "Precipitation", 
+                    "Relative humidity" = "Humidity", 
+                    "Soil moisture" = "SoilMoist", 
+                    "Snow Depth" = "Snow")
 
 variables2 <- c("Maximum air temperature" = "Air temperature", "Minimum air temperature" = "Tmin", "Average surface temperature" = "Surface temperature", "Daily average radiation" = "Radiation") 
                 #"Average soil temperature (1 m deep)" = "Soil temperature (1 m deep)", "Daily average radiation" = "Radiation", "Average wind speed" = "Wind speed")
@@ -35,6 +45,24 @@ shinyUI <- fluidPage(id = "page",
     id = "viz-wrapper",
     
     tabsetPanel(
+      
+      tabPanel("Data selection",
+        br(),
+        fluidRow(
+          column(2, awesomeCheckboxGroup("spaCov", "Spatial coverage", choices = c("US", "Global"), selected = "US")),
+          column(2, numericInput("tempCov_start", "Beginning of temporal coverage", min = 1979, max = 2021, value = 2017)),
+          column(2, numericInput("tempCov_end", "End of temporal coverage", min = 1979, max = 2021, value = 2017)),
+          
+          # column(6, sliderInput("tempCov", "Temporal coverage", min = 1979, max = 2021, value = c(2017, 2017))),
+          column(2, awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Daily", "3-hourly", "Hourly", "Sub-hourly"), selected = "")),
+          column(3, pickerInput("varTable", "Variables", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables")))
+        ),
+        
+        p(strong("Suitable datasets")),
+        htmlOutput("datasetOutput")
+        
+      ),
+      
       tabPanel("Temporal comparison",
                sidebarLayout(
                  sidebarPanel(
@@ -98,6 +126,8 @@ shinyUI <- fluidPage(id = "page",
                      uiOutput("datasetComparison"),
                      
                      htmlOutput("stats"),
+                     
+                     uiOutput("statsTable")
                    ),
                    
                    hr(),
