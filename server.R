@@ -378,7 +378,7 @@ shinyServer <- function(input, output, session) {
                        fillOpacity = 0.5)
   })
   
-<<<<<<< HEAD
+
   # rasterData1 <- reactive({
   #   validate(
   #     need(input$mapMethods1, "")
@@ -490,7 +490,7 @@ shinyServer <- function(input, output, session) {
   #                 title = paste(input$mapVar, unit))
   #   }
   # })
-=======
+
   observeEvent(input$mymap_groups, {
     
     raster1 <- rasterData1()
@@ -642,6 +642,4 @@ shinyServer <- function(input, output, session) {
     
   })
   
->>>>>>> f36691e1d6287118973945cab8376336bd4786d0
-
 }
