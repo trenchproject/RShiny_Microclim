@@ -9,6 +9,7 @@ source("R/SNODAS.R", local = TRUE)
 #source("R/USCRN.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
+library(TrenchR)
 
 grabAnyData <- function(methods, inputVar, loc, month) {
   if (methods == "SCAN") {
@@ -77,6 +78,22 @@ nameDf <- data.frame(row.names = variables,
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 methods <- colnames(varsDf)
 
+# Tb_gates default values
+A = 1 # surface area (m^2)
+D = 0.001 # characteristic dimension for conduction (m)
+psa_dir	= 0.6 # proportion surface area exposed to sky (or enclosure)
+psa_ref	= 0.4 # proportion surface area exposed to ground
+psa_air = 0.6 # proportion surface area exposed to air
+psa_g	= 0.2 # proportion surface area in contact with substrate
+T_g	= 303 # ground surface temperature in K -- DATASET DEPENDENT 
+T_a	= 310 # ambient air temperature in K -- DATASET DEPENDENT 
+Qabs= 800 # Solar and thermal radiation absorbed (W) -- DATASET DEPENDENT 
+epsilon	= 0.95 # longwave infrared emissivity of skin (proportion), 0.95 to 1 for most animals (Gates 1980)
+H_L	= 10 # Convective heat transfer coefficient (W m^-2 K^-1)
+ef = 1.23 # enhancement factor
+K = 0.15 # Thermal conductivity for insect cuticle (Galushko et al 2005) (W K^-1 m^-1)
+
+
 
 shinyServer <- function(input, output, session) {
   
@@ -101,6 +118,7 @@ shinyServer <- function(input, output, session) {
 
   })
   
+
   output$info <- renderText({
     if (input$loc == "WA") {
       station <- "Lind #1 (-118.57°, 47°)"
@@ -383,5 +401,115 @@ shinyServer <- function(input, output, session) {
                   title = paste(input$mapVar, unit))
     }
   })
+  
+  
+  # ---------------------- operative temperature -------------------------------
+  
+  # Dataset methods selector
+  output$methodsOutput3 <- renderUI({
+    pickerInput("methods3", "Datasets", choices = methods[-8], selected = methods[c(1, 2)], multiple = T,
+                options = list(style = "btn-success", `actions-box` = TRUE))
+  })
+  
+  # Rendering selected location/season data
+  output$info3 <- renderText({
+    if (input$loc3 == "WA") {
+      station3 <- "Lind #1 (-118.57°, 47°)"
+      loc3 <- "Adams county, WA 1640ft"
+    } else if (input$loc3 == "CO") {
+      station3 <- "Nunn #1 (-104.73°, 40.87°)"
+      loc3 <- "Weld county, CO 5900ft"
+    } else if (input$loc3 == "PR") {
+      station3 <- "Maricao Forest (-67°, 18.15°)"
+      loc3 <- "Mayaguez, Puerto Rico 2450ft"
+    }
+    
+    month3 <- ifelse(input$season3 == 1, "January", "July")
+    
+    
+    HTML("<br><br><b>Station name:</b> ", station3, 
+         "<br><b>Location:</b> ", loc3,
+         "<br><b>Time:</b> ", month3, "1st - 31st, 2017")
+  })
+  
+  
+  # Rendering plot
+  output$plot3 <- renderPlotly({
+    validate(
+      need(input$methods3, "Select datasets")
+    )
+    
+    colors <- c('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
+    p <- plot_ly() %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = paste("Operative temperature (degK)")))
+    
+    # For each selected method
+    i = 0
+    for (method in input$methods3) {
+      i = i + 1
+      
+      # Get variable name/location
+      aTemp <- varsDf["Air temperature", method]
+      sTemp <- varsDf["Surface temperature", method]
+      radiation<- varsDf["Radiation", method]
+      
+      if (is.na(aTemp)) aTemp = T_a
+      else {
+        if (input$loc3 != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) { 
+          aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
+          aTemp$Data = aTemp$Data + 273.15 # C to K
+        }
+      }
+      
+      if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
+      else {
+        if (input$loc3 != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) { 
+          sTemp <- grabAnyData(method, sTemp, input$loc3, input$season3)
+          sTemp$Data = sTemp$Data + 273.15 # C to K
+        }
+      }
+      
+      if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
+      else {
+        if (input$loc3 != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) { 
+          radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
+          radiation$Data[radiation$Data<0] <- 0 # No negative
+        }
+      }
+      
+      # method data stored in aTemp, sTemp, radiation
+      
+      op_temp = array(0, dim=c(length(aTemp$Data)))
+      for(i in 1:length(aTemp$Data)){
+        if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i])) op_temp[i] = NA
+        else op_temp[i] = Tb_Gates(A, D, psa_dir, psa_ref, psa_air, psa_g, sTemp$Data[i], 
+                              aTemp$Data[i], radiation$Data[i], epsilon, H_L, ef, K)
+      }
+      
+      p <- p %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line = list(color = colors[i]))
+    } 
+
+    
+    # Adding Tmin when Air temperature is selected
+    # if (input$var == "Air temperature") {
+    #   i = 0
+    #   for (method in input$methods3) {
+    #     i = i + 1
+    #     inputVar <- varsDf["Tmin", method]
+    #     if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
+    #       if (input$loc != "PR" || !method == "GRIDMET") { # gridMET doesn't have data for PR
+    #         df <- grabAnyData(method, inputVar, input$loc, input$season)
+    #         p <- p %>%
+    #           add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
+    #       }
+    #     }
+    #   }
+    # }
+    
+    p
+    
+  })
+  
 
 }

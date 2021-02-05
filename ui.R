@@ -61,7 +61,7 @@ shinyUI <- fluidPage(id = "page",
                    div(
                      id = "var-wrapper",
                      pickerInput("var", "Variable", choices = variables,
-                                 options = list(style = "btn-success")),
+                                 options = list(style = "btn-success"), multiple = F),
                    ),
                    
                    uiOutput("methodsOutput"),
@@ -162,7 +162,37 @@ shinyUI <- fluidPage(id = "page",
                      )
                    )
                  )
-        )
+         ),
+      tabPanel("Operative temperature comparison",
+               sidebarLayout(
+                 sidebarPanel(
+                   h4("Operative temperature comparison"),
+                   p("These plots predict operative temperature for an ectotherm in the 
+                     environmental conditions given by the selected datasets. The Tb_Gates()
+                     function in the TrenchR package is used to make these predictions."),
+                   
+                   uiOutput("methodsOutput3"),
+                   
+                   div(
+                     id = "sealoc-wrapper3",
+                     
+                     radioGroupButtons("season3", "Season", choices = c("Summer" = 7, "Winter" = 1), selected = 7, status = "danger", size = "sm"),
+                     
+                     radioGroupButtons("loc3", "Location", choices = c("Washington" = "WA", "Colorado" = "CO", "Puerto Rico" = "PR"), selected = "WA", status = "danger", size = "sm"),
+                   ),
+                   br(),
+                   htmlOutput("info3"),
+                   
+                   leafletOutput("minimap3")
+                   ),
+                 mainPanel(
+                   div(
+                     id = "plot-wrapper3",
+                     
+                     plotlyOutput("plot3") %>% withSpinner(type = 7)
+                   )
+                 ))
+      )
     )
   )
 )
