@@ -91,25 +91,46 @@ grabERA <- function(varIndex, loc, month) {
   return (df)
 }
 
-# 
-# mapERA <- function(varIndex, month, date, hour) {
+# Daily average
+
+# month = 1
+# date = 1
+# varIndex = 3
+
+
+# mapERA <- function(varIndex, month, date) {
 #   brickERA <- brick("COmap_ERA.grib")
 #   # 1/1 - 1/7 + 7/1 - 7/7
 #   # 2016 layers (2 months * 7 days * 24 hours * 6 variables)
 #   
 #   monthIndex <- ifelse(month == 1, 0, 7)
 #   offset = 7
-#   
-#   raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
-#   
-#   
-#   if (varIndex == 1) {  # For wind speed, we want to consider the combined wind speed.
 # 
-#     raster2 <- brick[[2 + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
+#   max <- -1000
+#   min <- 1000
+#   
+#   if (varIndex %in% c(3, 7)) { # When air temperature, maps the daily max or min
+#     for (hour in 0:23) {
+#       raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
+#       max <- max(raster, max)
+#       min <- min(raster, min)
+#     }
 #     
-#     raster <- sqrt(raster^2 + raster2^2)
+#     if (varIndex == 3) {
+#       raster <- max
+#     } else {
+#       raster <- min
+#     }
+#     
+#   } else { # otherwise maps the daily mean
+#     ave <- 0
+#     for (hour in 0:23) {
+#       raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
+#       ave <- ave + raster
+#     }
+#     raster <- ave / 24
 #   }
-# 
+#   
 #   if (varIndex %in% c(3, 4, 5)) {
 #     raster <- raster - 273.15
 #   }
@@ -122,54 +143,29 @@ grabERA <- function(varIndex, loc, month) {
 # }
 
 
-# Daily average
+# Extent 41.2, 33.5, -120.9, -115
 
-# month = 1
-# date = 1
-# varIndex = 3
+# 1. 2m_temperature (K)
+# 2. skin_temperature (surface temperature)
+# 3. surface_net_solar_radiation (J/m^2)
 
-
-mapERA <- function(varIndex, month, date) {
-  brickERA <- brick("COmap_ERA.grib")
-  # 1/1 - 1/7 + 7/1 - 7/7
-  # 2016 layers (2 months * 7 days * 24 hours * 6 variables)
+mapERA <- function(varIndex, month) {
+  db <- brick("ERA_CAmap_1.grib") 
+  # 4464 layers (3 variables * 2 months * 31 days * 24 hours)
   
-  monthIndex <- ifelse(month == 1, 0, 7)
-  offset = 7
-
-  max <- -1000
-  min <- 1000
+  df <- rasterToPoints(db) %>% as.data.frame()
   
-  if (varIndex %in% c(3, 7)) { # When air temperature, maps the daily max or min
-    for (hour in 0:23) {
-      raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
-      max <- max(raster, max)
-      min <- min(raster, min)
-    }
+  for (i in 1:nrow(stations)) {
+    i = 1
+    station <- stations$Station[i]
+    lat <- stations$Lat[i]
+    lon <- stations$Lon[i]
     
-    if (varIndex == 3) {
-      raster <- max
-    } else {
-      raster <- min
-    }
+    lon <- sort(df$x)[match.closest(lon, sort(df$x))]
+    lat <- sort(df$y)[match.closest(lat, sort(df$y))]
+    one_loc <- df[df$x == lon & df$y == lat, ]
     
-  } else { # otherwise maps the daily mean
-    ave <- 0
-    for (hour in 0:23) {
-      raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
-      ave <- ave + raster
-    }
-    raster <- ave / 24
   }
   
-  if (varIndex %in% c(3, 4, 5)) {
-    raster <- raster - 273.15
-  }
-  
-  if (varIndex == 6) {
-    raster <- raster / 3600
-  }
-  
-  return (raster)
 }
 

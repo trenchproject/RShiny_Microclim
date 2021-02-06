@@ -78,7 +78,66 @@ grabNOAA <- function(var, loc, month) {
     data$data[, "value"] <- 0
   }
   
-  df <- data$data[, c("date", "value")] %>% as.data.frame() %>% magrittr::set_colnames(c("Date", "Data"))
+  df <- data$data[, c("date", "value")] %>% as.data.frame() %>% 
+    magrittr::set_colnames(c("Date", "Data"))
   
   return (df)
+}
+
+
+# CO NUNN 7 NNE GHCND:USW00094074 (40.8066, -104.7552)
+list <- ncdc_stations(extent = c(40.7, -104.8, 40.9, -104.7), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+
+
+mapNOAA <- function(var, month) {
+
+  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  
+  # station_data <- ghcnd_stations()
+  # fwrite(station_data, "NOAA_stations.csv")
+  
+  stations_data <- fread("NOAA_stations.csv")
+  
+  colnames(stations)[1] <- "id" # for meteo_nearby_stations, colname has to be "id"
+  
+  list <- meteo_nearby_stations(lat_lon_df = stations, 
+                                station_data = station_data, 
+                                lat_colname = "Lat", 
+                                lon_colname = "Lon", 
+                                limit = 10,
+                                var = "TMAX")
+  
+  merged <- data.frame(date = NA) # need an initial date column to merge later
+
+  for (i in 1:nrow(stations)) {
+    station <- stations$id[i]
+    
+    ids <- list[[i]]$id # the number of elements in the list and the number of rows in stations are equal 
+    
+    j = 0
+    lgth = 0
+    
+    while (lgth == 0) { # starting from the nearest station, loops until the station contains the desired data
+      j = j + 1
+      data <- ncdc(datasetid = 'GHCND', 
+                   stationid = paste0("GHCND:", ids[j]), 
+                   token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+                   startdate = paste0("2017-0", month, "-01"), 
+                   enddate = paste0("2017-0", month, "-31"),
+                   datatypeid = var,
+                   add_units = T)
+      
+      lgth <- length(data$data)
+      
+    }
+    
+    values <- data$data %>% as.data.frame() %>%
+      select(date, value)
+    
+    merged <- merge(merged, values, by = "date", all = T)
+    colnames(merged)[i + 1] <- station
+    
+  }
+  
+  return (merged[-nrow(merged), ]) # the last row is just NAs
 }

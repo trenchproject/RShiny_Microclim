@@ -65,17 +65,59 @@ grabGRID <- function(param, loc, month) {
 }
 
 
-mapGRID <- function(param, month, date) {
-  
-  AOI = aoi_get(state = "CO")
-  char_date <- ifelse(date < 10, paste0("0", date), date)
+# mapGRID <- function(param, month, date) {
+#   
+#   AOI = aoi_get(state = "CO")
+#   char_date <- ifelse(date < 10, paste0("0", date), date)
+# 
+#   p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-", char_date), endDate = paste0("2017-0", month, "-", char_date))
+#   r = raster::brick(p)[[1]]
+#   
+#   if (param %in% c("tmin", "tmax")) {
+#     r <- r - 273.15
+#   }
+#   
+#   return(r)
+# }
 
-  p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-", char_date), endDate = paste0("2017-0", month, "-", char_date))
-  r = raster::brick(p)[[1]]
+
+mapGRID <- function(param, month) {
   
-  if (param %in% c("tmin", "tmax")) {
-    r <- r - 273.15
+  AOI = aoi_get(state = "CA")
+
+  p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
+  
+  df <- rasterToPoints(p[[1]]) %>% as.data.frame()
+  
+  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+
+  fullDf <- data.frame()
+  for (i in 1:nrow(stations)) {
+
+    station <- stations$Station[i]
+    lat <- stations$Lat[i]
+    lon <- stations$Lon[i]
+    
+    
+    data <- df[df$x == sort(df$x)[match.closest(lon, sort(df$x))] & df$y == sort(df$y)[match.closest(lat, sort(df$y))], ]
+    rownames(data) <- station
+    
+    fullDf <- rbind(fullDf, data)
+  }
+
+  t_fullDf <- transpose(fullDf[, 3 : length(fullDf)]) # first two columns are x and y
+  setnames(t_fullDf, rownames(fullDf))
+
+  if (param %in% c("tmax")) {
+    t_fullDf <- t_fullDf - 273.15
   }
   
-  return(r)
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  df <- cbind(Date = as.Date(days), t_fullDf)
+  
+  return (df)
 }

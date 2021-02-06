@@ -9,7 +9,8 @@ source("R/SNODAS.R", local = TRUE)
 #source("R/USCRN.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
-library(TrenchR)
+source("functions.R", local = TRUE)
+# library(TrenchR)
 
 grabAnyData <- function(methods, inputVar, loc, month) {
   if (methods == "SCAN") {
@@ -36,15 +37,32 @@ grabAnyData <- function(methods, inputVar, loc, month) {
   return (data)
 }
 
-grabMapData <- function(methods, inputVar, month, date) {
+# grabMapData <- function(methods, inputVar, month, date) {
+#   if (methods == "ERA5") {
+#     data <- mapERA(inputVar, month, date)
+#   } else if (methods == "GLDAS") {
+#     data <- mapGLDAS(inputVar, month, date)
+#   } else if (methods == "GRIDMET") {
+#     data <- mapGRID(inputVar, month, date)
+#   } else if (methods == "microclimUS") {
+#     data <- mapmicroUS(inputVar, month, date)
+#   } else if (methods == "microclim") {
+#     data <- mapmicro(inputVar, month)
+#   }
+#   return (data)
+# }
+
+grabMapData <- function(methods, inputVar, month) {
   if (methods == "ERA5") {
-    data <- mapERA(inputVar, month, date)
+    data <- mapERA(inputVar, month) # working on
   } else if (methods == "GLDAS") {
-    data <- mapGLDAS(inputVar, month, date)
+    data <- mapGLDAS(inputVar, month)
   } else if (methods == "GRIDMET") {
-    data <- mapGRID(inputVar, month, date)
+    data <- mapGRID(inputVar, month) # done
+  } else if (methods == "NOAA_NCDC") {
+    data <- mapGRID(inputVar, month) # done
   } else if (methods == "microclimUS") {
-    data <- mapmicroUS(inputVar, month, date)
+    data <- mapmicroUS(inputVar, month)
   } else if (methods == "microclim") {
     data <- mapmicro(inputVar, month)
   }
@@ -78,22 +96,6 @@ nameDf <- data.frame(row.names = variables,
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 
 methods <- colnames(varsDf)
-
-# Tb_gates default values
-A = 1 # surface area (m^2)
-D = 0.001 # characteristic dimension for conduction (m)
-psa_dir	= 0.6 # proportion surface area exposed to sky (or enclosure)
-psa_ref	= 0.4 # proportion surface area exposed to ground
-psa_air = 0.6 # proportion surface area exposed to air
-psa_g	= 0.2 # proportion surface area in contact with substrate
-T_g	= 303 # ground surface temperature in K -- DATASET DEPENDENT 
-T_a	= 310 # ambient air temperature in K -- DATASET DEPENDENT 
-Qabs= 800 # Solar and thermal radiation absorbed (W) -- DATASET DEPENDENT 
-epsilon	= 0.95 # longwave infrared emissivity of skin (proportion), 0.95 to 1 for most animals (Gates 1980)
-H_L	= 10 # Convective heat transfer coefficient (W m^-2 K^-1)
-ef = 1.23 # enhancement factor
-K = 0.15 # Thermal conductivity for insect cuticle (Galushko et al 2005) (W K^-1 m^-1)
-
 
 
 shinyServer <- function(input, output, session) {
@@ -368,8 +370,17 @@ shinyServer <- function(input, output, session) {
   output$mymap <- renderLeaflet({
     data <- read.delim("Data/SCANmap/SCAN_AshValley.txt", sep = ",")
     
+    
     stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
     
+    for (i in nrow(stations)) {
+      station <- stations$Station[i]
+      data <- read.delim(paste0("Data/SCANmap/SCAN_", station, ".txt"), sep = ",")
+      lat <- stations$Lat[i]
+      lon <- stations$Lon[i]
+      
+      grabMapData()
+    }
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addCircleMarkers(data = stations, lng = ~Lon, lat = ~Lat,
