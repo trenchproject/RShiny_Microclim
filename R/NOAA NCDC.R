@@ -96,7 +96,7 @@ mapNOAA <- function(var, month) {
   # station_data <- ghcnd_stations()
   # fwrite(station_data, "NOAA_stations.csv")
   
-  stations_data <- fread("NOAA_stations.csv")
+  station_data <- fread("NOAA_stations.csv")
   
   colnames(stations)[1] <- "id" # for meteo_nearby_stations, colname has to be "id"
   
@@ -116,7 +116,7 @@ mapNOAA <- function(var, month) {
     
     j = 0
     lgth = 0
-    
+
     while (lgth == 0) { # starting from the nearest station, loops until the station contains the desired data
       j = j + 1
       data <- ncdc(datasetid = 'GHCND', 
@@ -132,7 +132,7 @@ mapNOAA <- function(var, month) {
     }
     
     values <- data$data %>% as.data.frame() %>%
-      select(date, value)
+      plotly::select(date, value)
     
     merged <- merge(merged, values, by = "date", all = T)
     colnames(merged)[i + 1] <- station

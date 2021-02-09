@@ -54,15 +54,15 @@ grabAnyData <- function(methods, inputVar, loc, month) {
 
 grabMapData <- function(methods, inputVar, month) {
   if (methods == "ERA5") {
-    data <- mapERA(inputVar, month) # working on
+    data <- mapERA(inputVar, month)
   } else if (methods == "GLDAS") {
     data <- mapGLDAS(inputVar, month)
   } else if (methods == "GRIDMET") {
-    data <- mapGRID(inputVar, month) # done
+    data <- mapGRID(inputVar, month)
   } else if (methods == "NOAA_NCDC") {
-    data <- mapGRID(inputVar, month) # done
+    data <- mapGRID(inputVar, month)
   } else if (methods == "microclimUS") {
-    data <- mapmicroUS(inputVar, month)
+    data <- mapmicroUS(inputVar, month) 
   } else if (methods == "microclim") {
     data <- mapmicro(inputVar, month)
   }
@@ -350,6 +350,7 @@ shinyServer <- function(input, output, session) {
   })
   
   #______________________________________________________________________________________
+  # Spatial comparison
   
   # -109, -102, 37, 41
   
@@ -379,7 +380,7 @@ shinyServer <- function(input, output, session) {
       lat <- stations$Lat[i]
       lon <- stations$Lon[i]
       
-      grabMapData()
+      grabMapData() # working
     }
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%

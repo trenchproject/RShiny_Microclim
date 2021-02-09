@@ -81,3 +81,7 @@ grabSCAN <- function(varIndex, loc, month) {
   
   return (df)
 }
+
+mapSCAN <- function(varIndex, month) {
+  
+}

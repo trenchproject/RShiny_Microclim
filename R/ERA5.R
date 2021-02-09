@@ -32,12 +32,12 @@ library(magrittr)
 library(MALDIquant)
 library(data.table)
 
+locs <- data.frame(row.names = c("WA", "CO", "PR"), 
+                   "lon" = c(-118.5657, -104.7552, -66.98880), 
+                   "lat" = c(47.0022, 40.8066, 18.15110), 
+                   "offset" = c(-8, -7, -4))
 
 grabERA <- function(varIndex, loc, month) {
-  locs <- data.frame(row.names = c("WA", "CO", "PR"), 
-                     "lon" = c(-118.5657, -104.7552, -66.98880), 
-                     "lat" = c(47.0022, 40.8066, 18.15110), 
-                     "offset" = c(-8, -7, -4))
 
   df <- fread(paste0("Data/ERA/", loc, "_ERA.csv")) %>% as.data.frame()
   
@@ -143,6 +143,7 @@ grabERA <- function(varIndex, loc, month) {
 # }
 
 
+
 # Extent 41.2, 33.5, -120.9, -115
 
 # 1. 2m_temperature (K)
@@ -150,13 +151,21 @@ grabERA <- function(varIndex, loc, month) {
 # 3. surface_net_solar_radiation (J/m^2)
 
 mapERA <- function(varIndex, month) {
-  db <- brick("ERA_CAmap_1.grib") 
+  db <- brick("ERA_CAmap.grib") 
   # 4464 layers (3 variables * 2 months * 31 days * 24 hours)
   
   df <- rasterToPoints(db) %>% as.data.frame()
   
+  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  fullDf <- data.frame(Date = rep(days, each = 24)[1: (31 * 24 - offset)])
+  
   for (i in 1:nrow(stations)) {
-    i = 1
     station <- stations$Station[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
@@ -165,7 +174,27 @@ mapERA <- function(varIndex, month) {
     lat <- sort(df$y)[match.closest(lat, sort(df$y))]
     one_loc <- df[df$x == lon & df$y == lat, ]
     
+    vals <- c()
+    for (i in 0:1487) {  # 1488 = 2 months * 31 days * 24 hours
+      vals <- c(vals, one_loc[, 2 + varIndex + i * 3])  # adding 2 because the first two columns are x and y. After that, the selected variable shows up every 3 columns.
+    }
+
+    offset = 8
+    # The data for July comes after the data for January in the data frame. Each month has 24 hours and 31 days of data.
+    if (month == 1) {
+      vals <- vals[(1 + offset) : 744]
+    } else if (month == 7) {
+      vals <- vals[(745 + offset) : 1488]
+    }
+    
+    vals <- as.data.frame(vals) %>% set_colnames(station)
+    
+    if (varIndex %in% c(1, 2)) { # K to C
+      vals <- vals - 273.15
+    }
+    
+    fullDf <- cbind(fullDf, vals)
   }
   
+  return (fullDf)
 }
-

@@ -157,56 +157,121 @@ grabGLDAS <- function(var, loc, month) {
 #   return (raster)
 # }
 
-mapGLDAS <- function(var, month, date) {
-  
-  if (var %in% c("Tair_f_inst", "Tmin")) {
-    max <- -1000
-    min <- 1000
-    for (hour in seq(from = 0, to = 21, by = 3)) {
-      
-      date <- ifelse(hour < 9, date + 1, date)
-      
-      char_date <- ifelse(date < 10, paste0("0", date), date)
-      char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
-      filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
-      AOI = aoi_get(state = "CO")
-      
-      raster <- raster(filename, varname = "Tair_f_inst") %>%
-        crop(AOI)
-      
-      max <- max(raster, max)
-      min <- min(raster, min)
-    }
-    
-    if (var == "Tmin") {
-      raster <- min
-    } else {
-      raster <- max
-    }
-  } else {
-    ave <- 0
-    for (hour in seq(from = 0, to = 21, by = 3)) {
-      
-      date <- ifelse(hour < 9, date + 1, date)
-      
-      char_date <- ifelse(date < 10, paste0("0", date), date)
-      char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
-      filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
-      AOI = aoi_get(state = "CO")
-      
-      raster <- raster(filename, varname = var) %>%
-        crop(AOI)
-      
-      ave <- ave + raster
-      
-    }
-    raster <- ave / 8
-  }
-  
-  if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
-    raster <- raster - 273.15
-  }
-  
-  return (raster)
-}
+# mapGLDAS <- function(var, month, date) {
+#   
+#   if (var %in% c("Tair_f_inst", "Tmin")) {
+#     max <- -1000
+#     min <- 1000
+#     for (hour in seq(from = 0, to = 21, by = 3)) {
+#       
+#       date <- ifelse(hour < 9, date + 1, date)
+#       
+#       char_date <- ifelse(date < 10, paste0("0", date), date)
+#       char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+#       filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
+#       AOI = aoi_get(state = "CO")
+#       
+#       raster <- raster(filename, varname = "Tair_f_inst") %>%
+#         crop(AOI)
+#       
+#       max <- max(raster, max)
+#       min <- min(raster, min)
+#     }
+#     
+#     if (var == "Tmin") {
+#       raster <- min
+#     } else {
+#       raster <- max
+#     }
+#   } else {
+#     ave <- 0
+#     for (hour in seq(from = 0, to = 21, by = 3)) {
+#       
+#       date <- ifelse(hour < 9, date + 1, date)
+#       
+#       char_date <- ifelse(date < 10, paste0("0", date), date)
+#       char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+#       filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_date, ".", char_hour, "00.021.nc4.SUB.nc4")
+#       AOI = aoi_get(state = "CO")
+#       
+#       raster <- raster(filename, varname = var) %>%
+#         crop(AOI)
+#       
+#       ave <- ave + raster
+#       
+#     }
+#     raster <- ave / 8
+#   }
+#   
+#   if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) {
+#     raster <- raster - 273.15
+#   }
+#   
+#   return (raster)
+# }
 
+
+
+var = "Tair_f_inst"
+month = 1
+# -120.9, 33.5, -115, 41.2
+
+mapGLDAS <- function(var, month) {
+  
+  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  
+  offset <- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+  
+  roundUp <- ceiling(offset / 3)
+  
+  fullDf <- data.frame(Date = rep(days, each = 8), 
+                       Hour = seq(from = roundUp * 3 - offset, to = 21 + (roundUp * 3 - offset), by = 3))
+  
+  fullDf <- fullDf[1 : (31 * 8 - roundUp), ]
+  
+  fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+  
+  
+  for (i in 1:nrow(stations)) {
+    station <- stations$Station[i]
+    lat <- stations$Lat[i]
+    lon <- stations$Lon[i]
+  
+    array <- c()
+    for (day in 1:31) {
+      for (hour in seq(from = 0, to = 21, by = 3)) {
+        char_day <- ifelse(day < 10, paste0("0", day), day)
+        char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
+        
+        filename <- paste0("Data/GLDAS_CAmap", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        
+        # filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        nc <- nc_open(filename)
+        
+        ncvar <- ncvar_get(nc, varid = var)
+        
+        lonInd <- match.closest(lon, nc$dim$lon$vals)
+        lat <- sort(nc$dim$lat$vals)[match.closest(lat, sort(nc$dim$lat$vals))]
+        latInd <- match(lat, nc$dim$lat$vals)
+        
+        val <- ncvar[lonInd, latInd]
+        
+        if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) { # K to C
+          val <- val - 273.15
+        } else if (var == "Rainf_f_tavg") {  # kg/m^2 s to mm
+          val <- val * 60 * 60 * 3
+        } else if (var == "SnowDepth_inst") { # m to mm
+          val <- val * 1000
+        } else if (var == "SoilMoi40_100cm_inst") { # kg/m^3 to % (Soil density =~ 1.6 g/cm^3 = 1600 kg/m^3. The measurement is over 60 cm)
+          val <- 1600 / val / 0.6
+        }
+        array <- c(array, val)
+      }
+    }
+    array <- array[(1 + roundUp) : length(array)] %>%
+      as.data.frame() %>% set_colnames(station)
+    fullDf <- cbind(fullDf, array)
+  }
+  
+  return (fullDf)
+}
