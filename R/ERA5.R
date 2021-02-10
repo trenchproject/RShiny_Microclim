@@ -11,6 +11,32 @@
 # write.csv(one_loc, paste0(loc, "_ERA.csv"), row.names = F)
 
 
+# db <- brick("ERA_US.grib")
+# 
+# west <- raster::crop(db, extent(-124.05, -114, 33.4, 47.15))
+# WA <- raster::crop(db, extent(-119, -118, 46, 48))
+# CA <- raster::crop(db, extent(-121, -115, 33.5, 41.2))
+# central <- raster::crop(db, extent(-105, -104, 40, 42))
+# east <- raster::crop(db, extent(-68, -66.85, 18.05, 20.15))
+# 
+# CADf <- rasterToPoints(CA) %>% as.data.frame()
+# WADf <- rasterToPoints(WA) %>% as.data.frame()
+# westDf <- rasterToPoints(west) %>% as.data.frame()
+# centralDf <- rasterToPoints(central) %>% as.data.frame()
+# eastDf <- rasterToPoints(east) %>% as.data.frame()
+# 
+# df <- rasterToPoints(db) %>% as.data.frame()
+# 
+# process <- function (df, lon, lat, locName) {
+#   lon <- sort(df$x)[match.closest(lon, sort(df$x))]
+#   lat <- sort(df$y)[match.closest(lat, sort(df$y))]
+#   one_loc <- df[df$x == lon & df$y == lat, ]
+#   print(one_loc[1, c(1:10)])
+#   
+#   write.csv(one_loc, paste0(locName, "_ERA.csv"), row.names = F)
+# }
+
+
 # Variables
 
 # 1. 10m_u_component_of_wind (m/s)
@@ -19,7 +45,7 @@
 # 4. skin_temperature (surface temperature)
 # 5. Snow depth: Instantaneous grib-box average of the snow thickness on the ground (excluding snow on canopy).
 # 6. soil_temperature_level_3 (28-100cm)
-# 7. surface_net_solar_radiation (J/m^2)
+# 7. surface_solar_radiation_downwards (J/m^2)
 # 8. total precipitation (m)
 
 # 9. tmin (for the map)
@@ -31,6 +57,7 @@ library(raster)
 library(magrittr)
 library(MALDIquant)
 library(data.table)
+
 
 locs <- data.frame(row.names = c("WA", "CO", "PR"), 
                    "lon" = c(-118.5657, -104.7552, -66.98880), 
@@ -153,6 +180,8 @@ grabERA <- function(varIndex, loc, month) {
 mapERA <- function(varIndex, month) {
   db <- brick("ERA_CAmap.grib") 
   # 4464 layers (3 variables * 2 months * 31 days * 24 hours)
+  
+  varIndex <- ifelse(varIndex == 3, 1, ifelse(varIndex == 4, 2, 3))
   
   df <- rasterToPoints(db) %>% as.data.frame()
   

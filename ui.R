@@ -180,8 +180,8 @@ shinyUI <- fluidPage(id = "page",
                      
                      div(
                        id = "methods-wrapper",
-                       uiOutput("mapMethodsOutput1"),
-                       uiOutput("mapMethodsOutput2")
+                       uiOutput("mapMethodsOutput1")
+                       # uiOutput("mapMethodsOutput2")
                      )
                    ),
                    

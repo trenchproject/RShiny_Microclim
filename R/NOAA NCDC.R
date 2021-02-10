@@ -86,7 +86,7 @@ grabNOAA <- function(var, loc, month) {
 
 
 # CO NUNN 7 NNE GHCND:USW00094074 (40.8066, -104.7552)
-list <- ncdc_stations(extent = c(40.7, -104.8, 40.9, -104.7), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+# list <- ncdc_stations(extent = c(40.7, -104.8, 40.9, -104.7), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
 
 mapNOAA <- function(var, month) {

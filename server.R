@@ -74,7 +74,7 @@ variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m 
 varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "SCAN" = c(18, 3, 22, 7, 10, 5, 6, 17, NA, 4),
                      "ERA5" = c(4, 3, 6, 7, 1, 8, NA, NA, 5, 9),
-                     "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "Lwnet_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "SnowDepth_inst", "Tmin"),
+                     "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "SWdown_f_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "SnowDepth_inst", "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, NA, "tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
@@ -357,21 +357,20 @@ shinyServer <- function(input, output, session) {
   output$mapMethodsOutput1 <- renderUI({
     # USCRN, NOAA, 
     # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods1", "Dataset 1", choices = methods, selected = methods[1], 
+    pickerInput("mapMethods", "Dataset to compare", choices = methods, selected = methods[1], 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
-  output$mapMethodsOutput2 <- renderUI({
-    # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods2", "Dataset 2", choices = methods, selected = methods[2], 
-                options = list(style = "btn-success", `actions-box` = TRUE))
-  })
+  # output$mapMethodsOutput2 <- renderUI({
+  #   # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
+  #   pickerInput("mapMethods2", "Dataset 2", choices = methods, selected = methods[2], 
+  #               options = list(style = "btn-success", `actions-box` = TRUE))
+  # })
 
   
   output$mymap <- renderLeaflet({
     data <- read.delim("Data/SCANmap/SCAN_AshValley.txt", sep = ",")
-    
-    
+      
     stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
     
     for (i in nrow(stations)) {
@@ -380,8 +379,33 @@ shinyServer <- function(input, output, session) {
       lat <- stations$Lat[i]
       lon <- stations$Lon[i]
       
-      grabMapData() # working
     }
+    
+    # SCANmapDf <- 
+    
+    
+    if (input$mapMethods %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
+      SCANmapDf$Date <- as.Date(df1$Date)
+      df1 <- aggregate(SCANmapDf$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
+      df2$Date <- as.Date(df2$Date) 
+      df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
+    }
+    
+    colnames(df1)[colnames(df1) == "Data"] <- "Data1"
+    colnames(df2)[colnames(df2) == "Data"] <- "Data2"
+    
+    setDT(df1)
+    setDT(df2)
+    
+    merge <- df1[df2, on = "Date"] %>% 
+      na.omit() %>% 
+      as.data.frame()
+    
+    
+    inputVar <- varsDf[input$mapVar, input$mapMethods1]
+    mapDf <- grabMapData(input$mapMethods, inputVar, input$month)
+    
+    
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addCircleMarkers(data = stations, lng = ~Lon, lat = ~Lat,

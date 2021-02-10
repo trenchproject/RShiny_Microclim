@@ -1,5 +1,6 @@
 # GLDAS 3-hourly
 # Extent: -119,18,-66,48
+# Extent (CA included): -124,18,-66,48
 
 # https://disc.gsfc.nasa.gov/data-access
 # wget for Windows methods for download
@@ -11,8 +12,8 @@
 # }
 # or, https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_3H_2.1/summary?keywords=GLDAS
 # "time_bnds"     
-# "Lwnet_tavg" Net longwave radiation flux (W m-2) 
 # "AvgSurfT_inst" Average surface skin temperature (K) 
+# "SWdown_f_tavg" Downward shortwave radiation flux (W m-2)
 # "SnowDepth_inst" Snow depth (m) 
 # "SoilTMP40_100cm_inst" Soil temperature (40-100 cm underground) (K)
 # "SoilTMP100_200cm_inst" Soil temperature (100-200 cm underground) (K)
