@@ -675,7 +675,7 @@ shinyServer <- function(input, output, session) {
   
   # Dataset methods selector
   output$methodsOutput3 <- renderUI({
-    pickerInput("methods3", "Datasets", choices = methods[-8], selected = methods[c(1, 2)], multiple = T,
+    pickerInput("methods3", "Datasets", choices = methods[-8], selected = methods[c(1)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -742,7 +742,6 @@ shinyServer <- function(input, output, session) {
       else {
         if (input$loc3 != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) { 
           radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
-          radiation$Data[radiation$Data<0] <- 0 # No negative
         }
       }
       
@@ -758,22 +757,6 @@ shinyServer <- function(input, output, session) {
       p <- p %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line = list(color = colors[i]))
     } 
 
-    
-    # Adding Tmin when Air temperature is selected
-    # if (input$var == "Air temperature") {
-    #   i = 0
-    #   for (method in input$methods3) {
-    #     i = i + 1
-    #     inputVar <- varsDf["Tmin", method]
-    #     if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
-    #       if (input$loc != "PR" || !method == "GRIDMET") { # gridMET doesn't have data for PR
-    #         df <- grabAnyData(method, inputVar, input$loc, input$season)
-    #         p <- p %>%
-    #           add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
-    #       }
-    #     }
-    #   }
-    # }
     
     p
     
