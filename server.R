@@ -10,7 +10,7 @@ source("R/SNODAS.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
-# library(TrenchR)
+library(TrenchR)
 
 grabAnyData <- function(methods, inputVar, loc, month) {
   if (methods == "SCAN") {
@@ -53,7 +53,9 @@ grabAnyData <- function(methods, inputVar, loc, month) {
 # }
 
 grabMapData <- function(methods, inputVar, month) {
-  if (methods == "ERA5") {
+  if (methods == "SCAN") {
+    data <- mapSCAN(inputVar, month)
+  } else if (methods == "ERA5") {
     data <- mapERA(inputVar, month)
   } else if (methods == "GLDAS") {
     data <- mapGLDAS(inputVar, month)
@@ -354,10 +356,10 @@ shinyServer <- function(input, output, session) {
   
   # -109, -102, 37, 41
   
-  output$mapMethodsOutput1 <- renderUI({
+  output$mapMethodsOutput <- renderUI({
     # USCRN, NOAA, 
     # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods", "Dataset to compare", choices = methods, selected = methods[1], 
+    pickerInput("mapMethods", "Dataset to compare", choices = methods[-1], selected = methods[-1][1], # all the dataset except for SCAN
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -368,53 +370,152 @@ shinyServer <- function(input, output, session) {
   # })
 
   
-  output$mymap <- renderLeaflet({
-    data <- read.delim("Data/SCANmap/SCAN_AshValley.txt", sep = ",")
-      
+  statsTable <- reactive({
+    
+    validate(
+      need(input$mapMethods, "")
+    )
+    
     stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
     
-    for (i in nrow(stations)) {
-      station <- stations$Station[i]
-      data <- read.delim(paste0("Data/SCANmap/SCAN_", station, ".txt"), sep = ",")
-      lat <- stations$Lat[i]
-      lon <- stations$Lon[i]
+
+    SCAN <- grabMapData("SCAN", varsDf[input$mapVar, "SCAN"], input$month)
+    # SCAN <- grabMapData("SCAN", 3, 1)
+    if (input$mapMethods %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
+      SCAN$Date <- as.Date(SCAN$Date)
+      SCAN <- aggregate(list(SCAN[, c(-1, -2)]), by = list(SCAN$Date), mean) %>% # first two columns are date and hour
+        set_colnames(c("Date", stations$Station))
       
     }
     
-    # SCANmapDf <- 
+    inputVar <- varsDf[input$mapVar, input$mapMethods]
     
-    
-    if (input$mapMethods %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
-      SCANmapDf$Date <- as.Date(df1$Date)
-      df1 <- aggregate(SCANmapDf$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
-      df2$Date <- as.Date(df2$Date) 
-      df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
-    }
-    
-    colnames(df1)[colnames(df1) == "Data"] <- "Data1"
-    colnames(df2)[colnames(df2) == "Data"] <- "Data2"
-    
-    setDT(df1)
-    setDT(df2)
-    
-    merge <- df1[df2, on = "Date"] %>% 
-      na.omit() %>% 
-      as.data.frame()
-    
-    
-    inputVar <- varsDf[input$mapVar, input$mapMethods1]
     mapDf <- grabMapData(input$mapMethods, inputVar, input$month)
+    # mapDf <- grabMapData("ERA5", 3, 1)
     
+    stats <- cbind(stations, 
+                   "Bias" = NA,
+                   "RMSE" = NA)
+    for (station in stations$Station) {
+      merged <- merge(SCAN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date") %>%
+        set_colnames(c("Date", "Data1", "Data2")) %>%
+        na.omit()
+
+      bias <- abs((sum(merged$Data1) - sum(merged$Data2)) / nrow(merged))
+      stats[stats$Station == station, "Bias"] <- bias
+      
+      RMSE <- sum((merged$Data1 - merged$Data2)^2) / nrow(merged) # Root mean square error
+      stats[stats$Station == station, "RMSE"] <- RMSE
+    }
+
+    stats
+  })
+  
+  output$mymap <- renderLeaflet({
+    
+    validate(
+      need(statsTable(), "")
+    )
+  
+    stats <- statsTable()
+    
+    maxRawBias <- max(stats$Bias)
+    
+    maxRawRMSE <- max(stats$RMSE)
+    
+    roundUp <- function (percentile, category = "B") {
+      if (category == "B") {
+        return (ceiling(maxRawBias * percentile * 10) / 10)
+      } else if (category == "R") {
+        return (ceiling(maxRawRMSE * percentile * 10) / 10)
+      }
+    }
+
+    stats$BiasCat <- cut(stats$Bias,
+                      c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
+                      labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
+
+    biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
+    
+    
+    stats$RMSECat <- cut(stats$RMSE,
+                         c(0, roundUp(0.25, "R"), roundUp(0.5, "R"), roundUp(0.75, "R"), roundUp(1, "R")), include.lowest = T,
+                         labels = c(paste0("0 - ", roundUp(0.25, "R")), paste0(roundUp(0.25, "R"), " - ", roundUp(0.5, "R")), paste0(roundUp(0.5, "R"), " - ", roundUp(0.75, "R")), paste0(roundUp(0.75, "R"), " - ", roundUp(1, "R"))))
+    
+    rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
     
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      addCircleMarkers(data = stations, lng = ~Lon, lat = ~Lat,
-                       color = "navy",
+      addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
+                       color = ~biasCol(stats$BiasCat),
+                       stroke = FALSE, 
+                       radius = 7, 
+                       fillOpacity = 1, 
+                       group = "Bias",
+                       popup = paste0("Bias:", round(stats$Bias, digits = 2))) %>%
+      addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
+                       color = ~rmseCol(stats$RMSECat),
                        stroke = FALSE,
-                       fillOpacity = 0.5)
+                       radius = 7, 
+                       fillOpacity = 1, 
+                       group = "RMSE",
+                       popup = paste0("RMSE:", round(stats$RMSE, digits = 2))) %>%
+      addLayersControl(baseGroups = c("Bias", "RMSE")) %>%
+      addLegend(pal = biasCol,
+                opacity = 1,
+                values = stats$BiasCat,
+                position = "bottomright",
+                title = "Bias")
   })
   
-
+  observeEvent(input$mymap_groups, {
+    
+    stats <- statsTable()
+    
+    maxRawBias <- max(stats$Bias)
+    
+    maxRawRMSE <- max(stats$RMSE)
+    
+    roundUp <- function (percentile, category = "B") {
+      if (category == "B") {
+        return (ceiling(maxRawBias * percentile * 10) / 10)
+      } else if (category == "R") {
+        return (ceiling(maxRawRMSE * percentile * 10) / 10)
+      }
+    }
+    
+    stats$BiasCat <- cut(stats$Bias,
+                         c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
+                         labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
+    
+    biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
+    
+    
+    stats$RMSECat <- cut(stats$RMSE,
+                         c(0, roundUp(0.25, "R"), roundUp(0.5, "R"), roundUp(0.75, "R"), roundUp(1, "R")), include.lowest = T,
+                         labels = c(paste0("0 - ", roundUp(0.25, "R")), paste0(roundUp(0.25, "R"), " - ", roundUp(0.5, "R")), paste0(roundUp(0.5, "R"), " - ", roundUp(0.75, "R")), paste0(roundUp(0.75, "R"), " - ", roundUp(1, "R"))))
+    
+    rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
+    
+    
+    if (input$mymap_groups == "Bias") {
+      leafletProxy('mymap') %>% clearControls() %>%
+        addLegend(pal = biasCol, 
+                  opacity = 1,
+                  values = stats$BiasCat,
+                  group = "Bias legend",
+                  position = "bottomright",
+                  title = "Bias")
+    } else { # RMSE
+      leafletProxy('mymap') %>% clearControls() %>%
+        addLegend(pal = rmseCol,
+                  opacity = 1,
+                  values = stats$RMSECat,
+                  group = "RMSE legend",
+                  position = "bottomright",
+                  title = "RMSE")
+    }
+  })
   # rasterData1 <- reactive({
   #   validate(
   #     need(input$mapMethods1, "")
@@ -527,47 +628,47 @@ shinyServer <- function(input, output, session) {
   #   }
   # })
 
-  observeEvent(input$mymap_groups, {
-    
-    raster1 <- rasterData1()
-    raster2 <- rasterData2()
-    
-    if (input$mapVar == "Wind speed") {
-      unit <- "(m/s)"
-    } else if (input$mapVar == "Radiation") {
-      unit <- HTML("(W/m<sup>2</sup>)")
-    } else {
-      unit <- "(°C)"
-    }
-    
-    min <- min(minValue(raster1), minValue(raster2))
-    max <- max(maxValue(raster1), maxValue(raster2))
-    
-    pal <- colorNumeric(palette = viridis(5),
-                        domain = c(min, max),
-                        na.color = "transparent")
-    
-    paldif <- colorNumeric(palette = viridis(5),
-                           domain = c(minValue(rasterdif()), maxValue(rasterdif())),
-                           na.color = "transparent")
-    
-    if (input$mymap_groups == "Difference") {
-      leafletProxy('mymap') %>% clearControls() %>%
-        addLegend(pal = paldif, 
-                  opacity = 1,
-                  values = c(minValue(rasterdif()), maxValue(rasterdif())),
-                  group = "Difference",
-                  position = "bottomright",
-                  title = paste("Difference", unit))
-    } else {
-      leafletProxy('mymap') %>% clearControls() %>%
-        addLegend(pal = pal,
-                  opacity = 1,
-                  values = c(min, max),
-                  position = "bottomright",
-                  title = paste(input$mapVar, unit))
-    }
-  })
+  # observeEvent(input$mymap_groups, {
+  #   
+  #   raster1 <- rasterData1()
+  #   raster2 <- rasterData2()
+  #   
+  #   if (input$mapVar == "Wind speed") {
+  #     unit <- "(m/s)"
+  #   } else if (input$mapVar == "Radiation") {
+  #     unit <- HTML("(W/m<sup>2</sup>)")
+  #   } else {
+  #     unit <- "(°C)"
+  #   }
+  #   
+  #   min <- min(minValue(raster1), minValue(raster2))
+  #   max <- max(maxValue(raster1), maxValue(raster2))
+  #   
+  #   pal <- colorNumeric(palette = viridis(5),
+  #                       domain = c(min, max),
+  #                       na.color = "transparent")
+  #   
+  #   paldif <- colorNumeric(palette = viridis(5),
+  #                          domain = c(minValue(rasterdif()), maxValue(rasterdif())),
+  #                          na.color = "transparent")
+  #   
+  #   if (input$mymap_groups == "Difference") {
+  #     leafletProxy('mymap') %>% clearControls() %>%
+  #       addLegend(pal = paldif, 
+  #                 opacity = 1,
+  #                 values = c(minValue(rasterdif()), maxValue(rasterdif())),
+  #                 group = "Difference",
+  #                 position = "bottomright",
+  #                 title = paste("Difference", unit))
+  #   } else {
+  #     leafletProxy('mymap') %>% clearControls() %>%
+  #       addLegend(pal = pal,
+  #                 opacity = 1,
+  #                 values = c(min, max),
+  #                 position = "bottomright",
+  #                 title = paste(input$mapVar, unit))
+  #   }
+  # })
   
   
   # ---------------------- operative temperature -------------------------------
