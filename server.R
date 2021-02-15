@@ -654,9 +654,11 @@ shinyServer <- function(input, output, session) {
       }
       
       p <- p %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line = list(color = colors[i]))
+      
+      
+
     } 
 
-    
     p
     
   })

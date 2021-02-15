@@ -83,8 +83,8 @@ grabERA <- function(varIndex, loc, month) {
   
   if (varIndex %in% c(3, 4, 6)) { # K to C
     vals <- vals - 273.15
-  } else if (varIndex == 7) { # J/m^2 to W/m^2
-    vals <- vals / 3600
+  } else if (varIndex == 7) { # J/m^2 to W/m^2 for 9-hourly accumulation
+    vals <- vals / 32400
   } else if (varIndex %in% c(8, 5)) { # m to mm
     vals <- vals * 1000
     vals[vals < 0] <- 0
