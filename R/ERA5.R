@@ -47,7 +47,6 @@
 # 6. soil_temperature_level_3 (28-100cm)
 # 7. surface_solar_radiation_downwards (J/m^2)
 # 8. total precipitation (m)
-
 # 9. tmin (for the map)
 
 
@@ -177,6 +176,7 @@ grabERA <- function(varIndex, loc, month) {
 # 2. skin_temperature (surface temperature)
 # 3. surface_net_solar_radiation (J/m^2)
 
+# mapERA(3, 1)
 mapERA <- function(varIndex, month) {
   db <- brick("ERA_CAmap.grib") 
   # 4464 layers (3 variables * 2 months * 31 days * 24 hours)
@@ -192,9 +192,15 @@ mapERA <- function(varIndex, month) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  fullDf <- data.frame(Date = rep(days, each = 24)[1: (31 * 24 - offset)])
+  offset = 8
+
+  fullDf <- data.frame(Date = rep(days, each = 24),
+                       Hour = 0:23)
+  fullDf <- fullDf[1: (31 * 24 - offset), ]
+  fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
   for (i in 1:nrow(stations)) {
+    
     station <- stations$Station[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
@@ -208,7 +214,6 @@ mapERA <- function(varIndex, month) {
       vals <- c(vals, one_loc[, 2 + varIndex + i * 3])  # adding 2 because the first two columns are x and y. After that, the selected variable shows up every 3 columns.
     }
 
-    offset = 8
     # The data for July comes after the data for January in the data frame. Each month has 24 hours and 31 days of data.
     if (month == 1) {
       vals <- vals[(1 + offset) : 744]

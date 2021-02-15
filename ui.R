@@ -24,7 +24,7 @@ variablesTable <- c("Air temperature" = "AirTemp",
                     "Soil moisture" = "SoilMoist", 
                     "Snow Depth" = "Snow")
 
-variables2 <- c("Maximum air temperature" = "Air temperature", "Minimum air temperature" = "Tmin", "Average surface temperature" = "Surface temperature", "Daily average radiation" = "Radiation") 
+variables2 <- c("Air temperature", "Surface temperature", "Radiation") 
                 #"Average soil temperature (1 m deep)" = "Soil temperature (1 m deep)", "Daily average radiation" = "Radiation", "Average wind speed" = "Wind speed")
 shinyUI <- fluidPage(id = "page",
   use_cicerone(),
@@ -170,8 +170,8 @@ shinyUI <- fluidPage(id = "page",
                                    options = list(style = "btn-success")),
                      ),
                      fluidRow(id = "mondate-wrapper",
-                       column(6, radioGroupButtons("month", "Month", choices = c("January" = 1, "July" = 7), selected = 7, status = "danger", size = "sm")),
-                       column(6, radioGroupButtons("date", "Date", choices = 1:7, selected = 1, status = "danger", size = "sm"))
+                       column(6, radioGroupButtons("month", "Month", choices = c("January" = 1, "July" = 7), selected = 7, status = "danger", size = "sm"))
+                       # column(6, radioGroupButtons("date", "Date", choices = 1:7, selected = 1, status = "danger", size = "sm"))
                      ),
                      
                      # radioGroupButtons("hour", "Hour", choices = 0:23, selected = 0, status = "danger", size = "sm"),
@@ -180,7 +180,7 @@ shinyUI <- fluidPage(id = "page",
                      
                      div(
                        id = "methods-wrapper",
-                       uiOutput("mapMethodsOutput1")
+                       uiOutput("mapMethodsOutput")
                        # uiOutput("mapMethodsOutput2")
                      )
                    ),

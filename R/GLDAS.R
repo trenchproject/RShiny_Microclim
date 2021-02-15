@@ -212,9 +212,6 @@ grabGLDAS <- function(var, loc, month) {
 # }
 
 
-
-var = "Tair_f_inst"
-month = 1
 # -120.9, 33.5, -115, 41.2
 
 mapGLDAS <- function(var, month) {
@@ -224,6 +221,11 @@ mapGLDAS <- function(var, month) {
   offset <- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
   
   roundUp <- ceiling(offset / 3)
+  
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
   
   fullDf <- data.frame(Date = rep(days, each = 8), 
                        Hour = seq(from = roundUp * 3 - offset, to = 21 + (roundUp * 3 - offset), by = 3))
