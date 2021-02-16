@@ -22,11 +22,11 @@
 # }
 
 
-library(RNCEP)
+#library(RNCEP)
 library(elevatr)
 library(devtools)
 library(NicheMapR)
-library(microclima)
+#library(microclima)
 
 
 # Variables
