@@ -459,6 +459,9 @@ shinyServer <- function(input, output, session) {
     stats
   })
   
+  
+  output$coefTable <-
+  
   output$mymap <- renderLeaflet({
     
     validate(

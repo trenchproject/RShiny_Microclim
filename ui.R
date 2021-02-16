@@ -10,7 +10,7 @@ library(viridis)
 library(shinyBS)
 library(shinyjs)
 library(cicerone)
-library(DataExplorer)
+# library(DataExplorer)
 library(DT)
 
 variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
@@ -131,6 +131,8 @@ shinyUI <- fluidPage(id = "page",
                      htmlOutput("stats"),
                      
                      uiOutput("statsTable")
+                     
+                     # uiOutput("coeftable")
                    ),
                    
                    hr(),
