@@ -65,22 +65,6 @@ grabGRID <- function(param, loc, month) {
 }
 
 
-# mapGRID <- function(param, month, date) {
-#   
-#   AOI = aoi_get(state = "CO")
-#   char_date <- ifelse(date < 10, paste0("0", date), date)
-# 
-#   p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-", char_date), endDate = paste0("2017-0", month, "-", char_date))
-#   r = raster::brick(p)[[1]]
-#   
-#   if (param %in% c("tmin", "tmax")) {
-#     r <- r - 273.15
-#   }
-#   
-#   return(r)
-# }
-
-
 mapGRID <- function(param, month) {
   
   AOI = aoi_get(state = "CA")
