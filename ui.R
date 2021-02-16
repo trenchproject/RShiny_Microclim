@@ -11,12 +11,13 @@ library(shinyBS)
 library(shinyjs)
 library(cicerone)
 library(DataExplorer)
+library(DT)
 
 variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
 variablesTable <- c("Air temperature" = "AirTemp", 
                     "Surface temperature" = "SurfTemp", 
-                    "Soil temperature (1 m deep)" = "SoilTemp", 
+                    "Soil temperature" = "SoilTemp", 
                     "Radiation", 
                     "Wind speed" = "Wind", 
                     "Precipitation", 
@@ -36,7 +37,6 @@ shinyUI <- fluidPage(id = "page",
   title = "Microclim",
   titlePanel("Visual comparison of microclimate datasets"),
   hr(),
-  
   includeHTML("intro.html"),
   
   hr(),
@@ -49,18 +49,21 @@ shinyUI <- fluidPage(id = "page",
       tabPanel("Data selection",
         br(),
         fluidRow(
-          column(2, awesomeCheckboxGroup("spaCov", "Spatial coverage", choices = c("US", "Global"), selected = "US")),
+          column(2, radioButtons("spaCov", "Area of interest", choices = c("US", "Outside of US"), selected = "US")),
           column(2, numericInput("tempCov_start", "Beginning of temporal coverage", min = 1979, max = 2021, value = 2017)),
           column(2, numericInput("tempCov_end", "End of temporal coverage", min = 1979, max = 2021, value = 2017)),
           
           # column(6, sliderInput("tempCov", "Temporal coverage", min = 1979, max = 2021, value = c(2017, 2017))),
-          column(2, awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Daily", "3-hourly", "Hourly", "Sub-hourly"), selected = "")),
-          column(3, pickerInput("varTable", "Variables", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables")))
+          column(2, awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Daily", "3-hourly", "Hourly", "Other" = "One day each month"), selected = c("Daily", "3-hourly", "Hourly", "One day each month"))),
+          column(3, pickerInput("varTable", "Variables of interest", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables",
+                                                                                                                               style = "btn-danger")))
         ),
         
         p(strong("Suitable datasets")),
-        htmlOutput("datasetOutput")
+        # htmlOutput("datasetOutput"),
         
+        DT::dataTableOutput("mytable")
+
       ),
       
       tabPanel("Temporal comparison",
@@ -143,8 +146,7 @@ shinyUI <- fluidPage(id = "page",
                    sidebarPanel(
                      h4("Spatial comparison"),
                      p("Select a variable you are interested in and some datasets that contain that variable. 
-                       The map of Colorado will show how much the data can differ spatially depending on the dataset for a given time.
-                       Loading data can take around 45 seconds."),
+                       The map of Colorado will show how much the data can differ spatially depending on the dataset for a given time."),
                      
                      actionBttn(
                        inputId = "reset2",

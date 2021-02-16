@@ -10,7 +10,7 @@ source("R/SNODAS.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
-library(TrenchR)
+# library(TrenchR)
 
 grabAnyData <- function(methods, inputVar, loc, month) {
   if (methods == "SCAN") {
@@ -118,30 +118,73 @@ shinyServer <- function(input, output, session) {
   #___________________________________________________________________________________
   
   
-  output$datasetOutput <- renderText({
+  # output$datasetOutput <- renderText({
+  #   
+  # 
+  #   
+  #   dataTable <- readxl::read_xlsx("DatasetTable.xlsx") %>% as.data.frame() %>%
+  #     filter(TempCovStart <= input$tempCov_start | is.na(TempCovStart)) %>%
+  #     filter(TempCovEnd >= input$tempCov_end | is.na(TempCovEnd)) %>%
+  #     filter(TempRes %in% input$tempRes)
+  #   
+  #   if (input$spaCov == "Outside of US") {
+  #     dataTable <- filter(dataTable, SpatCov != "US")
+  #   }
+  #   
+  #   for (var in input$varTable) {
+  #     dataTable <- dataTable[dataTable[, var] == "T", ]
+  #   }
+  #   
+  #   text <- "No applicable dataset"
+  #   if (nrow(dataTable) != 0) {
+  #     text <- ""
+  #     for (i in 1 : nrow(dataTable)) {
+  #       text <- paste0(text, dataTable$Dataset[i], ": ", dataTable$Text[i], "<br>")
+  #     }
+  #   }
+  #   
+  #   HTML(text)
+  # })
+
+  
+  output$mytable <- DT::renderDataTable({
     
     validate(
-      need(input$spaCov, "Select spatial coverage"),
       need(input$tempRes, "Select temporal resolution")
     )
     
     dataTable <- readxl::read_xlsx("DatasetTable.xlsx") %>% as.data.frame() %>%
       filter(TempCovStart <= input$tempCov_start | is.na(TempCovStart)) %>%
       filter(TempCovEnd >= input$tempCov_end | is.na(TempCovEnd)) %>%
-      filter(SpatCov %in% input$spaCov & TempRes %in% input$tempRes)
+      filter(TempRes %in% input$tempRes)
+    
+    if (input$spaCov == "Outside of US") {
+      dataTable <- filter(dataTable, SpatCov != "US")
+    }
     
     for (var in input$varTable) {
       dataTable <- dataTable[dataTable[, var] == "T", ]
     }
     
-    text <- ""
-    for (i in 1 : nrow(dataTable)) {
-      text <- paste0(text, dataTable$Dataset[i], ": ", dataTable$Text[i], "<br>")
+    if (nrow(dataTable) > 0) {
+      dataTable$TempCovRange <- paste0(dataTable$TempCovStart, "-", dataTable$TempCovEnd)
+    } else {
+      dataTable <- cbind(dataTable, data.frame("TempCovRange" = character(0)))
     }
+    dataTable[dataTable == "NA-NA"] <- "Varies"
+    dataTable[dataTable == "T"] <- as.character(icon("ok", lib = "glyphicon"))
+    dataTable[dataTable == "F"] <- as.character(icon("remove", lib = "glyphicon"))
     
-    HTML(text)
+    dataTable <- dataTable[, c("Dataset", "TempCovRange", "TempRes", "SpatCov", "SpatRes", colnames(dataTable)[7:15])] %>%
+      set_colnames(c("Dataset", "Temporal coverage", "Temporal resolution", "Spatial coverage", "Spatial resolution", "Air temp", "Surface temp", "Soil temp", "Radiation", "Wind speed", "Precipitation", "Humidity", "Soil moist", "Snow depth"))
+    
+    datatable(dataTable, escape = F)
+    
+
+
   })
-  
+
+
   
   #___________________________________________________________________________________
   # Temporal comparison
@@ -395,7 +438,8 @@ shinyServer <- function(input, output, session) {
     
     stats <- cbind(stations, 
                    "Bias" = NA,
-                   "RMSE" = NA)
+                   "RMSE" = NA,
+                   "PCC" = NA)
     for (station in stations$Station) {
       merged <- merge(SCAN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date") %>%
         set_colnames(c("Date", "Data1", "Data2")) %>%
@@ -406,6 +450,10 @@ shinyServer <- function(input, output, session) {
       
       RMSE <- sum((merged$Data1 - merged$Data2)^2) / nrow(merged) # Root mean square error
       stats[stats$Station == station, "RMSE"] <- RMSE
+      
+      PCC <- cor.test(x = merged$Data1, y = merged$Data2, method = "pearson") # Pearson correlation coefficient
+      stats[stats$Station == station, "PCC"] <- PCC
+      
     }
 
     stats
@@ -423,11 +471,16 @@ shinyServer <- function(input, output, session) {
     
     maxRawRMSE <- max(stats$RMSE)
     
+    maxRawPCC <- max(stats$PCC)
+    
+    
     roundUp <- function (percentile, category = "B") {
       if (category == "B") {
         return (ceiling(maxRawBias * percentile * 10) / 10)
       } else if (category == "R") {
         return (ceiling(maxRawRMSE * percentile * 10) / 10)
+      } else if (category == "P") {
+        return (ceiling(maxRawPCC * percentile * 10) / 10)
       }
     }
 
@@ -444,6 +497,13 @@ shinyServer <- function(input, output, session) {
     
     rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
     
+    
+    stats$PCCCat <- cut(stats$PCC,
+                         c(0, roundUp(0.25, "P"), roundUp(0.5, "P"), roundUp(0.75, "P"), roundUp(1, "P")), include.lowest = T,
+                         labels = c(paste0("0 - ", roundUp(0.25, "P")), paste0(roundUp(0.25, "P"), " - ", roundUp(0.5, "P")), paste0(roundUp(0.5, "P"), " - ", roundUp(0.75, "P")), paste0(roundUp(0.75, "P"), " - ", roundUp(1, "P"))))
+    
+    pccCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$PCCCat)
+    
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
@@ -452,15 +512,22 @@ shinyServer <- function(input, output, session) {
                        radius = 7, 
                        fillOpacity = 1, 
                        group = "Bias",
-                       popup = paste0("Bias:", round(stats$Bias, digits = 2))) %>%
+                       popup = paste0(stats$Station, ": ", round(stats$Bias, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~rmseCol(stats$RMSECat),
                        stroke = FALSE,
                        radius = 7, 
                        fillOpacity = 1, 
                        group = "RMSE",
-                       popup = paste0("RMSE:", round(stats$RMSE, digits = 2))) %>%
-      addLayersControl(baseGroups = c("Bias", "RMSE")) %>%
+                       popup = paste0(stats$Station, ": ", round(stats$RMSE, digits = 2))) %>%
+      addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
+                       color = ~pccCol(stats$PCCCat),
+                       stroke = FALSE,
+                       radius = 7, 
+                       fillOpacity = 1, 
+                       group = "PCC",
+                       popup = paste0(stats$Station, ": ", round(stats$PCC, digits = 2))) %>%
+      addLayersControl(baseGroups = c("Bias", "RMSE", "PCC")) %>%
       addLegend(pal = biasCol,
                 opacity = 1,
                 values = stats$BiasCat,
@@ -476,11 +543,15 @@ shinyServer <- function(input, output, session) {
     
     maxRawRMSE <- max(stats$RMSE)
     
+    maxRawPCC <- max(stats$PCC)
+    
     roundUp <- function (percentile, category = "B") {
       if (category == "B") {
         return (ceiling(maxRawBias * percentile * 10) / 10)
       } else if (category == "R") {
         return (ceiling(maxRawRMSE * percentile * 10) / 10)
+      } else if (category == "P") {
+        return (ceiling(maxRawPCC * percentile * 10) / 10)
       }
     }
     
@@ -498,6 +569,12 @@ shinyServer <- function(input, output, session) {
     rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
     
     
+    stats$PCCCat <- cut(stats$PCC,
+                        c(0, roundUp(0.25, "P"), roundUp(0.5, "P"), roundUp(0.75, "P"), roundUp(1, "P")), include.lowest = T,
+                        labels = c(paste0("0 - ", roundUp(0.25, "P")), paste0(roundUp(0.25, "P"), " - ", roundUp(0.5, "P")), paste0(roundUp(0.5, "P"), " - ", roundUp(0.75, "P")), paste0(roundUp(0.75, "P"), " - ", roundUp(1, "P"))))
+    
+    pccCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$PCCCat)
+    
     if (input$mymap_groups == "Bias") {
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = biasCol, 
@@ -506,7 +583,7 @@ shinyServer <- function(input, output, session) {
                   group = "Bias legend",
                   position = "bottomright",
                   title = "Bias")
-    } else { # RMSE
+    } else if (input$mymap_groups == "RMSE") {
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = rmseCol,
                   opacity = 1,
@@ -514,6 +591,14 @@ shinyServer <- function(input, output, session) {
                   group = "RMSE legend",
                   position = "bottomright",
                   title = "RMSE")
+    } else { # PCC
+      leafletProxy('mymap') %>% clearControls() %>%
+        addLegend(pal = pccCol,
+                  opacity = 1,
+                  values = stats$PCCCat,
+                  group = "PCC legend",
+                  position = "bottomright",
+                  title = "Pearson Correlation Coefficient")
     }
   })
   # rasterData1 <- reactive({
