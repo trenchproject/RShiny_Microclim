@@ -10,7 +10,7 @@ source("R/SNODAS.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
-# library(TrenchR)
+library(TrenchR)
 
 grabAnyData <- function(methods, inputVar, loc, month) {
   if (methods == "SCAN") {
@@ -779,10 +779,22 @@ shinyServer <- function(input, output, session) {
     
     month3 <- ifelse(input$season3 == 1, "January", "July")
     
-    
     HTML("<br><br><b>Station name:</b> ", station3, 
          "<br><b>Location:</b> ", loc3,
          "<br><b>Time:</b> ", month3, "1st - 31st, 2017")
+  })
+  
+  output$minimap3 <- renderLeaflet({
+    
+    x = c(-118.5657, -104.7552, -66.98880)
+    y = c(47.0022, 40.8066, 18.15110)
+    text = c("Lind, WA", "Nunn, CO", "Maricao forest, Puerto Rico")
+    names(x) = names(y) = names(text) = c("WA", "CO", "PR")
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      addMarkers(lng = x[input$loc3], lat = y[input$loc3], popup = HTML(text[input$loc3])) %>%
+      setView(lng = -97.5, lat = 39, zoom = 2.5)
   })
   
   
@@ -792,20 +804,46 @@ shinyServer <- function(input, output, session) {
       need(input$methods3, "Select datasets")
     )
     
-    colors <- c('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
-    p <- plot_ly() %>%
+    colors_special <- list('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
+    fig1 <- plot_ly() %>%
       layout(xaxis = list(title = "Date"),
-             yaxis = list(title = paste("Operative temperature (degK)")))
+             yaxis = list(title = paste("Operative temperature (degK)")), 
+             annotations = list(
+               text = "Small Ectotherm Operative Temperature",
+               xref = "paper",
+               yref = "paper",
+               yanchor = "bottom",
+               xanchor = "center",
+               align = "center",
+               x = 0.5,
+               y = 1,
+               showarrow = FALSE
+             ))
+    fig2 <- plot_ly() %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = paste("Operative temperature (degK)")),
+             annotations = list(
+               text = "Sceloporus Lizard Operative Temperature",
+               xref = "paper",
+               yref = "paper",
+               yanchor = "bottom",
+               xanchor = "center",
+               align = "center",
+               x = 0.5,
+               y = 1,
+               showarrow = FALSE
+             ))
     
     # For each selected method
-    i = 0
+    j = 0
     for (method in input$methods3) {
-      i = i + 1
+      j = j + 1
       
       # Get variable name/location
       aTemp <- varsDf["Air temperature", method]
       sTemp <- varsDf["Surface temperature", method]
       radiation<- varsDf["Radiation", method]
+      wind <- varsDf["Wind speed", method]
       
       if (is.na(aTemp)) aTemp = T_a
       else {
@@ -830,8 +868,15 @@ shinyServer <- function(input, output, session) {
         }
       }
       
-      # method data stored in aTemp, sTemp, radiation
+      if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
+      else {
+        if (input$loc3 != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) { 
+          wind <- grabAnyData(method, wind, input$loc3, input$season3)
+        }
+      }
       
+      # method data stored in aTemp, sTemp, radiation
+  
       op_temp = array(0, dim=c(length(aTemp$Data)))
       for(i in 1:length(aTemp$Data)){
         if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i])) op_temp[i] = NA
@@ -839,13 +884,22 @@ shinyServer <- function(input, output, session) {
                               aTemp$Data[i], radiation$Data[i], epsilon, H_L, ef, K)
       }
       
-      p <- p %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line = list(color = colors[i]))
-      
-      
+      fig1 <- fig1 %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line=list(color=colors_special[[j]]))
 
+      op_temp = array(0, dim=c(length(aTemp$Data)))
+      for(i in 1:length(aTemp$Data)){
+        if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i]) || is.na(wind$Data[i])) op_temp[i] = NA
+        else op_temp[i] = Tb_lizard(aTemp$Data[i], sTemp$Data[i], wind$Data[i], svl=60, m=10, psi=34, rho_S=0.7, elev=500,
+                                    doy=day_of_year(aTemp$Date[i]), sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, epsilon_s=0.965, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)          
+      }
+      
+      fig2 <- fig2 %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line=list(color=colors_special[[j]]))
+      
     } 
 
-    p
+    fig <- subplot(fig1, fig2, nrows = 2, shareX = TRUE)
+    
+    fig
     
   })
   
