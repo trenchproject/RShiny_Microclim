@@ -212,7 +212,7 @@ shinyUI <- fluidPage(id = "page",
                      
                      radioGroupButtons("season3", "Season", choices = c("Summer" = 7, "Winter" = 1), selected = 7, status = "danger", size = "sm"),
                      
-                     radioGroupButtons("loc3", "Location", choices = c("Washington" = "WA", "Colorado" = "CO", "Puerto Rico" = "PR"), selected = "WA", status = "danger", size = "sm"),
+                     radioGroupButtons("loc3", "Location", choices = c("Oregon" = "OR", "Colorado" = "CO", "Hawaii" = "HI"), selected = "OR", status = "danger", size = "sm"),
                    ),
                    br(),
                    htmlOutput("info3"),
