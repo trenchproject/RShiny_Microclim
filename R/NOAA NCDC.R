@@ -23,10 +23,14 @@ library(data.table)
 # ncdc_stations(extent = c(40.8, -104.8, 40.9, -104.6), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
 
-
 # WA SPOKANE 17 SSW GHCND:USW00004136 (47.41740, -117.5867)
 # ncdc_stations(extent = c(47.4, -117.6, 47.5, -117.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
+# JOHN DAY 0.6 NW, OR US GHCND:USC00354291 (44.4233, -118.9594) not 44.426, -118.957
+# ncdc_stations(extent = c(44.423, -118.95, 44.424, -118.96), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
+
+# HILO INTERNATIONAL AIRPORT 87, HI US GHCND:USW00021504 (19.7191, -155.053)
+# ncdc_stations(extent = c(19.71, -155, 19.72, -155.1), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
 
 #_____________________________________________________________________________________
 
@@ -45,6 +49,10 @@ grabNOAA <- function(var, loc, month) {
     id = "GHCND:USW00094074"
   } else if (loc == "PR") {
     id = "GHCND:RQC00665908"
+  } else if (loc == "OR") {
+    id = "GHCND:USC00354291"
+  } else if (loc == "HI") {
+    id = "GHCND:USW00021504"
   }
   
   data <- ncdc(datasetid = 'GHCND', 

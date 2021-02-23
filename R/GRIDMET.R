@@ -30,6 +30,11 @@ library(raster)
 library(magrittr)
 
 grabGRID <- function(param, loc, month) {
+  locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
+                     "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
+                     "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
+                     "offset" = c(-8, -7, -4, -8, -10))
+  
   days <- c()
   for (i in 1:31) {
     days <- c(days, paste0("2017-0", month, "-", i))
@@ -39,10 +44,9 @@ grabGRID <- function(param, loc, month) {
     AOI = aoi_get(state = "WA", county = "adams")
   } else if (loc == "CO") {
     AOI = aoi_get(state = "CO", county = "weld")
+  } else if (loc == "OR") {
+    AOI = aoi_get(state = "OR", county = "grant")
   }
-  # } else if (loc == "TX") {
-  #   AOI = aoi_get(state = "TX", county = "brewster")
-  # }
   
   p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
   r = raster::brick(p)
