@@ -118,3 +118,10 @@ grabNicheR <- function(var, loc, month) {
   
   return (df)
 }
+
+
+# mapNicheR <- function(var, month) {
+#   
+#   stations <- read.delim("CRN_stations.inv", sep = ",") %>% as.data.frame()
+#   
+# }

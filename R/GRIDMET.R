@@ -64,26 +64,25 @@ grabGRID <- function(param, loc, month) {
   return (df)
 }
 
-
 mapGRID <- function(param, month) {
   
-  AOI = aoi_get(state = "CA")
+  AOI = aoi_get(state = "conus")
 
   p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
   
   df <- rasterToPoints(p[[1]]) %>% as.data.frame()
   
-  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
-
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+  
   fullDf <- data.frame()
   for (i in 1:nrow(stations)) {
-
-    station <- stations$Station[i]
+    station <- stations$Name[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
-    
-    
     data <- df[df$x == sort(df$x)[match.closest(lon, sort(df$x))] & df$y == sort(df$y)[match.closest(lat, sort(df$y))], ]
+    if (nrow(data) == 0) {
+      data[1, ] <- NA
+    }
     rownames(data) <- station
     
     fullDf <- rbind(fullDf, data)
@@ -92,7 +91,7 @@ mapGRID <- function(param, month) {
   t_fullDf <- transpose(fullDf[, 3 : length(fullDf)]) # first two columns are x and y
   setnames(t_fullDf, rownames(fullDf))
 
-  if (param %in% c("tmax")) {
+  if (param == "tmax") {
     t_fullDf <- t_fullDf - 273.15
   }
   

@@ -8,8 +8,7 @@
 
 library(rnoaa)
 library(magrittr)
-
-
+library(data.table)
 # # WA Lind 3 NE GHCND:USC00454679  (47.0022, -118.5657)
 # ncdc_stations(extent = c(46.9, -118.7, 47.1, -118.5), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50)
 # 
@@ -78,29 +77,27 @@ grabNOAA <- function(var, loc, month) {
 }
 
 
-# CO NUNN 7 NNE GHCND:USW00094074 (40.8066, -104.7552)
-# list <- ncdc_stations(extent = c(40.7, -104.8, 40.9, -104.7), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 50, datasetid = "GHCND")
-
+# Takes too long to run
 
 mapNOAA <- function(var, month) {
 
-  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   
   # station_data <- ghcnd_stations()
   # fwrite(station_data, "NOAA_stations.csv")
   
   station_data <- fread("NOAA_stations.csv")
   
-  colnames(stations)[1] <- "id" # for meteo_nearby_stations, colname has to be "id"
+  colnames(stations)[4] <- "id" # for meteo_nearby_stations, colname has to be "id"
   
   list <- meteo_nearby_stations(lat_lon_df = stations, 
                                 station_data = station_data, 
                                 lat_colname = "Lat", 
                                 lon_colname = "Lon", 
                                 limit = 10,
-                                var = "TMAX")
+                                var = var)
   
-  merged <- data.frame(date = NA) # need an initial date column to merge later
+  merged <- data.frame(Date = NA) # need an initial date column to merge later
 
   for (i in 1:nrow(stations)) {
     station <- stations$id[i]
@@ -123,14 +120,15 @@ mapNOAA <- function(var, month) {
       lgth <- length(data$data)
       
     }
-    
     values <- data$data %>% as.data.frame() %>%
-      plotly::select(date, value)
+      plotly::select(date, value) %>% set_colnames(c("Date", "Value"))
+    values$Value <- values$Value / 10
     
-    merged <- merge(merged, values, by = "date", all = T)
+    merged <- merge(merged, values, by = "Date", all = T)
     colnames(merged)[i + 1] <- station
-    
   }
+  
+  merged$Date <- format(as.POSIXct(merged$Date), format = "%Y-%m-%d %H:%M")
   
   return (merged[-nrow(merged), ]) # the last row is just NAs
 }

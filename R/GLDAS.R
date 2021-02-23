@@ -135,40 +135,45 @@ grabGLDAS <- function(var, loc, month) {
 
 
 # -120.9, 33.5, -115, 41.2
+# Whole US + AK, HI -170.3, 19.5, -67.8, 71.6
 
+# takes too long to process
 mapGLDAS <- function(var, month) {
   
-  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
-  
-  offset <- 8 # Data are stored as UCT. So we need adjustment to be aligned to the local time.
-  
-  roundUp <- ceiling(offset / 3)
-  
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+
   days <- c()
   for (i in 1:31) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  fullDf <- data.frame(Date = rep(days, each = 8), 
-                       Hour = seq(from = roundUp * 3 - offset, to = 21 + (roundUp * 3 - offset), by = 3))
+  # fullDf <- data.frame(Date = rep(days, each = 8),
+  #                      Hour = seq(from = 0, to = 21, by = 3))
   
-  fullDf <- fullDf[1 : (31 * 8 - roundUp), ]
+  fullDf <- data.frame(Date = rep(days, each = 24),
+                       Hour = 0:23)
   
   fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
+  fullDates <- fullDf$Date
+
+  # fullDf <- fullDf[1 : (31 * 8 - roundUp), ]
   
   for (i in 1:nrow(stations)) {
-    station <- stations$Station[i]
+    station <- stations$Name[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
-  
-    array <- c()
+    offset <- -stations$Offset[i] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
+    
+    roundUp <- ceiling(offset / 3)
+    array <- c(rep(NA, mod(-offset, 3)))
+    
     for (day in 1:31) {
       for (hour in seq(from = 0, to = 21, by = 3)) {
         char_day <- ifelse(day < 10, paste0("0", day), day)
         char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
         
-        filename <- paste0("GLDAS_CAmap", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        filename <- paste0("Data/GLDAS_USmap", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
         
         nc <- nc_open(filename)
         
@@ -189,12 +194,16 @@ mapGLDAS <- function(var, month) {
         } else if (var == "SoilMoi40_100cm_inst") { # kg/m^3 to % (Soil density =~ 1.6 g/cm^3 = 1600 kg/m^3. The measurement is over 60 cm)
           val <- 1600 / val / 0.6
         }
-        array <- c(array, val)
+        array <- c(array, val, NA, NA)
       }
     }
-    array <- array[(1 + roundUp) : length(array)] %>%
-      as.data.frame() %>% set_colnames(station)
-    fullDf <- cbind(fullDf, array)
+    array <- array[(roundUp * 3 + 1) : (24 * 31)]
+    
+    df <- cbind(fullDates[1: (31 * 24 - roundUp * 3)], array) %>% as.data.frame() %>% 
+      set_colnames(c("Date", station))
+    
+    fullDf <- merge(fullDf, df, by = "Date", all = T)
+    # print(paste0(station, "added (no. ", i, ")"))
   }
   
   return (fullDf)

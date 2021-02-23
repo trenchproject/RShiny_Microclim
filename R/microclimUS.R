@@ -56,7 +56,7 @@ grabmicroUS <- function(var, loc, month) {
 
 mapmicroUS <- function(var, month) {
   
-  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   
   nc <- nc_open(paste0("Data/microclimUS/", var, "_2017.nc"))
   
@@ -74,10 +74,9 @@ mapmicroUS <- function(var, month) {
   fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
   for (i in 1:nrow(stations)) {
-    station <- stations$Station[i]
+    station <- stations$Name[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
-  
     
     lonInd <- match.closest(lon, nc$dim$longitude$vals)
     lat <- sort(nc$dim$latitude$vals)[match.closest(lat, sort(nc$dim$latitude$vals))]

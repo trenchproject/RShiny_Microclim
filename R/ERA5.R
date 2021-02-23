@@ -11,31 +11,6 @@
 # write.csv(one_loc, paste0(loc, "_ERA.csv"), row.names = F)
 
 
-# db <- brick("ERA_US.grib")
-# 
-# west <- raster::crop(db, extent(-124.05, -114, 33.4, 47.15))
-# WA <- raster::crop(db, extent(-119, -118, 46, 48))
-# CA <- raster::crop(db, extent(-121, -115, 33.5, 41.2))
-# central <- raster::crop(db, extent(-105, -104, 40, 42))
-# east <- raster::crop(db, extent(-68, -66.85, 18.05, 20.15))
-# 
-# CADf <- rasterToPoints(CA) %>% as.data.frame()
-# WADf <- rasterToPoints(WA) %>% as.data.frame()
-# westDf <- rasterToPoints(west) %>% as.data.frame()
-# centralDf <- rasterToPoints(central) %>% as.data.frame()
-# eastDf <- rasterToPoints(east) %>% as.data.frame()
-# 
-# df <- rasterToPoints(db) %>% as.data.frame()
-# 
-# process <- function (df, lon, lat, locName) {
-#   lon <- sort(df$x)[match.closest(lon, sort(df$x))]
-#   lat <- sort(df$y)[match.closest(lat, sort(df$y))]
-#   one_loc <- df[df$x == lon & df$y == lat, ]
-#   print(one_loc[1, c(1:10)])
-#   
-#   write.csv(one_loc, paste0(locName, "_ERA.csv"), row.names = F)
-# }
-
 
 # Variables
 
@@ -65,7 +40,7 @@ locs <- data.frame(row.names = c("WA", "CO", "PR"),
 
 grabERA <- function(varIndex, loc, month) {
 
-  df <- fread(paste0("Data/ERA/", loc, "_ERA.csv")) %>% as.data.frame()
+  df <- fread(paste0("Data/ERA/ERA_", loc, ".csv")) %>% as.data.frame()
   
   vals <- c()
   for (i in 0:1487) {  # 1488 = 2 months * 31 days * 24 hours
@@ -117,57 +92,6 @@ grabERA <- function(varIndex, loc, month) {
   return (df)
 }
 
-# Daily average
-
-# month = 1
-# date = 1
-# varIndex = 3
-
-
-# mapERA <- function(varIndex, month, date) {
-#   brickERA <- brick("COmap_ERA.grib")
-#   # 1/1 - 1/7 + 7/1 - 7/7
-#   # 2016 layers (2 months * 7 days * 24 hours * 6 variables)
-#   
-#   monthIndex <- ifelse(month == 1, 0, 7)
-#   offset = 7
-# 
-#   max <- -1000
-#   min <- 1000
-#   
-#   if (varIndex %in% c(3, 7)) { # When air temperature, maps the daily max or min
-#     for (hour in 0:23) {
-#       raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
-#       max <- max(raster, max)
-#       min <- min(raster, min)
-#     }
-#     
-#     if (varIndex == 3) {
-#       raster <- max
-#     } else {
-#       raster <- min
-#     }
-#     
-#   } else { # otherwise maps the daily mean
-#     ave <- 0
-#     for (hour in 0:23) {
-#       raster <- brickERA[[varIndex + 6 * ((monthIndex + date - 1) * 24 + hour + offset)]]
-#       ave <- ave + raster
-#     }
-#     raster <- ave / 24
-#   }
-#   
-#   if (varIndex %in% c(3, 4, 5)) {
-#     raster <- raster - 273.15
-#   }
-#   
-#   if (varIndex == 6) {
-#     raster <- raster / 3600
-#   }
-#   
-#   return (raster)
-# }
-
 
 
 # Extent 41.2, 33.5, -120.9, -115
@@ -176,44 +100,59 @@ grabERA <- function(varIndex, loc, month) {
 # 2. skin_temperature (surface temperature)
 # 3. surface_net_solar_radiation (J/m^2)
 
-# mapERA(3, 1)
+
+# db <- brick(paste0("ERA_conus.grib"))
+#  
+# stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+# stations$Name[128]
+# stations$Name[129]
+# for (i in 129 : nrow(stations)) {
+#   # r <- raster::setExtent(db, c(stations$Lon[i] - 0.15, stations$Lon[i] + 0.15, stations$Lat[i] - 0.15, stations$Lat[i] + 0.15), keepres = T, snap = T)
+#   c <- crop(db, c(stations$Lon[i] - 0.1, stations$Lon[i] + 0.1, stations$Lat[i] - 0.1, stations$Lat[i] + 0.1))
+#   p <- rasterToPoints(c) %>% as.data.frame()
+# 
+#   fwrite(p, paste0("ERA_", stations$Name[i], ".csv"))
+#   print(paste0("Done with ", stations$Name[i], ". (No.", i, ")"))
+# }
+
+
+# 10416 (7 variables * 2 months * 31 days * 24 hours)
+
+
 mapERA <- function(varIndex, month) {
-  db <- brick("ERA_CAmap.grib") 
-  # 4464 layers (3 variables * 2 months * 31 days * 24 hours)
-  
+
   varIndex <- ifelse(varIndex == 3, 1, ifelse(varIndex == 4, 2, 3))
   
-  df <- rasterToPoints(db) %>% as.data.frame()
-  
-  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   
   days <- c()
   for (i in 1:31) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
-  
-  offset = 8
 
   fullDf <- data.frame(Date = rep(days, each = 24),
                        Hour = 0:23)
-  fullDf <- fullDf[1: (31 * 24 - offset), ]
+  # fullDf <- fullDf[1: (31 * 24 - offset), ]
   fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
+  fullDates <- fullDf$Date
+  
   for (i in 1:nrow(stations)) {
-    
-    station <- stations$Station[i]
+    station <- stations$Name[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
+    offset <- -stations$Offset[i]
+    df <- fread(paste0("Data/ERA/ERA_", station, ".csv"))
     
     lon <- sort(df$x)[match.closest(lon, sort(df$x))]
     lat <- sort(df$y)[match.closest(lat, sort(df$y))]
-    one_loc <- df[df$x == lon & df$y == lat, ]
+    one_loc <- df[df$x == lon & df$y == lat, ] %>% as.data.frame()
     
     vals <- c()
-    for (i in 0:1487) {  # 1488 = 2 months * 31 days * 24 hours
-      vals <- c(vals, one_loc[, 2 + varIndex + i * 3])  # adding 2 because the first two columns are x and y. After that, the selected variable shows up every 3 columns.
+    for (j in 0:1487) {  # 1488 = 2 months * 31 days * 24 hours
+      vals <- c(vals, one_loc[, 2 + varIndex + j * 3])  # adding 2 because the first two columns are x and y. After that, the selected variable shows up every 3 columns.
     }
-
+    
     # The data for July comes after the data for January in the data frame. Each month has 24 hours and 31 days of data.
     if (month == 1) {
       vals <- vals[(1 + offset) : 744]
@@ -221,13 +160,14 @@ mapERA <- function(varIndex, month) {
       vals <- vals[(745 + offset) : 1488]
     }
     
-    vals <- as.data.frame(vals) %>% set_colnames(station)
-    
     if (varIndex %in% c(1, 2)) { # K to C
       vals <- vals - 273.15
     }
     
-    fullDf <- cbind(fullDf, vals)
+    df <- cbind(fullDates[1: (31 * 24 - offset)], vals) %>% as.data.frame() %>% 
+      set_colnames(c("Date", station))
+    
+    fullDf <- merge(fullDf, df, by = "Date")
   }
   
   return (fullDf)

@@ -6,7 +6,7 @@ source("R/NOAA NCDC.R", local = TRUE)
 source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
 source("R/SNODAS.R", local = TRUE)
-#source("R/USCRN.R", local = TRUE)
+source("R/USCRN.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
@@ -62,12 +62,15 @@ grabMapData <- function(methods, inputVar, month) {
   } else if (methods == "GRIDMET") {
     data <- mapGRID(inputVar, month)
   } else if (methods == "NOAA_NCDC") {
-    data <- mapGRID(inputVar, month)
+    data <- mapNOAA(inputVar, month)
   } else if (methods == "microclimUS") {
     data <- mapmicroUS(inputVar, month) 
   } else if (methods == "microclim") {
     data <- mapmicro(inputVar, month)
+  } else if (methods == "USCRN") {
+    data <- mapUSCRN(inputVar, month)
   }
+  
   return (data)
 }
 
@@ -81,7 +84,7 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
-                     #"USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
+                     "USCRN" = c("SUR_TEMP", "T_MAX", NA, "SOLARAD", NA, NA, NA, NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
@@ -93,11 +96,13 @@ nameDf <- data.frame(row.names = variables,
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Daily precipitation", NA, NA, "Daily snow Depth"),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
-                     #"USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
+                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 
 methods <- colnames(varsDf)
+
+mapMethods <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclim", "microclimUS")
 
 
 shinyServer <- function(input, output, session) {
@@ -402,7 +407,7 @@ shinyServer <- function(input, output, session) {
   output$mapMethodsOutput <- renderUI({
     # USCRN, NOAA, 
     # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods", "Dataset to compare", choices = methods[-1], selected = methods[-1][1], # all the dataset except for SCAN
+    pickerInput("mapMethods", "Dataset to compare", choices = mapMethods, selected = mapMethods[3], # all the dataset except for SCAN
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -419,48 +424,51 @@ shinyServer <- function(input, output, session) {
       need(input$mapMethods, "")
     )
     
-    stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+    stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
     
-
-    SCAN <- grabMapData("SCAN", varsDf[input$mapVar, "SCAN"], input$month)
-    # SCAN <- grabMapData("SCAN", 3, 1)
-    if (input$mapMethods %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
-      SCAN$Date <- as.Date(SCAN$Date)
-      SCAN <- aggregate(list(SCAN[, c(-1, -2)]), by = list(SCAN$Date), mean) %>% # first two columns are date and hour
-        set_colnames(c("Date", stations$Station))
-      
+    CRN <- grabMapData("USCRN", varsDf[input$mapVar, "USCRN"], input$month)
+    
+    # CRN <- grabMapData("USCRN", varsDf["Air temperature", "USCRN"], 7)
+    
+    if (input$mapMethods %in% c("GRIDMET", "NOAA_NCDC")) {
+      CRN$Date <- as.Date(CRN$Date)
+      CRN <- aggregate(list(CRN[, c(-1, -2)]), by = list(CRN$Date), mean) %>%
+        set_colnames(c("Date", stations$Name))
     }
     
     inputVar <- varsDf[input$mapVar, input$mapMethods]
     
     mapDf <- grabMapData(input$mapMethods, inputVar, input$month)
-    # mapDf <- grabMapData("ERA5", 3, 1)
     
+    # mapDf <- grabMapData("GRIDMET", "tmax", 7)
     stats <- cbind(stations, 
                    "Bias" = NA,
                    "RMSE" = NA,
                    "PCC" = NA)
-    for (station in stations$Station) {
-      merged <- merge(SCAN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date") %>%
+    
+    for (station in stations$Name) {
+      merged <- merge(CRN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date", all = T) %>%
         set_colnames(c("Date", "Data1", "Data2")) %>%
         na.omit()
 
-      bias <- abs((sum(merged$Data1) - sum(merged$Data2)) / nrow(merged))
-      stats[stats$Station == station, "Bias"] <- bias
-      
-      RMSE <- sum((merged$Data1 - merged$Data2)^2) / nrow(merged) # Root mean square error
-      stats[stats$Station == station, "RMSE"] <- RMSE
-      
-      PCC <- cor.test(x = merged$Data1, y = merged$Data2, method = "pearson") # Pearson correlation coefficient
-      stats[stats$Station == station, "PCC"] <- PCC
-      
+      if (nrow(merged) > 7) {
+        bias <- abs((sum(merged$Data1) - sum(merged$Data2)) / nrow(merged))
+        stats[stats$Name == station, "Bias"] <- bias
+        
+        RMSE <- sum((merged$Data1 - merged$Data2)^2) / nrow(merged) # Root mean square error
+        stats[stats$Name == station, "RMSE"] <- RMSE
+        
+        PCC <- cor.test(x = merged$Data1, y = merged$Data2, method = "pearson") # Pearson correlation coefficient
+        stats[stats$Name == station, "PCC"] <- unname(PCC$estimate)
+      } else {
+        stats[stats$Name == station, c("Bias", "RMSE", "PCC")] <- NA
+      }
     }
 
+    stats <- stats %>% na.omit()
     stats
   })
   
-  
-  output$coefTable <-
   
   output$mymap <- renderLeaflet({
     
@@ -475,8 +483,7 @@ shinyServer <- function(input, output, session) {
     maxRawRMSE <- max(stats$RMSE)
     
     maxRawPCC <- max(stats$PCC)
-    
-    
+
     roundUp <- function (percentile, category = "B") {
       if (category == "B") {
         return (ceiling(maxRawBias * percentile * 10) / 10)
@@ -486,7 +493,7 @@ shinyServer <- function(input, output, session) {
         return (ceiling(maxRawPCC * percentile * 10) / 10)
       }
     }
-
+    
     stats$BiasCat <- cut(stats$Bias,
                       c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
                       labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
@@ -515,21 +522,21 @@ shinyServer <- function(input, output, session) {
                        radius = 7, 
                        fillOpacity = 1, 
                        group = "Bias",
-                       popup = paste0(stats$Station, ": ", round(stats$Bias, digits = 2))) %>%
+                       popup = paste0(stats$Name, ": ", round(stats$Bias, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~rmseCol(stats$RMSECat),
                        stroke = FALSE,
                        radius = 7, 
                        fillOpacity = 1, 
                        group = "RMSE",
-                       popup = paste0(stats$Station, ": ", round(stats$RMSE, digits = 2))) %>%
+                       popup = paste0(stats$Name, ": ", round(stats$RMSE, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~pccCol(stats$PCCCat),
                        stroke = FALSE,
                        radius = 7, 
                        fillOpacity = 1, 
                        group = "PCC",
-                       popup = paste0(stats$Station, ": ", round(stats$PCC, digits = 2))) %>%
+                       popup = paste0(stats$Name, ": ", round(stats$PCC, digits = 2))) %>%
       addLayersControl(baseGroups = c("Bias", "RMSE", "PCC")) %>%
       addLegend(pal = biasCol,
                 opacity = 1,
@@ -593,7 +600,7 @@ shinyServer <- function(input, output, session) {
                   values = stats$RMSECat,
                   group = "RMSE legend",
                   position = "bottomright",
-                  title = "RMSE")
+                  title = "Root mean squared error")
     } else { # PCC
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = pccCol,

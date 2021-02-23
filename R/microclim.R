@@ -43,18 +43,14 @@ grabmicro <- function(var, loc, month) {
 }
 
 
-
-
 mapmicro <- function(var, month) {
   
-  AOI = aoi_get(state = "CA")
-  
-  stations <- readxl::read_xlsx("SCAN_stations.xlsx") %>% as.data.frame()
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   
   fullDf <- data.frame(Date = 0:23)
   
   for (i in 1:nrow(stations)) {
-    station <- stations$Station[i]
+    station <- stations$Name[i]
     lat <- stations$Lat[i]
     lon <- stations$Lon[i]
     

@@ -148,7 +148,7 @@ shinyUI <- fluidPage(id = "page",
                    sidebarPanel(
                      h4("Spatial comparison"),
                      p("Select a variable you are interested in and some datasets that contain that variable. 
-                       The map of Colorado will show how much the data can differ spatially depending on the dataset for a given time."),
+                       "),
                      
                      actionBttn(
                        inputId = "reset2",
