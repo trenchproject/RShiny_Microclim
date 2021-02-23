@@ -199,7 +199,7 @@ mapGLDAS <- function(var, month) {
     }
     array <- array[(roundUp * 3 + 1) : (24 * 31)]
     
-    df <- cbind(fullDates[1: (31 * 24 - roundUp * 3)], array) %>% as.data.frame() %>% 
+    df <- cbind(fullDates[1: (31 * 24 - roundUp * 3)], array %>% as.data.frame()) %>% 
       set_colnames(c("Date", station))
     
     fullDf <- merge(fullDf, df, by = "Date", all = T)

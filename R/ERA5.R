@@ -164,7 +164,7 @@ mapERA <- function(varIndex, month) {
       vals <- vals - 273.15
     }
     
-    df <- cbind(fullDates[1: (31 * 24 - offset)], vals) %>% as.data.frame() %>% 
+    df <- cbind(fullDates[1: (31 * 24 - offset)], vals %>% as.data.frame()) %>% 
       set_colnames(c("Date", station))
     
     fullDf <- merge(fullDf, df, by = "Date")

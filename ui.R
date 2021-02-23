@@ -147,8 +147,8 @@ shinyUI <- fluidPage(id = "page",
                  sidebarLayout(
                    sidebarPanel(
                      h4("Spatial comparison"),
-                     p("Select a variable you are interested in and some datasets that contain that variable. 
-                       "),
+                     p("Select a climatic variable you are interested in and a dataset that contains that variable. 
+                       The map will display the bias, root mean squared error, and Pearson correlation coefficient between the data from the chosen dataset and USCRN data for each station in the US."),
                      
                      actionBttn(
                        inputId = "reset2",

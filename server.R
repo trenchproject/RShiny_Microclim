@@ -37,21 +37,6 @@ grabAnyData <- function(methods, inputVar, loc, month) {
   return (data)
 }
 
-# grabMapData <- function(methods, inputVar, month, date) {
-#   if (methods == "ERA5") {
-#     data <- mapERA(inputVar, month, date)
-#   } else if (methods == "GLDAS") {
-#     data <- mapGLDAS(inputVar, month, date)
-#   } else if (methods == "GRIDMET") {
-#     data <- mapGRID(inputVar, month, date)
-#   } else if (methods == "microclimUS") {
-#     data <- mapmicroUS(inputVar, month, date)
-#   } else if (methods == "microclim") {
-#     data <- mapmicro(inputVar, month)
-#   }
-#   return (data)
-# }
-
 grabMapData <- function(methods, inputVar, month) {
   if (methods == "SCAN") {
     data <- mapSCAN(inputVar, month)
@@ -440,18 +425,17 @@ shinyServer <- function(input, output, session) {
     inputVar <- varsDf[input$mapVar, input$mapMethods]
     
     mapDf <- grabMapData(input$mapMethods, inputVar, input$month)
-    
-    # mapDf <- grabMapData("GRIDMET", "tmax", 7)
+
     stats <- cbind(stations, 
                    "Bias" = NA,
                    "RMSE" = NA,
                    "PCC" = NA)
     
     for (station in stations$Name) {
+      station <- stations$Name[1]
       merged <- merge(CRN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date", all = T) %>%
         set_colnames(c("Date", "Data1", "Data2")) %>%
         na.omit()
-
       if (nrow(merged) > 7) {
         bias <- abs((sum(merged$Data1) - sum(merged$Data2)) / nrow(merged))
         stats[stats$Name == station, "Bias"] <- bias
