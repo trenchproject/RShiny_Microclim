@@ -393,15 +393,10 @@ shinyServer <- function(input, output, session) {
   output$mapMethodsOutput <- renderUI({
     # USCRN, NOAA, 
     # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods", "Dataset to compare", choices = mapMethods, selected = mapMethods[3], # all the dataset except for SCAN
+    pickerInput("mapMethods", "Dataset to compare", choices = mapMethods, selected = "ERA5", # all the dataset except for SCAN
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
-  
-  # output$mapMethodsOutput2 <- renderUI({
-  #   # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-  #   pickerInput("mapMethods2", "Dataset 2", choices = methods, selected = methods[2], 
-  #               options = list(style = "btn-success", `actions-box` = TRUE))
-  # })
+
 
   
   statsTable <- reactive({
@@ -432,7 +427,6 @@ shinyServer <- function(input, output, session) {
                    "PCC" = NA)
     
     for (station in stations$Name) {
-      station <- stations$Name[1]
       merged <- merge(CRN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date", all = T) %>%
         set_colnames(c("Date", "Data1", "Data2")) %>%
         na.omit()
