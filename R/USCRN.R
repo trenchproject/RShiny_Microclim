@@ -99,6 +99,8 @@ grabUSCRN <- function(var, loc, month) {
 # T_MAX
 # SOLARAD
 
+var = "SUR_TEMP"
+month = 7
 mapUSCRN <- function(var, month) {
   var <- ifelse(var == "SURFACE_TEMPERATURE", "SUR_TEMP", ifelse(var == "AIR_TEMPERATURE", "T_MAX", "SOLARAD"))
   
@@ -118,8 +120,10 @@ mapUSCRN <- function(var, month) {
   
   for (i in 1 : nrow(stations)) {
     station <- stations$Name[i]
-    stationData <- df[df$WBANNO == stations$WBANNO[i], c("Date", var)] %>% set_colnames(c("Date", station)) %>%
-      na.omit()
+    stationData <- df[df$WBANNO == stations$WBANNO[i], c("Date", var)] 
+    stationData[stationData < - 30] <- NA  # Montrose, CO has surface temperature values that are completely off
+    stationData <- stationData %>% set_colnames(c("Date", station)) %>% na.omit()
+    
     fullDf <- merge(fullDf, stationData, by = "Date", all = T)
   }
   

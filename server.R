@@ -88,8 +88,6 @@ nameDf <- data.frame(row.names = variables,
 
 methods <- colnames(varsDf)
 
-mapMethods <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclim", "microclimUS")
-
 
 shinyServer <- function(input, output, session) {
   
@@ -107,35 +105,6 @@ shinyServer <- function(input, output, session) {
   
   
   #___________________________________________________________________________________
-  
-  
-  # output$datasetOutput <- renderText({
-  #   
-  # 
-  #   
-  #   dataTable <- readxl::read_xlsx("DatasetTable.xlsx") %>% as.data.frame() %>%
-  #     filter(TempCovStart <= input$tempCov_start | is.na(TempCovStart)) %>%
-  #     filter(TempCovEnd >= input$tempCov_end | is.na(TempCovEnd)) %>%
-  #     filter(TempRes %in% input$tempRes)
-  #   
-  #   if (input$spaCov == "Outside of US") {
-  #     dataTable <- filter(dataTable, SpatCov != "US")
-  #   }
-  #   
-  #   for (var in input$varTable) {
-  #     dataTable <- dataTable[dataTable[, var] == "T", ]
-  #   }
-  #   
-  #   text <- "No applicable dataset"
-  #   if (nrow(dataTable) != 0) {
-  #     text <- ""
-  #     for (i in 1 : nrow(dataTable)) {
-  #       text <- paste0(text, dataTable$Dataset[i], ": ", dataTable$Text[i], "<br>")
-  #     }
-  #   }
-  #   
-  #   HTML(text)
-  # })
 
   
   output$mytable <- DT::renderDataTable({
@@ -170,8 +139,6 @@ shinyServer <- function(input, output, session) {
       set_colnames(c("Dataset", "Temporal coverage", "Temporal resolution", "Spatial coverage", "Spatial resolution", "Air temp", "Surface temp", "Soil temp", "Radiation", "Wind speed", "Precipitation", "Humidity", "Soil moist", "Snow depth"))
     
     datatable(dataTable, escape = F)
-    
-
 
   })
 
@@ -391,9 +358,12 @@ shinyServer <- function(input, output, session) {
   # -109, -102, 37, 41
   
   output$mapMethodsOutput <- renderUI({
-    # USCRN, NOAA, 
-    # index <- c(which(is.na(varsDf[input$mapVar, ])), 1, 5, 8)
-    pickerInput("mapMethods", "Dataset to compare", choices = mapMethods, selected = "ERA5", # all the dataset except for SCAN
+    mapMethods <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclim", "microclimUS")
+    
+    index <- which(!is.na(varsDf[input$mapVar, ]))
+    choices <- mapMethods[mapMethods %in% methods[index]]
+    
+    pickerInput("mapMethods", "Dataset to compare", choices = choices, selected = "ERA5", # all the dataset except for SCAN
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
 
@@ -493,27 +463,31 @@ shinyServer <- function(input, output, session) {
     
     pccCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$PCCCat)
     
+    
     leaflet() %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~biasCol(stats$BiasCat),
-                       stroke = FALSE, 
-                       radius = 7, 
-                       fillOpacity = 1, 
+                       stroke = TRUE,
+                       radius = ~Bias / maxRawBias * 15, 
+                       opacity = 1, 
+                       fillOpacity = 0, 
                        group = "Bias",
                        popup = paste0(stats$Name, ": ", round(stats$Bias, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~rmseCol(stats$RMSECat),
-                       stroke = FALSE,
-                       radius = 7, 
-                       fillOpacity = 1, 
+                       stroke = TRUE,
+                       radius = ~RMSE / maxRawRMSE * 15, 
+                       opacity = 1, 
+                       fillOpacity = 0,                        
                        group = "RMSE",
                        popup = paste0(stats$Name, ": ", round(stats$RMSE, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~pccCol(stats$PCCCat),
-                       stroke = FALSE,
-                       radius = 7, 
-                       fillOpacity = 1, 
+                       stroke = TRUE,
+                       radius = ~PCC / maxRawPCC * 7, 
+                       opacity = 1, 
+                       fillOpacity = 0,                        
                        group = "PCC",
                        popup = paste0(stats$Name, ": ", round(stats$PCC, digits = 2))) %>%
       addLayersControl(baseGroups = c("Bias", "RMSE", "PCC")) %>%

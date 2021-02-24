@@ -31,11 +31,6 @@ library(magrittr)
 library(AOI)
 library(humidity)
 
-locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
-                   "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
-                   "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
-                   "offset" = c(-8, -7, -4, -8, -10))
-
 
 # nc2 <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170701.0000.021.nc4.SUB.nc4")
 # ncvar2 <- ncvar_get(nc2, var = "Tair_f_inst")
@@ -201,6 +196,7 @@ mapGLDAS <- function(var, month) {
 
   # fullDf <- fullDf[1 : (31 * 8 - roundUp), ]
   
+
   for (i in 1:nrow(stations)) {
     station <- stations$Name[i]
     lat <- stations$Lat[i]
