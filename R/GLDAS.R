@@ -31,10 +31,10 @@ library(magrittr)
 library(AOI)
 library(humidity)
 
-locs <- data.frame(row.names = c("WA", "CO", "PR"), 
-                   "lon" = c(-118.5657, -104.7552, -66.98880), 
-                   "lat" = c(47.0022, 40.8066, 18.15110), 
-                   "offset" = c(-8, -7, -4))
+locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
+                   "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
+                   "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
+                   "offset" = c(-8, -7, -4, -8, -10))
 
 
 # nc2 <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170701.0000.021.nc4.SUB.nc4")
@@ -49,11 +49,48 @@ locs <- data.frame(row.names = c("WA", "CO", "PR"),
 # nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
 
 valGLDAS <- function(nc, var, loc) {
+  
+  locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
+                     "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
+                     "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
+                     "offset" = c(-8, -7, -4, -8, -10))
+  
   ncvar <- ncvar_get(nc, varid = var)
   
   lonInd <- match.closest(locs[loc, "lon"], nc$dim$lon$vals)
   lat <- sort(nc$dim$lat$vals)[match.closest(locs[loc, "lat"], sort(nc$dim$lat$vals))]
   latInd <- match(lat, nc$dim$lat$vals)
+  
+  i=1
+  while(is.na(ncvar[lonInd, latInd])){
+    if(!is.na(ncvar[lonInd+i, latInd+i])) {
+      lonInd = lonInd+i;
+      latInd = latInd+i;
+      break
+    }
+    if(!is.na(ncvar[lonInd, latInd+i]))  {
+      latInd = latInd+i;
+      break
+    }
+    if(!is.na(ncvar[lonInd+i, latInd]))  {
+      lonInd = lonInd+i;
+      break
+    }
+    if(!is.na(ncvar[lonInd-i, latInd-i]) && latInd-i!=0 && lonInd-i!=0)  {
+      lonInd = lonInd-i;
+      latInd = latInd-i;
+      break
+    }
+    if(!is.na(ncvar[lonInd-i, latInd]) && lonInd-i!=0)  {
+      lonInd = lonInd-i;
+      break
+    }
+    if(!is.na(ncvar[lonInd, latInd-i]) && latInd-i!=0)  {
+      latInd = latInd-i;
+      break
+    }
+    i = i + 1
+  }
   
   val <- ncvar[lonInd, latInd]
   
@@ -74,6 +111,11 @@ valGLDAS <- function(nc, var, loc) {
 
 
 grabGLDAS <- function(var, loc, month) {
+  
+  locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
+                     "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
+                     "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
+                     "offset" = c(-8, -7, -4, -8, -10))
   
   days <- c()
   for (i in 1:31) {

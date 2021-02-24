@@ -789,6 +789,7 @@ shinyServer <- function(input, output, session) {
   
   # Rendering plot
   output$plot3 <- renderPlotly({
+    
     validate(
       need(input$methods3, "Select datasets")
     )
@@ -822,6 +823,20 @@ shinyServer <- function(input, output, session) {
                y = 1,
                showarrow = FALSE
              ))
+    fig3 <- plot_ly() %>%
+      layout(xaxis = list(title = "Date"),
+             yaxis = list(title = paste("Operative temperature (degK)")),
+             annotations = list(
+               text = "Campbell Norman Operative Temperature",
+               xref = "paper",
+               yref = "paper",
+               yanchor = "bottom",
+               xanchor = "center",
+               align = "center",
+               x = 0.5,
+               y = 1,
+               showarrow = FALSE
+             ))
     
     # For each selected method
     j = 0
@@ -836,7 +851,7 @@ shinyServer <- function(input, output, session) {
       
       if (is.na(aTemp)) aTemp = T_a
       else {
-        if (input$loc3 != c("PR", "HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
           aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
           aTemp$Data = aTemp$Data + 273.15 # C to K
         }
@@ -844,7 +859,7 @@ shinyServer <- function(input, output, session) {
       
       if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
       else {
-        if (input$loc3 != c("PR", "HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
           sTemp <- grabAnyData(method, sTemp, input$loc3, input$season3)
           sTemp$Data = sTemp$Data + 273.15 # C to K
         }
@@ -852,47 +867,60 @@ shinyServer <- function(input, output, session) {
       
       if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
       else {
-        if (input$loc3 != c("PR", "HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
           radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
         }
       }
       
       if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
       else {
-        if (input$loc3 != c("PR", "HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
           wind <- grabAnyData(method, wind, input$loc3, input$season3)
         }
       }
       
-      # method data stored in aTemp, sTemp, radiation
+      # method data stored in aTemp, sTemp, radiation, wind
   
-      op_temp = array(0, dim=c(length(aTemp$Data)))
+      op_temp1 = array(0, dim=c(length(aTemp$Data)))
+      op_temp2 = array(0, dim=c(length(aTemp$Data)))
+      op_temp3 = array(0, dim=c(length(aTemp$Data)))
+      
       for(i in 1:length(aTemp$Data)){
-        if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i])) op_temp[i] = NA
-        else if(input$loc3 == "HI" && method %in% c("GRIDMET", "microclimUS")) op_temp[i] = NA
-        else op_temp[i] = Tb_Gates(A, D, psa_dir, psa_ref, psa_air, psa_g, sTemp$Data[i], 
+        if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i])) {
+          op_temp1[i] = NA
+          op_temp2[i] = NA
+          op_temp3[i] = NA
+        }
+        else if(is.na(wind$Data[i])) {
+          op_temp2[i] = NA
+          op_temp3[i] = NA
+        }
+        else if(input$loc3 == "HI" && method %in% c("GRIDMET", "microclimUS")) {
+          op_temp1[i] = NA
+          op_temp2[i] = NA
+          op_temp3[i] = NA
+        } else {
+          op_temp1[i] = Tb_Gates(A, D, psa_dir, psa_ref, psa_air, psa_g, sTemp$Data[i], 
                               aTemp$Data[i], radiation$Data[i], epsilon, H_L, ef, K)
+          op_temp2[i] = Tb_lizard(aTemp$Data[i], sTemp$Data[i], wind$Data[i], svl=60, m=10, psi=34, rho_S=0.7, elev=500,
+                              doy=day_of_year(aTemp$Date[i]), sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, 
+                              epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
+          op_temp3[i] = Tb_CampbellNorman(aTemp$Data[i], sTemp$Data[i], radiation$Data[i], 
+                                          alpha_L=0.965, epsilon, c_p=29.3, D, wind$Data[i])
+        }
       }
       
-      op_temp[op_temp < 0] = NA
+      op_temp1[op_temp1 < 0] = NA
+      op_temp2[op_temp2 < 0] = NA
+      op_temp3[op_temp3 < 0] = NA
       
-      fig1 <- fig1 %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line=list(color=colors_special[[j]]))
-
-      op_temp = array(0, dim=c(length(aTemp$Data)))
-      for(i in 1:length(aTemp$Data)){
-        if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i]) || is.na(wind$Data[i])) op_temp[i] = NA
-        else if(input$loc3 == "HI" && method %in% c("GRIDMET", "microclimUS")) op_temp[i] = NA
-        else op_temp[i] = Tb_lizard(aTemp$Data[i], sTemp$Data[i], wind$Data[i], svl=60, m=10, psi=34, rho_S=0.7, elev=500,
-                                    doy=day_of_year(aTemp$Date[i]), sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, epsilon_s=0.965, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)          
-      }
-      
-      op_temp[op_temp < 0] = NA
-      
-      fig2 <- fig2 %>% add_lines(x = aTemp$Date, y = op_temp, name = method, line=list(color=colors_special[[j]]))
+      fig1 <- fig1 %>% add_lines(x = aTemp$Date, y = op_temp1, name = method, line=list(color=colors_special[[j]]))
+      fig2 <- fig2 %>% add_lines(x = aTemp$Date, y = op_temp2, name = method, line=list(color=colors_special[[j]]))
+      fig3 <- fig3 %>% add_lines(x = aTemp$Date, y = op_temp3, name = method, line=list(color=colors_special[[j]]))
       
     } 
 
-    fig <- subplot(fig1, fig2, nrows = 2, shareX = TRUE)
+    fig <- subplot(fig1, fig2, fig3, nrows = 3, shareX = TRUE)
     
     fig
     

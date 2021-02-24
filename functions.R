@@ -150,3 +150,8 @@ Tb_CampbellNorman=function(T_a, T_g, S, alpha_L=0.96, epsilon=0.96, c_p=29.3, D,
   
   return(T_e) 
 }
+
+day_of_year<- function(day, format="%Y-%m-%d"){
+  day=  as.POSIXlt(day, format=format)
+  return(as.numeric(strftime(day, format = "%j")))
+}
