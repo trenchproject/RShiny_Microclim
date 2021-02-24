@@ -1,14 +1,13 @@
 # ERA-5 hourly
 
-# db <- brick(paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/", loc, "_ERA.grib"))
-# # 10416 (7 variables * 2 months * 31 days * 24 hours)
+# db <- brick(paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/ERA_", loc, ".grib"))
 # 
 # df <- rasterToPoints(db) %>% as.data.frame()
 # lon <- sort(df$x)[match.closest(locs[loc, "lon"], sort(df$x))]
 # lat <- sort(df$y)[match.closest(locs[loc, "lat"], sort(df$y))]
 # 
 # one_loc <- df[df$x == lon & df$y == lat, ]
-# write.csv(one_loc, paste0(loc, "_ERA.csv"), row.names = F)
+# fwrite(one_loc, paste0("ERA_", loc, ".csv"))
 
 
 
@@ -33,10 +32,10 @@ library(MALDIquant)
 library(data.table)
 
 
-locs <- data.frame(row.names = c("WA", "CO", "PR"), 
-                   "lon" = c(-118.5657, -104.7552, -66.98880), 
-                   "lat" = c(47.0022, 40.8066, 18.15110), 
-                   "offset" = c(-8, -7, -4))
+locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
+                   "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
+                   "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
+                   "offset" = c(-8, -7, -4, -8, -10))
 
 grabERA <- function(varIndex, loc, month) {
 
