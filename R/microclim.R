@@ -30,6 +30,37 @@ grabmicro <- function(var, loc, month) {
   lat <- sort(nc$dim$latitude$vals)[match.closest(locs[loc, "lat"], sort(nc$dim$latitude$vals))]
   latInd <- match(lat, nc$dim$latitude$vals)
   
+  i=1
+  while(is.na(ncvar[lonInd, latInd, 1])){
+    if(!is.na(ncvar[lonInd+i, latInd+i, 1])) {
+      lonInd = lonInd+i;
+      latInd = latInd+i;
+      break
+    }
+    if(!is.na(ncvar[lonInd, latInd+i, 1]))  {
+      latInd = latInd+i;
+      break
+    }
+    if(!is.na(ncvar[lonInd+i, latInd, 1]))  {
+      lonInd = lonInd+i;
+      break
+    }
+    if(!is.na(ncvar[lonInd-i, latInd-i, 1]))  {
+      lonInd = lonInd-i;
+      latInd = latInd-i;
+      break
+    }
+    if(!is.na(ncvar[lonInd-i, latInd, 1]))  {
+      lonInd = lonInd-i;
+      break
+    }
+    if(!is.na(ncvar[lonInd, latInd-i, 1]))  {
+      latInd = latInd-i;
+      break
+    }
+    i = i + 1
+  }
+  
   array <- c()
   for (i in 1:24) {
     array <- c(array, ncvar[lonInd, latInd, i])
