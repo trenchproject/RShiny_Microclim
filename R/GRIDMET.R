@@ -1,7 +1,5 @@
 # GRIDMET
 
-# Locations: WA and CO
-
 # Variables (param_meta$gridmet)
 #       common.name   call                                     description                        units
 # 1            prcp     pr                            precipitation_amount                           mm

@@ -1,3 +1,4 @@
+# Sourcing R files
 source("R/SCAN.R", local = TRUE)
 source("R/ERA5.R", local = TRUE)
 source("R/GLDAS.R", local = TRUE)
@@ -10,54 +11,7 @@ source("R/USCRN.R", local = TRUE)
 source("R/NicheMapR.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
-# library(TrenchR)
 
-grabAnyData <- function(methods, inputVar, loc, month) {
-  if (methods == "SCAN") {
-    data <- grabSCAN(inputVar, loc, month)
-  } else if (methods == "ERA5") {
-    data <- grabERA(inputVar, loc, month)
-  } else if (methods == "GLDAS") {
-    data <- grabGLDAS(inputVar, loc, month)
-  } else if (methods == "GRIDMET") {
-    data <- grabGRID(inputVar, loc, month)
-  } else if (methods == "NOAA_NCDC") {
-    data <- grabNOAA(inputVar, loc, month)
-  } else if (methods == "microclimUS") {
-    data <- grabmicroUS(inputVar, loc, month)
-  } else if (methods == "microclim") {
-    data <- grabmicro(inputVar, loc, month)
-  } else if (methods == "USCRN") {
-    data <- grabUSCRN(inputVar, loc, month)
-  } else if (methods == "SNODAS") {
-    data <- grabSNODAS(inputVar, loc, month)
-  } else if (methods == "NicheMapR") {
-    data <- grabNicheR(inputVar, loc, month)
-  }
-  return (data)
-}
-
-grabMapData <- function(methods, inputVar, month) {
-  if (methods == "SCAN") {
-    data <- mapSCAN(inputVar, month)
-  } else if (methods == "ERA5") {
-    data <- mapERA(inputVar, month)
-  } else if (methods == "GLDAS") {
-    data <- mapGLDAS(inputVar, month)
-  } else if (methods == "GRIDMET") {
-    data <- mapGRID(inputVar, month)
-  } else if (methods == "NOAA_NCDC") {
-    data <- mapNOAA(inputVar, month)
-  } else if (methods == "microclimUS") {
-    data <- mapmicroUS(inputVar, month) 
-  } else if (methods == "microclim") {
-    data <- mapmicro(inputVar, month)
-  } else if (methods == "USCRN") {
-    data <- mapUSCRN(inputVar, month)
-  }
-  
-  return (data)
-}
 
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
@@ -86,11 +40,14 @@ nameDf <- data.frame(row.names = variables,
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 
-methods <- colnames(varsDf)
+datasets <- colnames(varsDf)
+
 
 
 shinyServer <- function(input, output, session) {
   
+  #____________________________________________________________________________
+  # Guided tour
   observeEvent(input$tour1, guide1$init()$start())
   
   observeEvent(input$reset1, {
@@ -104,8 +61,8 @@ shinyServer <- function(input, output, session) {
   })
   
   
-  #___________________________________________________________________________________
-
+  #____________________________________________________________________________
+  # Data selection
   
   output$mytable <- DT::renderDataTable({
     
@@ -115,10 +72,15 @@ shinyServer <- function(input, output, session) {
     
     dataTable <- readxl::read_xlsx("DatasetTable.xlsx") %>% as.data.frame() %>%
       filter(TempCovStart <= input$tempCov_start | is.na(TempCovStart)) %>%
-      filter(TempCovEnd >= input$tempCov_end | is.na(TempCovEnd)) %>%
-      filter(TempRes %in% input$tempRes)
+      filter(TempCovEnd >= input$tempCov_end | is.na(TempCovEnd)) 
     
-    if (input$spaCov == "Outside of US") {
+    if (length(input$tempRes) == 1 && input$tempRes == "3-hourly") { # USCRN has TempRes of "Sub-hourly, Hourly, Daily"
+      dataTable <- filter(dataTable, TempRes %in% "3-hourly")
+    } else {
+      dataTable <- filter(dataTable, TempRes %in% c(input$tempRes, "Sub-hourly, Hourly, Daily"))
+    }
+    
+    if (input$spaCov == "Outside of US") { # When "US" is selected, datasets of global spatial coverage are listed as well
       dataTable <- filter(dataTable, SpatCov != "US")
     }
     
@@ -147,12 +109,11 @@ shinyServer <- function(input, output, session) {
   #___________________________________________________________________________________
   # Temporal comparison
   
-  output$methodsOutput <- renderUI({
+  output$datasetsOutput <- renderUI({
     
     index <- which(!is.na(varsDf[input$var, ]))
-    pickerInput("methods", "Datasets", choices = methods[index], selected = methods[index][c(1, 2)], multiple = T,
+    pickerInput("datasets", "Datasets", choices = datasets[index], selected = datasets[index][c(1, 2)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
-
   })
   
 
@@ -171,7 +132,7 @@ shinyServer <- function(input, output, session) {
     month <- ifelse(input$season == 1, "January", "July")
     
     text <- ""
-    for (method in input$methods) {
+    for (method in input$datasets) {
       text <- paste0(text, "<br><b>", method, ":</b> ", nameDf[input$var, method])
     }
     HTML("<b><u>Data showing</u></b>",
@@ -184,7 +145,7 @@ shinyServer <- function(input, output, session) {
   
   output$plot <- renderPlotly({
     validate(
-      need(input$methods, "Select datasets")
+      need(input$datasets, "Select datasets")
     )
   
     if (input$var == "Wind speed") {
@@ -200,11 +161,10 @@ shinyServer <- function(input, output, session) {
     } 
     
     colors <- c('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
-    p <- plot_ly() %>%
-      layout(xaxis = list(title = "Date"),
-             yaxis = list(title = paste(input$var, unit)))
+    p <- plot_ly()
+
     i = 0
-    for (method in input$methods) {
+    for (method in input$datasets) {
       i = i + 1
       inputVar <- varsDf[input$var, method]
       
@@ -219,7 +179,7 @@ shinyServer <- function(input, output, session) {
     # Adding Tmin when Air temperature is selected
     if (input$var == "Air temperature") {
       i = 0
-      for (method in input$methods) {
+      for (method in input$datasets) {
         i = i + 1
         inputVar <- varsDf["Tmin", method]
         if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
@@ -232,17 +192,19 @@ shinyServer <- function(input, output, session) {
       }
     }
     
-    p
+    p %>% layout(xaxis = list(title = "Date",
+                              dtick = 24),
+                 yaxis = list(title = paste(input$var, unit)))
     
   })
   
-  
+  # Stats for temporal comparison
   output$datasetComparison <- renderUI({
     validate(
-      need(input$methods, "")
+      need(input$datasets, "")
     )
 
-    checkboxGroupButtons("statsOption", "Select two datasets to see their relatedness", choices = input$methods, status = "success", 
+    checkboxGroupButtons("statsOption", "Select two datasets to see their relatedness", choices = input$datasets, status = "success", 
                          checkIcon = list(yes = icon("ok", lib = "glyphicon")))
   })
   
@@ -296,47 +258,47 @@ shinyServer <- function(input, output, session) {
   })
   
   
-  output$statsTable <- renderUI({
-    validate(
-      need(length(input$statsOption) == 2, "Select two datasets\n\n\n")
-    )
-    # Have to figure out what to do with 3-hourly and daily values. take the average?
-    
-    # hourly: SCAN, ERA5, microclimUS, NicheMapR
-    # 3-hourly: GLDAS
-    # daily: gridMET, NOAA NCDC, SNODAS
-    # sub-hourly: USCRN
-    
-    df1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
-    df2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
-    
-    if (input$statsOption[1] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS") || input$statsOption[2] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
-      df1$Date <- as.Date(df1$Date)
-      df1 <- aggregate(df1$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
-      df2$Date <- as.Date(df2$Date) 
-      df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
-    }
-    
-    # Will have to work on
-    # } else if (input$statsOption[1] == "GLDAS" || input$statsOption[2] == "GLDAS") {
-    #   
-    # }
-    
-    colnames(df1)[colnames(df1) == "Data"] <- "Data1"
-    colnames(df2)[colnames(df2) == "Data"] <- "Data2"
-    
-    setDT(df1)
-    setDT(df2)
-    
-    merge <- df1[df2, on = "Date"] %>% 
-      na.omit() %>% 
-      as.data.frame()
-    
-    data1 <- merge$Data1
-    data2 <- merge$Data2
-    
-    plot_correlation()
-  })
+  # output$statsTable <- renderUI({
+  #   validate(
+  #     need(length(input$statsOption) == 2, "Select two datasets\n\n\n")
+  #   )
+  #   # Have to figure out what to do with 3-hourly and daily values. take the average?
+  #   
+  #   # hourly: SCAN, ERA5, microclimUS, NicheMapR
+  #   # 3-hourly: GLDAS
+  #   # daily: gridMET, NOAA NCDC, SNODAS
+  #   # sub-hourly: USCRN
+  #   
+  #   df1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
+  #   df2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
+  #   
+  #   if (input$statsOption[1] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS") || input$statsOption[2] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
+  #     df1$Date <- as.Date(df1$Date)
+  #     df1 <- aggregate(df1$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
+  #     df2$Date <- as.Date(df2$Date) 
+  #     df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
+  #   }
+  #   
+  #   # Will have to work on
+  #   # } else if (input$statsOption[1] == "GLDAS" || input$statsOption[2] == "GLDAS") {
+  #   #   
+  #   # }
+  #   
+  #   colnames(df1)[colnames(df1) == "Data"] <- "Data1"
+  #   colnames(df2)[colnames(df2) == "Data"] <- "Data2"
+  #   
+  #   setDT(df1)
+  #   setDT(df2)
+  #   
+  #   merge <- df1[df2, on = "Date"] %>% 
+  #     na.omit() %>% 
+  #     as.data.frame()
+  #   
+  #   data1 <- merge$Data1
+  #   data2 <- merge$Data2
+  #   
+  #   plot_correlation()
+  # })
   
   
   output$minimap <- renderLeaflet({
@@ -352,44 +314,40 @@ shinyServer <- function(input, output, session) {
       setView(lng = -97.5, lat = 39, zoom = 2.5)
   })
   
+  
   #______________________________________________________________________________________
   # Spatial comparison
   
-  # -109, -102, 37, 41
-  
-  output$mapMethodsOutput <- renderUI({
-    mapMethods <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclim", "microclimUS")
+  output$mapDatasetsOutput <- renderUI({
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclim", "microclimUS")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
-    choices <- mapMethods[mapMethods %in% methods[index]]
+    choices <- mapDatasets[mapDatasets %in% datasets[index]]
     
-    pickerInput("mapMethods", "Dataset to compare", choices = choices, selected = "ERA5", # all the dataset except for SCAN
+    pickerInput("mapDatasets", "Dataset to compare", choices = choices, selected = "ERA5", # all the dataset except for SCAN
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
 
-
-  
+  # Stats for spatial comparison
   statsTable <- reactive({
     
     validate(
-      need(input$mapMethods, "")
+      need(input$mapDatasets, "")
     )
     
     stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
     
     CRN <- grabMapData("USCRN", varsDf[input$mapVar, "USCRN"], input$month)
     
-    # CRN <- grabMapData("USCRN", varsDf["Air temperature", "USCRN"], 7)
-    
-    if (input$mapMethods %in% c("GRIDMET", "NOAA_NCDC")) {
+    if (input$mapDatasets %in% c("GRIDMET", "NOAA_NCDC")) {
       CRN$Date <- as.Date(CRN$Date)
       CRN <- aggregate(list(CRN[, c(-1, -2)]), by = list(CRN$Date), mean) %>%
         set_colnames(c("Date", stations$Name))
     }
     
-    inputVar <- varsDf[input$mapVar, input$mapMethods]
+    inputVar <- varsDf[input$mapVar, input$mapDatasets]
     
-    mapDf <- grabMapData(input$mapMethods, inputVar, input$month)
+    mapDf <- grabMapData(input$mapDatasets, inputVar, input$month)
 
     stats <- cbind(stations, 
                    "Bias" = NA,
@@ -498,6 +456,7 @@ shinyServer <- function(input, output, session) {
                 title = "Bias")
   })
   
+  
   observeEvent(input$mymap_groups, {
     
     stats <- statsTable()
@@ -564,166 +523,14 @@ shinyServer <- function(input, output, session) {
                   title = "Pearson Correlation Coefficient")
     }
   })
-  # rasterData1 <- reactive({
-  #   validate(
-  #     need(input$mapMethods1, "")
-  #   )
-  #   
-  #   inputVar1 <- varsDf[input$mapVar, input$mapMethods1]
-  #   rasterData1 <- grabMapData(input$mapMethods1, inputVar1, input$month, as.numeric(input$date))
-  #   
-  # })
-  # 
-  # rasterData2 <- reactive({
-  #   validate(
-  #     need(input$mapMethods2, "")
-  #   )
-  # 
-  #   inputVar2 <- varsDf[input$mapVar, input$mapMethods2]
-  #   rasterData2 <- grabMapData(input$mapMethods2, inputVar2, input$month, as.numeric(input$date))
-  # 
-  # })
-  # 
-  # rasterdif <- reactive({
-  #   raster1 <- rasterData1()
-  #   raster2 <- rasterData2()
-  #   
-  #   if (res(raster1)[1] > res(raster2)[1]) {
-  #     rasterdif <- abs(resample(raster2, raster1) - raster1)
-  #   } else {
-  #     rasterdif <- abs(resample(raster1, raster2) - raster2)
-  #   }
-  #   rasterdif
-  # })
-  # 
-  # 
-  # output$mymap <- renderLeaflet({
-  #   raster1 <- rasterData1()
-  #   raster2 <- rasterData2()
-  #   
-  #   if (input$mapVar == "Wind speed") {
-  #     unit <- "(m/s)"
-  #   } else if (input$mapVar == "Radiation") {
-  #     unit <- HTML("(W/m<sup>2</sup>)")
-  #   } else {
-  #     unit <- "(°C)"
-  #   }
-  #   
-  #   min <- min(minValue(raster1), minValue(raster2))
-  #   max <- max(maxValue(raster1), maxValue(raster2))
-  # 
-  #   pal <- colorNumeric(palette = viridis(5),
-  #                       domain = c(min, max),
-  #                       na.color = "transparent")
-  #   
-  #   paldif <- colorNumeric(palette = viridis(5),
-  #                          domain = c(minValue(rasterdif()), maxValue(rasterdif())),
-  #                          na.color = "transparent")
-  #   
-  #   leaflet() %>%
-  #     addProviderTiles(providers$CartoDB.Positron) %>%
-  #     addRasterImage(x = raster1, colors = pal, group = input$mapMethods1, opacity = 1) %>%
-  #     addRasterImage(x = raster2, colors = pal, group = input$mapMethods2, opacity = 1) %>%
-  #     addRasterImage(x = rasterdif(), colors = paldif, group = "Difference", opacity = 1) %>%
-  #     setView(lng = -105.5, lat = 39, zoom = 6) %>%
-  #     addLayersControl(baseGroups = c(input$mapMethods1, input$mapMethods2, "Difference")) %>%
-  #     addLegend(pal = pal,
-  #               opacity = 1,
-  #               values = c(min, max),
-  #               position = "bottomright",
-  #               title = paste(input$mapVar, unit))
-  # })
-  # 
-  # observeEvent(input$mymap_groups, {
-  #   
-  #   raster1 <- rasterData1()
-  #   raster2 <- rasterData2()
-  #   
-  #   if (input$mapVar == "Wind speed") {
-  #     unit <- "(m/s)"
-  #   } else if (input$mapVar == "Radiation") {
-  #     unit <- HTML("(W/m<sup>2</sup>)")
-  #   } else {
-  #     unit <- "(°C)"
-  #   }
-  #   
-  #   min <- min(minValue(raster1), minValue(raster2))
-  #   max <- max(maxValue(raster1), maxValue(raster2))
-  #   
-  #   pal <- colorNumeric(palette = viridis(5),
-  #                       domain = c(min, max),
-  #                       na.color = "transparent")
-  #   
-  #   paldif <- colorNumeric(palette = viridis(5),
-  #                          domain = c(minValue(rasterdif()), maxValue(rasterdif())),
-  #                          na.color = "transparent")
-  #   
-  #   if (input$mymap_groups == "Difference") {
-  #     leafletProxy('mymap') %>% clearControls() %>%
-  #       addLegend(pal = paldif, 
-  #                 opacity = 1,
-  #                 values = c(minValue(rasterdif()), maxValue(rasterdif())),
-  #                 group = "Difference",
-  #                 position = "bottomright",
-  #                 title = paste("Difference", unit))
-  #   } else {
-  #     leafletProxy('mymap') %>% clearControls() %>%
-  #       addLegend(pal = pal,
-  #                 opacity = 1,
-  #                 values = c(min, max),
-  #                 position = "bottomright",
-  #                 title = paste(input$mapVar, unit))
-  #   }
-  # })
 
-  # observeEvent(input$mymap_groups, {
-  #   
-  #   raster1 <- rasterData1()
-  #   raster2 <- rasterData2()
-  #   
-  #   if (input$mapVar == "Wind speed") {
-  #     unit <- "(m/s)"
-  #   } else if (input$mapVar == "Radiation") {
-  #     unit <- HTML("(W/m<sup>2</sup>)")
-  #   } else {
-  #     unit <- "(°C)"
-  #   }
-  #   
-  #   min <- min(minValue(raster1), minValue(raster2))
-  #   max <- max(maxValue(raster1), maxValue(raster2))
-  #   
-  #   pal <- colorNumeric(palette = viridis(5),
-  #                       domain = c(min, max),
-  #                       na.color = "transparent")
-  #   
-  #   paldif <- colorNumeric(palette = viridis(5),
-  #                          domain = c(minValue(rasterdif()), maxValue(rasterdif())),
-  #                          na.color = "transparent")
-  #   
-  #   if (input$mymap_groups == "Difference") {
-  #     leafletProxy('mymap') %>% clearControls() %>%
-  #       addLegend(pal = paldif, 
-  #                 opacity = 1,
-  #                 values = c(minValue(rasterdif()), maxValue(rasterdif())),
-  #                 group = "Difference",
-  #                 position = "bottomright",
-  #                 title = paste("Difference", unit))
-  #   } else {
-  #     leafletProxy('mymap') %>% clearControls() %>%
-  #       addLegend(pal = pal,
-  #                 opacity = 1,
-  #                 values = c(min, max),
-  #                 position = "bottomright",
-  #                 title = paste(input$mapVar, unit))
-  #   }
-  # })
   
   
   # ---------------------- operative temperature -------------------------------
   
   # Dataset methods selector
-  output$methodsOutput3 <- renderUI({
-    pickerInput("methods3", "Datasets", choices = methods[-1][-8], selected = methods[c(8)], multiple = T,
+  output$datasetsOutput3 <- renderUI({
+    pickerInput("datasets3", "Datasets", choices = datasets[-1][-8], selected = datasets[c(8)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -765,7 +572,7 @@ shinyServer <- function(input, output, session) {
   output$plot3 <- renderPlotly({
     
     validate(
-      need(input$methods3, "Select datasets")
+      need(input$datasets3, "Select datasets")
     )
     
     colors_special <- list('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
@@ -814,7 +621,7 @@ shinyServer <- function(input, output, session) {
     
     # For each selected method
     j = 0
-    for (method in input$methods3) {
+    for (method in input$datasets3) {
       j = j + 1
       
       # Get variable name/location

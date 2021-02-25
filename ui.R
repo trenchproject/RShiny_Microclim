@@ -95,7 +95,7 @@ shinyUI <- fluidPage(id = "page",
                                  options = list(style = "btn-success"), multiple = F),
                    ),
                    
-                   uiOutput("methodsOutput"),
+                   uiOutput("datasetsOutput"),
                    
                    div(
                      id = "sealoc-wrapper",
@@ -173,19 +173,14 @@ shinyUI <- fluidPage(id = "page",
                        pickerInput("mapVar", "Variable", choices = variables2,
                                    options = list(style = "btn-success")),
                      ),
-                     fluidRow(id = "mondate-wrapper",
-                       column(6, radioGroupButtons("month", "Month", choices = c("January" = 1, "July" = 7), selected = 7, status = "danger", size = "sm"))
-                       # column(6, radioGroupButtons("date", "Date", choices = 1:7, selected = 1, status = "danger", size = "sm"))
+                     div(id = "mondate-wrapper",
+                       radioGroupButtons("month", "Month", choices = c("Summer" = 7, "Winter" = 1), selected = 7, status = "danger", size = "sm")
                      ),
                      
-                     # radioGroupButtons("hour", "Hour", choices = 0:23, selected = 0, status = "danger", size = "sm"),
-                     
-                     hr(),
-                     
+
                      div(
-                       id = "methods-wrapper",
-                       uiOutput("mapMethodsOutput")
-                       # uiOutput("mapMethodsOutput2")
+                       id = "datasets-wrapper",
+                       uiOutput("mapDatasetsOutput")
                      )
                    ),
                    
@@ -205,7 +200,7 @@ shinyUI <- fluidPage(id = "page",
                      environmental conditions given by the selected datasets. The Tb_Gates()
                      function in the TrenchR package is used to make these predictions."),
                    
-                   uiOutput("methodsOutput3"),
+                   uiOutput("datasetsOutput3"),
                    
                    div(
                      id = "sealoc-wrapper3",

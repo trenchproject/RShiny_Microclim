@@ -32,7 +32,7 @@ guide1 <- Cicerone$
     position = "right"
   )$
   step(
-    el = "methodsOutput",
+    el = "datasetsOutput",
     title = "Datasets to show on the plot",
     description = HTML("Here, you will see a list of avialable datasets that collect the variable you selected above.
                        The first two on the list are automatically selected as default. Deselect <b>ERA5</b>, select <b>SCAN</b> and <b>GRIDMET</b> and hit next."),
@@ -88,25 +88,25 @@ guide2 <- Cicerone$
   step(
     el = "map-wrapper",
     title = "Map comparing datasets",
-    description = HTML("This map shows the state of Colorado and the maximum air temperature using the data from ERA5.
-                       <br>On the top right corner, you can select to view the data from GLDAS to compare the resolution and the data accuracy.
-                       <br>Selecting \"Difference\" will adjust the two maps to the coarser resolution and visualizes the temperature difference between the two datasets."),
+    description = HTML("The map currently shows the bias between the air temperature data from 155 weather stations and ERA-5. The size of the circle corresponds to the value of the bias. Therefore, the error is larger at locations where the circles are bigger.
+                       Clicking on the circle will show the name of the location and the precise value.  
+                       <br>On the top right corner, you can select to view RMSE (roor mean squared error) or PCC (Pearson correlation coefficient) as well."),
     position = "left"
   )$
   step(
     el = "var2-wrapper",
     title = "Variable to plot",
-    description = HTML("Here, you can select the variables for which you are looking to get the data."),
+    description = HTML("Here, you can select a climatic variable."),
     position = "right"
   )$
   step(
     el = "mondate-wrapper",
-    title = "Month and date",
-    description = HTML("There are options to plot for any day in the first week of January and July in 2017.")
+    title = "Month",
+    description = HTML("There are options to plot for January and July in 2017. Either case, the statistics are calculated using the data for the whole month.")
   )$
   step(
-    el = "methods-wrapper",
-    title = "Two datasets to map",
-    description = HTML("Here, you can select two different datasets that collect the variable you selected above.
+    el = "datasets-wrapper",
+    title = "A dataset to compare",
+    description = HTML("Here, you can select a dataset that collect the variable you selected above to compare to the USCRN weather station data.
                        <br>")
   )

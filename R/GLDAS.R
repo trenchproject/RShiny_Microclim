@@ -1,6 +1,5 @@
 # GLDAS 3-hourly
-# Extent: -119,18,-66,48
-# Extent (CA included): -124,18,-66,48
+# Extent: Whole US + AK, HI -170.3, 19.5, -67.8, 71.6
 
 # https://disc.gsfc.nasa.gov/data-access
 # wget for Windows methods for download
@@ -32,16 +31,6 @@ library(AOI)
 library(humidity)
 
 
-# nc2 <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170701.0000.021.nc4.SUB.nc4")
-# ncvar2 <- ncvar_get(nc2, var = "Tair_f_inst")
-# val2 <- ncvar2[lonInd, latInd]
-# var = "Tair_f_inst"
-# 
-# filename <- "G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170701.1200.021.nc4.SUB.nc4"
-# nc <- nc_open("GLDAS7_new/GLDAS_NOAH025_3H.A20170711.1200.021.nc4.SUB.nc4")
-# 
-# nc <- nc_open(filename)
-# nc <- nc_open(paste0("G:/Shared drives/TrEnCh/TSMVisualization/Data/Microclim/R/GLDAS_7/GLDAS_NOAH025_3H.A20170710.0000.021.nc4.SUB.nc4"))
 
 valGLDAS <- function(nc, var, loc) {
   
@@ -56,7 +45,7 @@ valGLDAS <- function(nc, var, loc) {
   lat <- sort(nc$dim$lat$vals)[match.closest(locs[loc, "lat"], sort(nc$dim$lat$vals))]
   latInd <- match(lat, nc$dim$lat$vals)
   
-  i=1
+  i = 1
   while(is.na(ncvar[lonInd, latInd])){
     if(!is.na(ncvar[lonInd+i, latInd+i])) {
       lonInd = lonInd+i;
@@ -98,9 +87,7 @@ valGLDAS <- function(nc, var, loc) {
   } else if (var == "SoilMoi40_100cm_inst") { # kg/m^3 to % (Soil density =~ 1.6 g/cm^3 = 1600 kg/m^3. The measurement is over 60 cm)
     val <- 1600 / val / 0.6
   }
-  # if (var %in% c("Swnet_tavg", "Lwnet_tavg")) {
-  #   val <- -val
-  # }
+
   return (val)
 }
 
@@ -124,12 +111,10 @@ grabGLDAS <- function(var, loc, month) {
       
       char_day <- ifelse(day < 10, paste0("0", day), day)
       char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
-      
-      filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
-      
-      # filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
-      nc <- nc_open(filename)
 
+      filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+
+      nc <- nc_open(filename)
       val <- valGLDAS(nc, var, loc)
       array <- c(array, val)
     }
@@ -145,9 +130,8 @@ grabGLDAS <- function(var, loc, month) {
         
         filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
         
-        # filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        filename <- paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
         nc <- nc_open(filename)
-        
         val <- valGLDAS(nc, "Tair_f_inst", loc)
         arrayTemp <- c(arrayTemp, val)
       }
@@ -171,8 +155,6 @@ grabGLDAS <- function(var, loc, month) {
 }
 
 
-# -120.9, 33.5, -115, 41.2
-# Whole US + AK, HI -170.3, 19.5, -67.8, 71.6
 
 # takes too long to process
 mapGLDAS <- function(var, month) {
@@ -184,8 +166,6 @@ mapGLDAS <- function(var, month) {
     days <- c(days, paste0("2017-0", month, "-", i))
   }
   
-  # fullDf <- data.frame(Date = rep(days, each = 8),
-  #                      Hour = seq(from = 0, to = 21, by = 3))
   
   fullDf <- data.frame(Date = rep(days, each = 24),
                        Hour = 0:23)
@@ -194,8 +174,6 @@ mapGLDAS <- function(var, month) {
   
   fullDates <- fullDf$Date
 
-  # fullDf <- fullDf[1 : (31 * 8 - roundUp), ]
-  
 
   for (i in 1:nrow(stations)) {
     station <- stations$Name[i]
@@ -211,7 +189,7 @@ mapGLDAS <- function(var, month) {
         char_day <- ifelse(day < 10, paste0("0", day), day)
         char_hour <- ifelse(hour < 10, paste0("0", hour), hour)
         
-        filename <- paste0("Data/GLDAS_USmap", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
+        filename <- paste0("Data/GLDAS_", month, "/GLDAS_NOAH025_3H.A20170", month, char_day, ".", char_hour, "00.021.nc4.SUB.nc4")
         
         nc <- nc_open(filename)
         

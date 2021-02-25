@@ -1,3 +1,54 @@
+grabAnyData <- function(methods, inputVar, loc, month) {
+  if (methods == "SCAN") {
+    data <- grabSCAN(inputVar, loc, month)
+  } else if (methods == "ERA5") {
+    data <- grabERA(inputVar, loc, month)
+  } else if (methods == "GLDAS") {
+    data <- grabGLDAS(inputVar, loc, month)
+  } else if (methods == "GRIDMET") {
+    data <- grabGRID(inputVar, loc, month)
+  } else if (methods == "NOAA_NCDC") {
+    data <- grabNOAA(inputVar, loc, month)
+  } else if (methods == "microclimUS") {
+    data <- grabmicroUS(inputVar, loc, month)
+  } else if (methods == "microclim") {
+    data <- grabmicro(inputVar, loc, month)
+  } else if (methods == "USCRN") {
+    data <- grabUSCRN(inputVar, loc, month)
+  } else if (methods == "SNODAS") {
+    data <- grabSNODAS(inputVar, loc, month)
+  } else if (methods == "NicheMapR") {
+    data <- grabNicheR(inputVar, loc, month)
+  }
+  return (data)
+}
+
+grabMapData <- function(methods, inputVar, month) {
+  if (methods == "SCAN") {
+    data <- mapSCAN(inputVar, month)
+  } else if (methods == "ERA5") {
+    data <- mapERA(inputVar, month)
+  } else if (methods == "GLDAS") {
+    data <- mapGLDAS(inputVar, month)
+  } else if (methods == "GRIDMET") {
+    data <- mapGRID(inputVar, month)
+  } else if (methods == "NOAA_NCDC") {
+    data <- mapNOAA(inputVar, month)
+  } else if (methods == "microclimUS") {
+    data <- mapmicroUS(inputVar, month) 
+  } else if (methods == "microclim") {
+    data <- mapmicro(inputVar, month)
+  } else if (methods == "USCRN") {
+    data <- mapUSCRN(inputVar, month)
+  }
+  
+  return (data)
+}
+
+
+
+
+
 # Tb_gates default values
 A = 1 # surface area (m^2)
 D = 0.001 # characteristic dimension for conduction (m)

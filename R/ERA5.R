@@ -1,13 +1,20 @@
 # ERA-5 hourly
 
-# db <- brick(paste0("G:/Shared drives/TrEnCh/Projects/Microclimate/R/ERA_", loc, ".grib"))
+# Processing grib files for just one location
+
+# When specifying geogrphical area, select "Sub-region extraction" and specify a very small region.
+# e.g.) when getting data for (47.00, -118.56), make the region something like west: -118.6, east: -118.5, north: 47.1, south: 46.9 
+# This will minimize the data size and make the processing faster.
+# Then the following lines of code produces a csv file that has one row.
+
+# db <- brick("....grib")
 # 
 # df <- rasterToPoints(db) %>% as.data.frame()
-# lon <- sort(df$x)[match.closest(locs[loc, "lon"], sort(df$x))]
-# lat <- sort(df$y)[match.closest(locs[loc, "lat"], sort(df$y))]
+# lon <- sort(df$x)[match.closest("lon", sort(df$x))]
+# lat <- sort(df$y)[match.closest("lat", sort(df$y))]
 # 
-# one_loc <- df[df$x == lon & df$y == lat, ]
-# fwrite(one_loc, paste0("ERA_", loc, ".csv"))
+# r <- df[df$x == lon & df$y == lat, ]
+# data.table::fwrite(r, "....csv")
 
 
 
@@ -100,13 +107,15 @@ grabERA <- function(varIndex, loc, month) {
 # 3. surface_net_solar_radiation (J/m^2)
 
 
+# When processing grib files for a large region
+
+
 # db <- brick(paste0("ERA_conus.grib"))
-#  
+#
 # stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
-# stations$Name[128]
-# stations$Name[129]
-# for (i in 129 : nrow(stations)) {
-#   # r <- raster::setExtent(db, c(stations$Lon[i] - 0.15, stations$Lon[i] + 0.15, stations$Lat[i] - 0.15, stations$Lat[i] + 0.15), keepres = T, snap = T)
+#
+# for (i in 1 : nrow(stations)) {
+#
 #   c <- crop(db, c(stations$Lon[i] - 0.1, stations$Lon[i] + 0.1, stations$Lat[i] - 0.1, stations$Lat[i] + 0.1))
 #   p <- rasterToPoints(c) %>% as.data.frame()
 # 
