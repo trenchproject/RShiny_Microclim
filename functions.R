@@ -1,45 +1,47 @@
-grabAnyData <- function(methods, inputVar, loc, month) {
-  if (methods == "SCAN") {
+grabAnyData <- function(dataset, inputVar, loc, month) {
+  if (dataset == "SCAN") {
     data <- grabSCAN(inputVar, loc, month)
-  } else if (methods == "ERA5") {
+  } else if (dataset == "ERA5") {
     data <- grabERA(inputVar, loc, month)
-  } else if (methods == "GLDAS") {
+  } else if (dataset == "GLDAS") {
     data <- grabGLDAS(inputVar, loc, month)
-  } else if (methods == "GRIDMET") {
+  } else if (dataset == "GRIDMET") {
     data <- grabGRID(inputVar, loc, month)
-  } else if (methods == "NOAA_NCDC") {
+  } else if (dataset == "NOAA_NCDC") {
     data <- grabNOAA(inputVar, loc, month)
-  } else if (methods == "microclimUS") {
+  } else if (dataset == "microclimUS") {
     data <- grabmicroUS(inputVar, loc, month)
-  } else if (methods == "microclim") {
+  } else if (dataset == "microclim") {
     data <- grabmicro(inputVar, loc, month)
-  } else if (methods == "USCRN") {
+  } else if (dataset == "USCRN") {
     data <- grabUSCRN(inputVar, loc, month)
-  } else if (methods == "SNODAS") {
+  } else if (dataset == "SNODAS") {
     data <- grabSNODAS(inputVar, loc, month)
-  } else if (methods == "NicheMapR") {
+  } else if (dataset == "NicheMapR") {
     data <- grabNicheR(inputVar, loc, month)
   }
   return (data)
 }
 
-grabMapData <- function(methods, inputVar, month) {
-  if (methods == "SCAN") {
+grabMapData <- function(dataset, inputVar, month) {
+  if (dataset == "SCAN") {
     data <- mapSCAN(inputVar, month)
-  } else if (methods == "ERA5") {
+  } else if (dataset == "ERA5") {
     data <- mapERA(inputVar, month)
-  } else if (methods == "GLDAS") {
+  } else if (dataset == "GLDAS") {
     data <- mapGLDAS(inputVar, month)
-  } else if (methods == "GRIDMET") {
+  } else if (dataset == "GRIDMET") {
     data <- mapGRID(inputVar, month)
-  } else if (methods == "NOAA_NCDC") {
+  } else if (dataset == "NOAA_NCDC") {
     data <- mapNOAA(inputVar, month)
-  } else if (methods == "microclimUS") {
+  } else if (dataset == "microclimUS") {
     data <- mapmicroUS(inputVar, month) 
-  } else if (methods == "microclim") {
+  } else if (dataset == "microclim") {
     data <- mapmicro(inputVar, month)
-  } else if (methods == "USCRN") {
+  } else if (dataset == "USCRN") {
     data <- mapUSCRN(inputVar, month)
+  } else if (dataset == "NicheMapR") {
+    data <- mapNicheR(inputVar, month)
   }
   
   return (data)

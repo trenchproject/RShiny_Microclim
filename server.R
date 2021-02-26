@@ -319,7 +319,7 @@ shinyServer <- function(input, output, session) {
   # Spatial comparison
   
   output$mapDatasetsOutput <- renderUI({
-    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "microclim", "microclimUS")
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "NicheMapR", "microclim", "microclimUS")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
     choices <- mapDatasets[mapDatasets %in% datasets[index]]

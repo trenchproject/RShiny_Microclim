@@ -140,7 +140,6 @@ mapERA <- function(varIndex, month) {
 
   fullDf <- data.frame(Date = rep(days, each = 24),
                        Hour = 0:23)
-  # fullDf <- fullDf[1: (31 * 24 - offset), ]
   fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
   
   fullDates <- fullDf$Date
@@ -175,7 +174,7 @@ mapERA <- function(varIndex, month) {
     df <- cbind(fullDates[1: (31 * 24 - offset)], vals %>% as.data.frame()) %>% 
       set_colnames(c("Date", station))
     
-    fullDf <- merge(fullDf, df, by = "Date")
+    fullDf <- merge(fullDf, df, by = "Date", all = T)
   }
   
   return (fullDf)

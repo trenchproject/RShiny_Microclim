@@ -120,8 +120,55 @@ grabNicheR <- function(var, loc, month) {
 }
 
 
-# mapNicheR <- function(var, month) {
-#   
-#   stations <- read.delim("CRN_stations.inv", sep = ",") %>% as.data.frame()
-#   
+
+# DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
+# 
+# for (i in 91 : nrow(stations)) {
+#   lonlat <- c(stations$Lon[i], stations$Lat[i]) # (longitude, latitude)
+#   for (month in c(1, 7)) {
+#     dstart <- paste0("01/0", month, "/2017") # start date
+#     dfinish <- paste0("31/0", month, "/2017") # end date
+# 
+#     micro <- micro_ncep(loc = lonlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
+#                         runmoist = 0, runshade = 0)
+# 
+#     filename <- paste0("NicheRmap_", stations$Name[i], "_", month, ".RData")
+# 
+#     save(micro, file = filename)
+#     print(paste0("Done with no.", i))
+#   }
 # }
+
+
+mapNicheR <- function(var, month) {
+
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+  
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  fullDf <- data.frame(Date = rep(days, each = 24),
+                       Hour = 0:23)
+  fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+  
+  fullDates <- fullDf$Date
+  
+  for (i in 1 : nrow(stations)) {
+    station <- stations$Name[i]
+    offset <- -stations$Offset[i]
+    
+    load(paste0("Data/NicheMapR_map/NicheRmap_", station, "_", month, ".RData"))
+    
+    vals <- micro$metout[, var] 
+
+    df <- cbind(fullDates[1 : (24 * 31 - offset)], vals[(offset + 1) : (24 * 31)] %>% as.data.frame()) %>% 
+      set_colnames(c("Date", station))
+    
+    fullDf <- merge(fullDf, df, by = "Date", all = T)
+
+  }
+
+  return (fullDf)
+}
