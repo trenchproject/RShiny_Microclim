@@ -99,8 +99,6 @@ grabUSCRN <- function(var, loc, month) {
 # T_MAX
 # SOLARAD
 
-var = "SUR_TEMP"
-month = 7
 mapUSCRN <- function(var, month) {
   var <- ifelse(var == "SURFACE_TEMPERATURE", "SUR_TEMP", ifelse(var == "AIR_TEMPERATURE", "T_MAX", "SOLARAD"))
   

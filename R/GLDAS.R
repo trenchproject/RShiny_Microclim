@@ -201,14 +201,8 @@ mapGLDAS <- function(var, month) {
         
         val <- ncvar[lonInd, latInd]
         
-        if (var %in% c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst")) { # K to C
+        if (var %in% c("AvgSurfT_inst", "Tair_f_inst")) { # K to C
           val <- val - 273.15
-        } else if (var == "Rainf_f_tavg") {  # kg/m^2 s to mm
-          val <- val * 60 * 60 * 3
-        } else if (var == "SnowDepth_inst") { # m to mm
-          val <- val * 1000
-        } else if (var == "SoilMoi40_100cm_inst") { # kg/m^3 to % (Soil density =~ 1.6 g/cm^3 = 1600 kg/m^3. The measurement is over 60 cm)
-          val <- 1600 / val / 0.6
         }
         array <- c(array, val, NA, NA)
       }

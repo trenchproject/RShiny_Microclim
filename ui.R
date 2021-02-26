@@ -10,8 +10,8 @@ library(viridis)
 library(shinyBS)
 library(shinyjs)
 library(cicerone)
-# library(DataExplorer)
 library(DT)
+library(stringr)
 
 variables <- c("Air temperature", "Surface temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
@@ -50,13 +50,17 @@ shinyUI <- fluidPage(id = "page",
         br(),
         fluidRow(
           column(2, radioButtons("spaCov", "Area of interest", choices = c("US", "Outside of US"), selected = "US")),
-          column(2, numericInput("tempCov_start", "Beginning of temporal coverage", min = 1979, max = 2021, value = 2017)),
-          column(2, numericInput("tempCov_end", "End of temporal coverage", min = 1979, max = 2021, value = 2017)),
+          column(2, tipify(numericInput("tempCov_start", "Beginning of temporal coverage", min = 1979, max = 2021, value = 2017), 
+                           "Enter the first year that you need the data for.")),
+          column(2, tipify(numericInput("tempCov_end", "End of temporal coverage", min = 1979, max = 2021, value = 2017),
+                           "Enter the last year you need the data for.")),
           
           # column(6, sliderInput("tempCov", "Temporal coverage", min = 1979, max = 2021, value = c(2017, 2017))),
-          column(2, awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Daily", "3-hourly", "Hourly", "Other" = "One day each month"), selected = c("Daily", "3-hourly", "Hourly", "One day each month"))),
-          column(3, pickerInput("varTable", "Variables of interest", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables",
-                                                                                                                               style = "btn-danger")))
+          column(2, tipify(awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Daily", "3-hourly", "Hourly", "Other" = "One day each month"), selected = c("Daily", "3-hourly", "Hourly", "One day each month")),
+                           "This is how frequently the data are collected")),
+          column(3, tipify(pickerInput("varTable", "Variables of interest", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables",
+                                                                                                                               style = "btn-danger")),
+                           "Select all the climatic variables you want from the dataset.", placement = "top"))
         ),
         
         p(strong("Suitable datasets")),
@@ -70,7 +74,7 @@ shinyUI <- fluidPage(id = "page",
                sidebarLayout(
                  sidebarPanel(
                    h4("Temporal comparison"),
-                   p("Select a variable you are interested in and some datasets that contain that variable. 
+                   p("Select a climatic variable of interest and some datasets that contain that variable. 
                      The plot will show how much the data can differ temporally for a given location and a given month, depending on the dataset."),
                    actionBttn(
                      inputId = "reset1",
@@ -147,7 +151,7 @@ shinyUI <- fluidPage(id = "page",
                  sidebarLayout(
                    sidebarPanel(
                      h4("Spatial comparison"),
-                     p("Select a climatic variable you are interested in and a dataset that contains that variable. 
+                     p("Select a climatic variable of intereste and a dataset that contains that variable. 
                        The map will display the bias, root mean squared error, and Pearson correlation coefficient between the data from the chosen dataset and USCRN data for each station in the US."),
                      
                      actionBttn(

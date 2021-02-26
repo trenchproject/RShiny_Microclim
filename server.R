@@ -43,7 +43,6 @@ nameDf <- data.frame(row.names = variables,
 datasets <- colnames(varsDf)
 
 
-
 shinyServer <- function(input, output, session) {
   
   #____________________________________________________________________________
@@ -112,7 +111,11 @@ shinyServer <- function(input, output, session) {
   output$datasetsOutput <- renderUI({
     
     index <- which(!is.na(varsDf[input$var, ]))
-    pickerInput("datasets", "Datasets", choices = datasets[index], selected = datasets[index][c(1, 2)], multiple = T,
+    
+    pickerInput("datasets", "Datasets", 
+                choices = datasets[index][datasets[index] != "USCRN"],  # USCRN shouldn't be an option
+                selected = datasets[index][datasets[index] != "USCRN"][c(1, 2)], 
+                multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -192,8 +195,7 @@ shinyServer <- function(input, output, session) {
       }
     }
     
-    p %>% layout(xaxis = list(title = "Date",
-                              dtick = 24),
+    p %>% layout(xaxis = list(title = "Date"),
                  yaxis = list(title = paste(input$var, unit)))
     
   })
@@ -431,7 +433,7 @@ shinyServer <- function(input, output, session) {
                        opacity = 1, 
                        fillOpacity = 0, 
                        group = "Bias",
-                       popup = paste0(stats$Name, ": ", round(stats$Bias, digits = 2))) %>%
+                       popup = paste0(str_replace_all(string = stats$Name, pattern =  "_", replacement = " "), ": ", round(stats$Bias, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~rmseCol(stats$RMSECat),
                        stroke = TRUE,
@@ -439,7 +441,7 @@ shinyServer <- function(input, output, session) {
                        opacity = 1, 
                        fillOpacity = 0,                        
                        group = "RMSE",
-                       popup = paste0(stats$Name, ": ", round(stats$RMSE, digits = 2))) %>%
+                       popup = paste0(str_replace_all(string = stats$Name, pattern =  "_", replacement = " "), ": ", round(stats$RMSE, digits = 2))) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~pccCol(stats$PCCCat),
                        stroke = TRUE,
@@ -447,7 +449,7 @@ shinyServer <- function(input, output, session) {
                        opacity = 1, 
                        fillOpacity = 0,                        
                        group = "PCC",
-                       popup = paste0(stats$Name, ": ", round(stats$PCC, digits = 2))) %>%
+                       popup = paste0(str_replace_all(string = stats$Name, pattern =  "_", replacement = " "), ": ", round(stats$PCC, digits = 2))) %>%
       addLayersControl(baseGroups = c("Bias", "RMSE", "PCC")) %>%
       addLegend(pal = biasCol,
                 opacity = 1,

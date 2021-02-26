@@ -2,7 +2,7 @@
 
 # Processing grib files for just one location
 
-# When specifying geogrphical area, select "Sub-region extraction" and specify a very small region.
+# When specifying geographical area, select "Sub-region extraction" and specify a very small region.
 # e.g.) when getting data for (47.00, -118.56), make the region something like west: -118.6, east: -118.5, north: 47.1, south: 46.9 
 # This will minimize the data size and make the processing faster.
 # Then the following lines of code produces a csv file that has one row.
@@ -129,7 +129,7 @@ grabERA <- function(varIndex, loc, month) {
 
 mapERA <- function(varIndex, month) {
 
-  varIndex <- ifelse(varIndex == 3, 1, ifelse(varIndex == 4, 2, 3))
+  varIndex <- ifelse(varIndex == 3, 1, ifelse(varIndex == 4, 2, 3)) # Converting index since this data file only contains three variables
   
   stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   
@@ -169,6 +169,8 @@ mapERA <- function(varIndex, month) {
     
     if (varIndex %in% c(1, 2)) { # K to C
       vals <- vals - 273.15
+    } else if (varIndex == 3) { # J/m^2 to W/m^2 for 9-hourly accumulation
+      vals <- vals / 32400
     }
     
     df <- cbind(fullDates[1: (31 * 24 - offset)], vals %>% as.data.frame()) %>% 
