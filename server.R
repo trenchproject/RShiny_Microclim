@@ -525,14 +525,26 @@ shinyServer <- function(input, output, session) {
   })
 
   
-  
+  # ---------------------- operative temperature -------------------------------
+  # ---------------------- operative temperature -------------------------------
+  # ---------------------- operative temperature -------------------------------
   # ---------------------- operative temperature -------------------------------
   
-  # Dataset methods selector
+  
+  # Data set selector
   output$datasetsOutput3 <- renderUI({
     pickerInput("datasets3", "Datasets", choices = datasets[-1][-8], selected = datasets[c(8)], multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
+  
+  # Operative temperature function selector
+  output$op3 <- renderUI({
+    pickerInput("op3", "Operative Temperature Function", 
+                choices = c("Small Ectotherm (Gates)" = "gates", "Sceloporus Lizard" = "lizard", "Small Ectotherm (Campbell-Norman)" = "campbell"), 
+                selected = "lizard", multiple = F,
+                options = list(style = "btn-success", `actions-box` = TRUE))
+  })
+  
   
   # Rendering selected location/season data
   output$info3 <- renderText({
@@ -554,8 +566,8 @@ shinyServer <- function(input, output, session) {
          "<br><b>Time:</b> ", month3, "1st - 31st, 2017")
   })
   
+  # Small location map in sidebar
   output$minimap3 <- renderLeaflet({
-    
     x = c(-119.65, -104.7552, -155.07)
     y = c(44.55, 40.8066, 19.7)
     text = c("John Day, OR", "Nunn, CO", "Hilo, HI")
@@ -571,58 +583,16 @@ shinyServer <- function(input, output, session) {
   # Rendering plot
   output$plot3 <- renderPlotly({
     
-    validate(
-      need(input$datasets3, "Select datasets")
-    )
+    validate(need(input$datasets3, "Select datasets"))
     
     colors_special <- list('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
-    fig1 <- plot_ly() %>%
+    fig <- plot_ly() %>%
       layout(xaxis = list(title = "Date"),
-             yaxis = list(title = paste("Operative temperature (degK)")), 
-             annotations = list(
-               text = "Small Ectotherm Operative Temperature",
-               xref = "paper",
-               yref = "paper",
-               yanchor = "bottom",
-               xanchor = "center",
-               align = "center",
-               x = 0.5,
-               y = 1,
-               showarrow = FALSE
-             ))
-    fig2 <- plot_ly() %>%
-      layout(xaxis = list(title = "Date"),
-             yaxis = list(title = paste("Operative temperature (degK)")),
-             annotations = list(
-               text = "Sceloporus Lizard Operative Temperature",
-               xref = "paper",
-               yref = "paper",
-               yanchor = "bottom",
-               xanchor = "center",
-               align = "center",
-               x = 0.5,
-               y = 1,
-               showarrow = FALSE
-             ))
-    fig3 <- plot_ly() %>%
-      layout(xaxis = list(title = "Date"),
-             yaxis = list(title = paste("Operative temperature (degK)")),
-             annotations = list(
-               text = "Campbell Norman Operative Temperature",
-               xref = "paper",
-               yref = "paper",
-               yanchor = "bottom",
-               xanchor = "center",
-               align = "center",
-               x = 0.5,
-               y = 1,
-               showarrow = FALSE
-             ))
+             yaxis = list(title = paste("Operative temperature (degK)"))
+             )
     
     # For each selected method
-    j = 0
     for (method in input$datasets3) {
-      j = j + 1
       
       # Get variable name/location
       aTemp <- varsDf["Air temperature", method]
@@ -630,81 +600,60 @@ shinyServer <- function(input, output, session) {
       radiation<- varsDf["Radiation", method]
       wind <- varsDf["Wind speed", method]
       
-      if (is.na(aTemp)) aTemp = T_a
-      else {
-        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
+      # If it is not a continental-US-only dataset
+      if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+        
+        # Get air temperature data
+        if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
+        else {
           aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
           aTemp$Data = aTemp$Data + 273.15 # C to K
         }
-      }
-      
-      if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
-      else {
-        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
+        
+        # Get surface temperature data
+        if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
+        else {
           sTemp <- grabAnyData(method, sTemp, input$loc3, input$season3)
           sTemp$Data = sTemp$Data + 273.15 # C to K
         }
+        
+        # Get radiation data
+        if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
+        else radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
+        
+        # Get wind speed data
+        if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
+        else wind <- grabAnyData(method, wind, input$loc3, input$season3)
+      
+        # method data stored in aTemp, sTemp, radiation, wind
+        
+        op_temp = array(0, dim=c(length(aTemp$Data)))
+        
+        if (input$op3=="gates") {
+          op_temp = mapply(Tb_Gates, A, D, psa_dir, psa_ref, psa_air, psa_g, sTemp$Data, 
+                           aTemp$Data, radiation$Data, epsilon, H_L, ef, K)
+          fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Gates Model)")
+        } else if (input$op3=="lizard") {
+          doytemp = sapply(aTemp$Date,day_of_year)
+          op_temp = mapply(Tb_lizard, aTemp$Data, sTemp$Data, wind$Data, svl=60, m=10, psi=34, rho_S=0.7, elev=500,
+                                  doy=doytemp, sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, 
+                                  epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
+          fig <- fig %>% layout(title="Sceloporus Lizard Operative Temperature")
+        } else if (input$op3=="campbell") {
+          op_temp = mapply(Tb_CampbellNorman, aTemp$Data, sTemp$Data, radiation$Data, 
+                                          alpha_L=0.965, epsilon, c_p=29.3, D, wind$Data)
+          fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Campbell-Norman Model)")
+        }
+        
+        op_temp[op_temp < 0] = NA
+        
+        fig <- fig %>% add_lines(x = aTemp$Date, y = op_temp, name = method)
       }
-      
-      if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
-      else {
-        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
-          radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
-        }
-      }
-      
-      if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
-      else {
-        if (input$loc3 != c("PR") || !method %in% c("GRIDMET", "microclimUS")) { 
-          wind <- grabAnyData(method, wind, input$loc3, input$season3)
-        }
-      }
-      
-      # method data stored in aTemp, sTemp, radiation, wind
-  
-      op_temp1 = array(0, dim=c(length(aTemp$Data)))
-      op_temp2 = array(0, dim=c(length(aTemp$Data)))
-      op_temp3 = array(0, dim=c(length(aTemp$Data)))
-      
-      for(i in 1:length(aTemp$Data)){
-        if(is.na(sTemp$Data[i]) || is.na(aTemp$Data[i]) || is.na(radiation$Data[i])) {
-          op_temp1[i] = NA
-          op_temp2[i] = NA
-          op_temp3[i] = NA
-        }
-        else if(is.na(wind$Data[i])) {
-          op_temp2[i] = NA
-          op_temp3[i] = NA
-        }
-        else if(input$loc3 == "HI" && method %in% c("GRIDMET", "microclimUS")) {
-          op_temp1[i] = NA
-          op_temp2[i] = NA
-          op_temp3[i] = NA
-        } else {
-          op_temp1[i] = Tb_Gates(A, D, psa_dir, psa_ref, psa_air, psa_g, sTemp$Data[i], 
-                              aTemp$Data[i], radiation$Data[i], epsilon, H_L, ef, K)
-          op_temp2[i] = Tb_lizard(aTemp$Data[i], sTemp$Data[i], wind$Data[i], svl=60, m=10, psi=34, rho_S=0.7, elev=500,
-                              doy=day_of_year(aTemp$Date[i]), sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, 
-                              epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
-          op_temp3[i] = Tb_CampbellNorman(aTemp$Data[i], sTemp$Data[i], radiation$Data[i], 
-                                          alpha_L=0.965, epsilon, c_p=29.3, D, wind$Data[i])
-        }
-      }
-      
-      op_temp1[op_temp1 < 0] = NA
-      op_temp2[op_temp2 < 0] = NA
-      op_temp3[op_temp3 < 0] = NA
-      
-      fig1 <- fig1 %>% add_lines(x = aTemp$Date, y = op_temp1, name = method, line=list(color=colors_special[[j]]))
-      fig2 <- fig2 %>% add_lines(x = aTemp$Date, y = op_temp2, name = method, line=list(color=colors_special[[j]]))
-      fig3 <- fig3 %>% add_lines(x = aTemp$Date, y = op_temp3, name = method, line=list(color=colors_special[[j]]))
-      
     } 
-
-    fig <- subplot(fig1, fig2, fig3, nrows = 3, shareX = TRUE)
     
     fig
     
   })
+
   
 }

@@ -208,6 +208,8 @@ shinyUI <- fluidPage(id = "page",
                      radioGroupButtons("season3", "Season", choices = c("Summer" = 7, "Winter" = 1), selected = 7, status = "danger", size = "sm"),
                      
                      radioGroupButtons("loc3", "Location", choices = c("Oregon" = "OR", "Colorado" = "CO", "Hawaii" = "HI"), selected = "OR", status = "danger", size = "sm"),
+                     
+                     uiOutput("op3"),
                    ),
                    br(),
                    htmlOutput("info3"),
@@ -218,7 +220,10 @@ shinyUI <- fluidPage(id = "page",
                    div(
                      id = "plot-wrapper3",
                      
-                     plotlyOutput("plot3") %>% withSpinner(type = 7)
+                     plotlyOutput("plot3") %>% withSpinner(type = 7),
+                     
+                     br(),
+                     htmlOutput("stats3"),
                    )
                  ))
       )
