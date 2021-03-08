@@ -201,8 +201,9 @@ shinyUI <- fluidPage(id = "page",
                  sidebarPanel(
                    h4("Operative temperature comparison"),
                    p("These plots predict operative temperature for an ectotherm in the 
-                     environmental conditions given by the selected datasets. The Tb_Gates()
-                     function in the TrenchR package is used to make these predictions."),
+                     environmental conditions given by the selected datasets. Available 
+                     operative temperature estimation models are the Tb_Gates(), 
+                     Tb_NormanCampbell, and Tb_lizard functions in the TrenchR package."),
                    
                    uiOutput("datasetsOutput3"),
                    

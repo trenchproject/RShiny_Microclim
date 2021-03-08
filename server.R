@@ -506,7 +506,8 @@ shinyServer <- function(input, output, session) {
                   values = stats$BiasCat,
                   group = "Bias legend",
                   position = "bottomright",
-                  title = "Bias")
+                  title = "Bias") %>%
+        addProviderTiles("Esri.WorldImagery")
     } else if (input$mymap_groups == "RMSE") {
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = rmseCol,
@@ -514,7 +515,8 @@ shinyServer <- function(input, output, session) {
                   values = stats$RMSECat,
                   group = "RMSE legend",
                   position = "bottomright",
-                  title = "Root mean squared error")
+                  title = "Root mean squared error") %>%
+        addProviderTiles("Esri.WorldImagery")
     } else { # PCC
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = pccCol,
@@ -522,7 +524,8 @@ shinyServer <- function(input, output, session) {
                   values = stats$PCCCat,
                   group = "PCC legend",
                   position = "bottomright",
-                  title = "Pearson Correlation Coefficient")
+                  title = "Pearson Correlation Coefficient") %>%
+        addProviderTiles("Esri.WorldImagery")
     }
   })
 
@@ -563,7 +566,22 @@ shinyServer <- function(input, output, session) {
     
     month3 <- ifelse(input$season3 == 1, "January", "July")
     
-    HTML("<br><br><b>Station name:</b> ", station3, 
+    text3 <- ""
+    for (method in input$datasets3) {
+      text3 <- paste0(text3, "<br><b>", method, ":</b> ")
+      var <- "Air temperature"
+      text3 <- paste0(text3, nameDf[var, method], ", ")
+      var <- "Surface temperature"
+      text3 <- paste0(text3, nameDf[var, method], ", ")
+      var <- "Radiation"
+      text3 <- paste0(text3, nameDf[var, method], ", ")
+      var <- "Wind speed"
+      text3 <- paste0(text3, nameDf[var, method])
+    }
+    
+    HTML("<b><u>Input data for operative temperature estimation</u></b>",
+         text3,
+         "<br><br><b>Station name:</b> ", station3, 
          "<br><b>Location:</b> ", loc3,
          "<br><b>Time:</b> ", month3, "1st - 31st, 2017")
   })
@@ -590,7 +608,7 @@ shinyServer <- function(input, output, session) {
     colors_special <- list('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
     fig <- plot_ly() %>%
       layout(xaxis = list(title = "Date"),
-             yaxis = list(title = paste("Operative temperature (degK)"))
+             yaxis = list(title = paste("Operative temperature (degC)"))
              )
     
     # For each selected method
@@ -648,8 +666,11 @@ shinyServer <- function(input, output, session) {
         }
         
         op_temp[op_temp < 0] = NA
+        op_temp = op_temp - 273.15
         
-        fig <- fig %>% add_lines(x = aTemp$Date, y = op_temp, name = method)
+        
+        
+        fig <- fig %>% add_lines(x = as.POSIXct(aTemp$Date), y = op_temp, name = method)
       }
     } 
     
