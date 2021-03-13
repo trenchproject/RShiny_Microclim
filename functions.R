@@ -208,3 +208,15 @@ day_of_year<- function(day, format="%Y-%m-%d"){
   day=  as.POSIXlt(day, format=format)
   return(as.numeric(strftime(day, format = "%j")))
 }
+
+Qmetabolism_from_mass_temp<-function(m, T_b, taxa){
+  
+  stopifnot(m>0, T_b>200, T_b<400, taxa %in% c("bird","mammal","reptile","amphibian","invertebrate") )
+  
+  #Source:  Gillooly JF et al. 2001. Effects of size and temperature on metabolic rate. Science 293: 2248-2251. 
+  if(taxa=="bird" | taxa=="mammal") Qmet= exp(-9100/T_b+29.49)*m^0.75/60
+  if(taxa=="reptile") Qmet= exp(-8780/T_b+26.85)*m^0.75/60
+  if(taxa=="amphibian") Qmet= exp(-5760/T_b+16.68)*m^0.75/60
+  if(taxa=="invertebrate") Qmet= exp(-9150/T_b+27.62)*m^0.75/60
+  return(Qmet)
+}

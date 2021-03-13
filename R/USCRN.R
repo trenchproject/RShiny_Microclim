@@ -21,7 +21,7 @@ grabUSCRN <- function(var, loc, month) {
 
   fulldf <- read.delim(paste0("Data/CRN/", loc, "_CRN.txt"), sep = "", header = F)
   
-  headers <- read.delim("Data/CRN/HEADERS.txt", sep = "", header = T, skip = 1)
+  headers <- read.delim("Data/CRN/HEADERS_hourly.txt", sep = "", header = T, skip = 1)
   
   colnames(fulldf) <- colnames(headers)
   

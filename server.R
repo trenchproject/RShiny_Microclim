@@ -23,8 +23,8 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
-                     #"USCRN" = c("SUR_TEMP", "T_MAX", NA, "SOLARAD", NA, NA, NA, NA, NA, NA),
-                     "USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
+                     "USCRN" = c("SUR_TEMP", "T_MAX", NA, "SOLARAD", NA, NA, NA, NA, NA, NA),
+                     #"USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
@@ -649,9 +649,10 @@ shinyServer <- function(input, output, session) {
         
         op_temp = array(0, dim=c(length(aTemp$Data)))
         
+        # use selected method to calculate operative temperature
         if (input$op3=="gates") {
-          op_temp = mapply(Tb_Gates, A, D, psa_dir, psa_ref, psa_air, psa_g, sTemp$Data, 
-                           aTemp$Data, radiation$Data, epsilon, H_L, ef, K)
+          op_temp = mapply(Tb_Gates, A, D, psa_dir, psa_ref, psa_air, psa_g, T_g=sTemp$Data, 
+                           T_a=aTemp$Data, radiation$Data, epsilon, H_L, ef, K)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Gates Model)")
         } else if (input$op3=="lizard") {
           doytemp = sapply(aTemp$Date,day_of_year)
@@ -660,22 +661,108 @@ shinyServer <- function(input, output, session) {
                                   epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
           fig <- fig %>% layout(title="Sceloporus Lizard Operative Temperature")
         } else if (input$op3=="campbell") {
-          op_temp = mapply(Tb_CampbellNorman, aTemp$Data, sTemp$Data, radiation$Data, 
-                                          alpha_L=0.965, epsilon, c_p=29.3, D, wind$Data)
+          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, radiation$Data, 
+                                          alpha_L=0.965, epsilon, c_p=29.3, D, V=wind$Data)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Campbell-Norman Model)")
         }
         
+
         op_temp[op_temp < 0] = NA
         op_temp = op_temp - 273.15
         
-        
-        
+        # add to figure
         fig <- fig %>% add_lines(x = as.POSIXct(aTemp$Date), y = op_temp, name = method)
       }
     } 
     
     fig
     
+  })
+  
+  
+  output$stats3 <- renderText({
+    
+    statistics <- "<h3>Operative Temperature Biostatistics of a Sceloporus Lizard</h3>"
+    statistics = paste0(statistics,"<p><i>Calculates average operative temperature (avgTe), ")
+    statistics = paste0(statistics,"hours above critical threshold temperature of 43 degC (CTmax_hours), ")
+    statistics = paste0(statistics,"hours of activity defined as operative temperative between 32C and 37C (activity_hours), ")
+    statistics = paste0(statistics,"and average basal metabolism rate calculated as the Qmetabolism_from_mass_temp() function ")
+    statistics = paste0(statistics,"from the TrenchR package with 0.5g mass and lizard taxa (avgQmet).</i></p>")
+    
+    # For each selected method
+    for (method in input$datasets3) {
+      
+      # Get variable name/location
+      aTemp <- varsDf["Air temperature", method]
+      sTemp <- varsDf["Surface temperature", method]
+      radiation<- varsDf["Radiation", method]
+      wind <- varsDf["Wind speed", method]
+      
+      # If it is not a continental-US-only dataset
+      if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+        
+        # Get air temperature data
+        if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
+        else {
+          aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
+          aTemp$Data = aTemp$Data + 273.15 # C to K
+        }
+        
+        # Get surface temperature data
+        if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
+        else {
+          sTemp <- grabAnyData(method, sTemp, input$loc3, input$season3)
+          sTemp$Data = sTemp$Data + 273.15 # C to K
+        }
+        
+        # Get radiation data
+        if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
+        else radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
+        
+        # Get wind speed data
+        if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
+        else wind <- grabAnyData(method, wind, input$loc3, input$season3)
+        
+        # method data stored in aTemp, sTemp, radiation, wind
+        
+        op_temp = array(0, dim=c(length(aTemp$Data)))
+        
+        # use selected method to calculate operative temperature
+        if (input$op3=="gates") {
+          op_temp = mapply(Tb_Gates, A, D, psa_dir, psa_ref, psa_air, psa_g, T_g=sTemp$Data, 
+                           T_a=aTemp$Data, radiation$Data, epsilon, H_L, ef, K)
+        } else if (input$op3=="lizard") {
+          doytemp = sapply(aTemp$Date,day_of_year)
+          op_temp = mapply(Tb_lizard, aTemp$Data, sTemp$Data, wind$Data, svl=60, m=10, psi=34, rho_S=0.7, elev=500,
+                           doy=doytemp, sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, 
+                           epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
+        } else if (input$op3=="campbell") {
+          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, radiation$Data, 
+                           alpha_L=0.965, epsilon, c_p=29.3, D, V=wind$Data)
+        }
+        
+        
+        op_temp[op_temp < 0] = NA
+        op_temp = op_temp - 273.15
+        op_tempK = op_temp + 273.15
+        
+        
+        # calculate biostatistics
+        avgTe = mean(op_temp)
+        CTmax_hours = length(op_temp[op_temp > 43])
+        activity_hours = length(op_temp[op_temp > 32 && op_temp < 37])
+        avgQmet = mean(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile"))
+        
+        # print biostatistics
+        statistics = paste0(statistics,"<p><b><u>",method,"</u></b><br>")
+        statistics = paste0(statistics,"avgTe: ",avgTe," degC <br>")
+        statistics = paste0(statistics,"CTmax_hours: ",CTmax_hours," hours <br>")
+        statistics = paste0(statistics,"activity_hours: ",activity_hours," hours <br>")
+        statistics = paste0(statistics,"avgQmet: ",avgQmet," W </p>")
+      }
+    } 
+    
+    HTML(statistics)
   })
 
   
