@@ -100,7 +100,7 @@ grabUSCRN <- function(var, loc, month) {
 # SOLARAD
 
 mapUSCRN <- function(var, month) {
-  var <- ifelse(var == "SURFACE_TEMPERATURE", "SUR_TEMP", ifelse(var == "AIR_TEMPERATURE", "T_MAX", "SOLARAD"))
+  #var <- ifelse(var == "SURFACE_TEMPERATURE", "SUR_TEMP", ifelse(var == "AIR_TEMPERATURE", "T_MAX", "SOLARAD"))
   
   stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   

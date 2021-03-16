@@ -16,20 +16,20 @@ source("functions.R", local = TRUE)
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 
 varsDf <- data.frame(row.names = c(variables, "Tmin"),
-                     "SCAN" = c(18, 3, 22, 7, 10, 5, 6, 17, NA, 4),
+                     "SCAN" = c(NA, 3, 22, 7, 10, 5, 6, 17, NA, 4),
                      "ERA5" = c(4, 3, 6, 7, 1, 8, NA, NA, 5, 9),
                      "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "SWdown_f_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "SnowDepth_inst", "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, NA, "tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
-                     "USCRN" = c("SUR_TEMP", "T_MAX", NA, "SOLARAD", NA, NA, NA, NA, NA, NA),
+                     "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
                      #"USCRN" = c("SURFACE_TEMPERATURE", "AIR_TEMPERATURE", NA, "SOLAR_RADIATION", "WIND_1_5", "PRECIPITATION", "RELATIVE_HUMIDITY", NA, NA, NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
 nameDf <- data.frame(row.names = variables, 
-                     "SCAN" = c("Hourly average soil temperature 2 in below ground", "Hourly maximum air temperature", "Hourly average soil temperature 1 m below ground", "Hourly average solar radiation", "Hourly average wind speed", "Precipitation increment", "Hourly average humidity", "Hourly average xsoil moisture 1 m below ground", NA),
+                     "SCAN" = c(NA, "Hourly maximum air temperature", "Hourly average soil temperature 1 m below ground", "Hourly average solar radiation", "Hourly average wind speed", "Precipitation increment", "Hourly average humidity", "Hourly average xsoil moisture 1 m below ground", NA),
                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
                      "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", "3-hourly relative humidity", "3-hourly average soil moisture 40-100 cm below ground", "3-hourly snow depth"),
                      "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", "Daily precipitation amount", NA, NA, NA),
@@ -611,6 +611,8 @@ shinyServer <- function(input, output, session) {
              yaxis = list(title = paste("Operative temperature (degC)"))
              )
     
+    dates <- vector()
+    
     # For each selected method
     for (method in input$datasets3) {
       
@@ -672,8 +674,18 @@ shinyServer <- function(input, output, session) {
         
         # add to figure
         fig <- fig %>% add_lines(x = as.POSIXct(aTemp$Date), y = op_temp, name = method)
+        
+        dates <- aTemp$Date
       }
     } 
+    
+    fig <- layout(fig, 
+      shapes = list(
+        list(type = "rect",
+             fillcolor = "green", line = list(color = "green"), opacity = 0.3,
+             x0 = dates[1], x1 = dates[length(dates)], xref = "x",
+             y0 = 32, y1 = 37, yref = "y"))
+    )
     
     fig
     
@@ -750,7 +762,20 @@ shinyServer <- function(input, output, session) {
         # calculate biostatistics
         avgTe = mean(op_temp)
         CTmax_hours = length(op_temp[op_temp > 43])
-        activity_hours = length(op_temp[op_temp > 32 && op_temp < 37])
+        activeLower = op_temp[op_temp >= 32]
+        active = activeLower[activeLower <= 37]
+        activity_hours = length(active)
+        
+        # daily values
+        if(method == "GRIDMET" || method == "NOAA_NCDC"){ 
+          activity_hours = activity_hours * 12 #talk to lauren about this
+          CTmax_hours = CTmax_hours * 12
+        }
+        else if (method == "GLDAS"){ # 3 hourly
+          activity_hours = activity_hours * 3
+          CTmax_hours = CTmax_hours * 3
+        }
+        
         avgQmet = mean(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile"))
         
         # print biostatistics
