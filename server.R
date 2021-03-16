@@ -36,7 +36,7 @@ nameDf <- data.frame(row.names = variables,
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Daily precipitation", NA, NA, "Daily snow Depth"),
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
-                     "USCRN" = c("Sub-hourly infrared surface temperature", "Sub-hourly air temperature", NA, "Average global solar radiation received", "Wind speed 1.5 m above ground", "Sub-hourly precipitation", "Sub-hourly relative humidity", NA, NA),
+                     "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 
@@ -174,7 +174,7 @@ shinyServer <- function(input, output, session) {
       if (!is.na(inputVar)) {
         if (input$loc != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
           df <- grabAnyData(method, inputVar, input$loc, input$season)
-          p <- p %>% add_lines(x = df$Date, y = df$Data, name = method, line = list(color = colors[i]))
+          p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colors[i]))
         }
       }
     }
@@ -189,7 +189,7 @@ shinyServer <- function(input, output, session) {
           if (input$loc != "PR" || !method == "GRIDMET") { # gridMET doesn't have data for PR
             df <- grabAnyData(method, inputVar, input$loc, input$season)
             p <- p %>%
-              add_lines(x = df$Date, y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
+              add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[i]))
           }
         }
       }
@@ -258,49 +258,6 @@ shinyServer <- function(input, output, session) {
          "<br><b>RMSE:</b> ", round(RMSE, digits = 2))
 
   })
-  
-  
-  # output$statsTable <- renderUI({
-  #   validate(
-  #     need(length(input$statsOption) == 2, "Select two datasets\n\n\n")
-  #   )
-  #   # Have to figure out what to do with 3-hourly and daily values. take the average?
-  #   
-  #   # hourly: SCAN, ERA5, microclimUS, NicheMapR
-  #   # 3-hourly: GLDAS
-  #   # daily: gridMET, NOAA NCDC, SNODAS
-  #   # sub-hourly: USCRN
-  #   
-  #   df1 <- grabAnyData(input$statsOption[1], varsDf[input$var, input$statsOption[1]], input$loc, input$season)
-  #   df2 <- grabAnyData(input$statsOption[2], varsDf[input$var, input$statsOption[2]], input$loc, input$season)
-  #   
-  #   if (input$statsOption[1] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS") || input$statsOption[2] %in% c("GRIDMET", "NOAA_NCDC", "SNODAS")) {
-  #     df1$Date <- as.Date(df1$Date)
-  #     df1 <- aggregate(df1$Data, by = list(df1$Date), mean) %>% set_colnames(c("Date", "Data"))
-  #     df2$Date <- as.Date(df2$Date) 
-  #     df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
-  #   }
-  #   
-  #   # Will have to work on
-  #   # } else if (input$statsOption[1] == "GLDAS" || input$statsOption[2] == "GLDAS") {
-  #   #   
-  #   # }
-  #   
-  #   colnames(df1)[colnames(df1) == "Data"] <- "Data1"
-  #   colnames(df2)[colnames(df2) == "Data"] <- "Data2"
-  #   
-  #   setDT(df1)
-  #   setDT(df2)
-  #   
-  #   merge <- df1[df2, on = "Date"] %>% 
-  #     na.omit() %>% 
-  #     as.data.frame()
-  #   
-  #   data1 <- merge$Data1
-  #   data2 <- merge$Data2
-  #   
-  #   plot_correlation()
-  # })
   
   
   output$minimap <- renderLeaflet({
@@ -425,7 +382,7 @@ shinyServer <- function(input, output, session) {
     
     
     leaflet() %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
+      addProviderTiles("Esri.WorldImagery") %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~biasCol(stats$BiasCat),
                        stroke = TRUE,
@@ -506,8 +463,7 @@ shinyServer <- function(input, output, session) {
                   values = stats$BiasCat,
                   group = "Bias legend",
                   position = "bottomright",
-                  title = "Bias") %>%
-        addProviderTiles("Esri.WorldImagery")
+                  title = "Bias")
     } else if (input$mymap_groups == "RMSE") {
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = rmseCol,
@@ -515,8 +471,7 @@ shinyServer <- function(input, output, session) {
                   values = stats$RMSECat,
                   group = "RMSE legend",
                   position = "bottomright",
-                  title = "Root mean squared error") %>%
-        addProviderTiles("Esri.WorldImagery")
+                  title = "Root mean squared error")
     } else { # PCC
       leafletProxy('mymap') %>% clearControls() %>%
         addLegend(pal = pccCol,
@@ -524,8 +479,7 @@ shinyServer <- function(input, output, session) {
                   values = stats$PCCCat,
                   group = "PCC legend",
                   position = "bottomright",
-                  title = "Pearson Correlation Coefficient") %>%
-        addProviderTiles("Esri.WorldImagery")
+                  title = "Pearson Correlation Coefficient")
     }
   })
 
@@ -701,8 +655,22 @@ shinyServer <- function(input, output, session) {
     statistics = paste0(statistics,"and average basal metabolism rate calculated as the Qmetabolism_from_mass_temp() function ")
     statistics = paste0(statistics,"from the TrenchR package with 0.5g mass and lizard taxa (avgQmet).</i></p>")
     
+    HTML(statistics)
+    
+  })
+  
+  output$statsmap <- renderPlotly({
+    
+    method_vec <- vector()
+    avgTe_vec <- vector()
+    CTmax_hours_vec <- vector()
+    activity_hours_vec <- vector()
+    avgQmet_vec <- vector()
+    
     # For each selected method
     for (method in input$datasets3) {
+      
+      append(method_vec, method)
       
       # Get variable name/location
       aTemp <- varsDf["Air temperature", method]
@@ -767,11 +735,7 @@ shinyServer <- function(input, output, session) {
         activity_hours = length(active)
         
         # daily values
-        if(method == "GRIDMET" || method == "NOAA_NCDC"){ 
-          activity_hours = activity_hours * 12 #talk to lauren about this
-          CTmax_hours = CTmax_hours * 12
-        }
-        else if (method == "GLDAS"){ # 3 hourly
+        if (method == "GLDAS"){ # 3 hourly
           activity_hours = activity_hours * 3
           CTmax_hours = CTmax_hours * 3
         }
@@ -779,15 +743,67 @@ shinyServer <- function(input, output, session) {
         avgQmet = mean(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile"))
         
         # print biostatistics
-        statistics = paste0(statistics,"<p><b><u>",method,"</u></b><br>")
-        statistics = paste0(statistics,"avgTe: ",avgTe," degC <br>")
-        statistics = paste0(statistics,"CTmax_hours: ",CTmax_hours," hours <br>")
-        statistics = paste0(statistics,"activity_hours: ",activity_hours," hours <br>")
-        statistics = paste0(statistics,"avgQmet: ",avgQmet," W </p>")
+        avgTe_vec = append(avgTe_vec, avgTe)
+        if(method %in% c("NOAA_NCDC","GRIDMET")){
+          CTmax_hours_vec = append(CTmax_hours_vec, NA)
+          activity_hours_vec = append(activity_hours_vec, NA)
+        } else {
+          CTmax_hours_vec = append(CTmax_hours_vec, CTmax_hours)
+          activity_hours_vec = append(activity_hours_vec, activity_hours)
+        }
+        avgQmet_vec = append(avgQmet_vec, avgQmet)
       }
     } 
     
-    HTML(statistics)
+    
+    # font style
+    f <- list(
+      family = "Courier New, monospace",
+      size = 12,
+      color = "black")
+    
+    # annotations
+    a <- list(
+      text = "Average operative temperature", font = f, xref = "paper", yref = "paper",
+      yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,
+      y = 1, showarrow = FALSE
+    )
+    
+    b <- list(
+      text = "Hours above critical temperature (42degC)", font = f, xref = "paper", yref = "paper",
+      yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,
+      y = 1, showarrow = FALSE
+    )
+    
+    c <- list(
+      text = "Hours of activity (32C - 37C)", font = f, xref = "paper", yref = "paper",
+      yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,
+      y = 1, showarrow = FALSE
+    )
+    
+    d <- list(
+      text = "Average resting metabolic rate", font = f, xref = "paper", yref = "paper",
+      yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,
+      y = 1, showarrow = FALSE
+    )
+    
+    p1 <- plot_ly(x = input$datasets3, y = avgTe_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+      layout(annotations = a)
+    
+    p2 <- plot_ly(x = input$datasets3, y = CTmax_hours_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+      layout(annotations = b)
+    
+    p3 <- plot_ly(x = input$datasets3, y = activity_hours_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+      layout(annotations = c)
+    
+    p4 <- plot_ly(x = input$datasets3, y = avgQmet_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+      layout(annotations = d)
+    
+    s1 <- subplot(p1, p2, margin = 0.07)
+    s2 <- subplot(p3, p4, margin = 0.07)
+    fig <- subplot(s1, s2, nrows=2, margin = 0.07) %>%
+      layout(height = 600)
+    fig
   })
 
   

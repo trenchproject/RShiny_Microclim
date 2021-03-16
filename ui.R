@@ -229,6 +229,7 @@ shinyUI <- fluidPage(id = "page",
                      
                      br(),
                      htmlOutput("stats3"),
+                     plotlyOutput("statsmap")
                    )
                  ))
       )
