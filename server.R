@@ -40,6 +40,8 @@ nameDf <- data.frame(row.names = variables,
 datasets <- colnames(varsDf)
 
 
+
+
 shinyServer <- function(input, output, session) {
   
   # Guided tour
@@ -468,10 +470,20 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   #____________________________________________________________________________
   
+  # Defaults
+  T_g_OR1 = .27 - 5 + 273.15
+  T_g_OR7 = 21 + 5 + 273.15
+  T_g_CO1 = -3 - 5 + 273.15
+  T_g_CO7 = 22 + 5 + 273.15
+  T_g_HI1 = 22 + 5 + 273.15
+  T_g_HI7 = 25 + 5 + 273.15
+  
+  u_default = 1 
+  Qabs_default = 800
   
   # Data set selector
   output$datasetsOutput3 <- renderUI({
-    operative_datasets <- c("USCRN", "ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "NicheMapR", "microclim", "microclimUS")
+    operative_datasets <- c("microclim", "NOAA_NCDC", "GRIDMET", "GLDAS", "ERA5", "microclimUS", "NicheMapR", "USCRN")
     pickerInput("datasets3", "Datasets", choices = operative_datasets, selected = "USCRN", multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
@@ -559,25 +571,36 @@ shinyServer <- function(input, output, session) {
       if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS")) { 
         
         # Get air temperature data
-        if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
-        else {
-          aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
-          aTemp$Data = aTemp$Data + 273.15 # C to K
+        aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
+        if(method == "GRIDMET"){
+          aTempTmin <- grabAnyData(method, "tmin", input$loc3, input$season3)
+          aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
+        } else if(method == "NOAA_NCDC"){
+          aTempTmin <- grabAnyData(method, "TMIN", input$loc3, input$season3)
+          aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
         }
+        aTemp$Data = aTemp$Data + 273.15 # C to K
         
         # Get surface temperature data
-        if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
+        if (is.na(sTemp)) {
+          if (input$loc3 == c("HI") && input$season3==1) sTemp$Data = array(T_g_HI1, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("HI") && input$season3==7) sTemp$Data = array(T_g_HI7, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("CO") && input$season3==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("CO") && input$season3==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("OR") && input$season3==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("OR") && input$season3==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
+        }
         else {
           sTemp <- grabAnyData(method, sTemp, input$loc3, input$season3)
           sTemp$Data = sTemp$Data + 273.15 # C to K
         }
         
         # Get radiation data
-        if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
+        if (is.na(radiation)) radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
         else radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
         
         # Get wind speed data
-        if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
+        if (is.na(wind)) wind$Data = array(u_default, dim=c(length(aTemp$Data)))
         else wind <- grabAnyData(method, wind, input$loc3, input$season3)
       
         # Initialize operative temperature vector
@@ -585,27 +608,25 @@ shinyServer <- function(input, output, session) {
         
         # Use selected method to calculate operative temperature
         if (input$op3=="gates") {
-          op_temp = mapply(Tb_Gates, A=A, D=D, psa_dir=psa_dir, psa_ref=psa_ref, 
-                           psa_air=psa_air, psa_g=psa_g, T_g=sTemp$Data, T_a=aTemp$Data, 
-                           Qabs=radiation$Data, epsilon=epsilon, H_L=H_L, ef=ef, K=K)
+          op_temp = mapply(Tb_Gates, A=1, D=0.001, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
+                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data, epsilon=0.95, H_L=10, K=0.15)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Gates Model)")
           
         } else if (input$op3=="lizard") {
           doytemp = sapply(aTemp$Date,day_of_year)
-          op_temp = mapply(Tb_lizard, T_a=aTemp$Data, T_g=sTemp$Data, u=wind$Data, svl=60, m=10, psi=34, rho_S=0.7, elev=500,
-                                  doy=doytemp, sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, 
-                                  epsilon_s=epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
+          op_temp = mapply(Tb_lizard, T_a=aTemp$Data-273.15, T_g=sTemp$Data-273.15, u=wind$Data, 
+                           svl=60, m=10, psi=34, rho_S=0.7, elev=500, doy=doytemp)
+          op_temp = op_temp + 273.15 # back to K
           fig <- fig %>% layout(title="Sceloporus Lizard Operative Temperature")
           
         } else if (input$op3=="campbell") {
-          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, 
-                           S = radiation$Data, alpha_L=0.965, epsilon=epsilon, c_p=29.3, D=D, V=wind$Data)
+          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, S=radiation$Data, D=0.17, V=wind$Data)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Campbell-Norman Model)")
         }
         
 
         op_temp[op_temp < 0] = NA
-        op_temp = op_temp - 273.15
+        op_temp = op_temp - 273.15 # To C
         
         # add to figure
         fig <- fig %>% add_lines(x = as.POSIXct(aTemp$Date), y = op_temp, name = method)
@@ -650,8 +671,6 @@ shinyServer <- function(input, output, session) {
     # For each selected method
     for (method in input$datasets3) {
       
-      append(method_vec, method)
-      
       # Get variable name/location
       aTemp <- varsDf["Air temperature", method]
       sTemp <- varsDf["Surface temperature", method]
@@ -661,26 +680,42 @@ shinyServer <- function(input, output, session) {
       # If it is not a continental-US-only dataset
       if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS")) { 
         
+        method_vec = append(method_vec, method) 
+        
         # Get air temperature data
         if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
         else {
           aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
+          if(method == "GRIDMET"){
+            aTempTmin <- grabAnyData(method, "tmin", input$loc3, input$season3)
+            aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
+          } else if(method == "NOAA_NCDC"){
+            aTempTmin <- grabAnyData(method, "TMIN", input$loc3, input$season3)
+            aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
+          }
           aTemp$Data = aTemp$Data + 273.15 # C to K
         }
         
         # Get surface temperature data
-        if (is.na(sTemp)) sTemp$Data = array(T_g, dim=c(length(aTemp$Data)))
+        if (is.na(sTemp)) {
+          if (input$loc3 == c("HI") && input$season3==1) sTemp$Data = array(T_g_HI1, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("HI") && input$season3==7) sTemp$Data = array(T_g_HI7, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("CO") && input$season3==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("CO") && input$season3==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("OR") && input$season3==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
+          if (input$loc3 == c("OR") && input$season3==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
+        }
         else {
           sTemp <- grabAnyData(method, sTemp, input$loc3, input$season3)
           sTemp$Data = sTemp$Data + 273.15 # C to K
         }
         
         # Get radiation data
-        if (is.na(radiation)) radiation$Data = array(Qabs, dim=c(length(aTemp$Data)))
+        if (is.na(radiation)) radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
         else radiation <- grabAnyData(method, radiation, input$loc3, input$season3)
         
         # Get wind speed data
-        if (is.na(wind)) wind$Data = array(0, dim=c(length(aTemp$Data)))
+        if (is.na(wind)) wind$Data = array(u_default, dim=c(length(aTemp$Data)))
         else wind <- grabAnyData(method, wind, input$loc3, input$season3)
         
         # method data stored in aTemp, sTemp, radiation, wind
@@ -689,18 +724,15 @@ shinyServer <- function(input, output, session) {
         
         # use selected method to calculate operative temperature
         if (input$op3=="gates") {
-          op_temp = mapply(Tb_Gates, A=A, D=D, psa_dir=psa_dir, psa_ref=psa_ref, 
-                           psa_air=psa_air, psa_g=psa_g, T_g=sTemp$Data, 
-                           T_a=aTemp$Data, Qabs=radiation$Data, epsilon=epsilon, 
-                           H_L=H_L, ef=ef, K=K)
+          op_temp = mapply(Tb_Gates, A=1, D=0.001, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
+                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data, epsilon=0.95, H_L=10, K=0.15)
         } else if (input$op3=="lizard") {
           doytemp = sapply(aTemp$Date,day_of_year)
-          op_temp = mapply(Tb_lizard, T_a=aTemp$Data, T_g=sTemp$Data, u=wind$Data, svl=60, m=10, psi=34, rho_S=0.7, elev=500,
-                           doy=doytemp, sun=TRUE, surface=TRUE, alpha_S=0.9, alpha_L=0.965, 
-                           epsilon_s=epsilon, F_d=0.8, F_r=0.5, F_a=0.5, F_g=0.5)
+          op_temp = mapply(Tb_lizard, T_a=aTemp$Data-273.15, T_g=sTemp$Data-273.15, u=wind$Data, 
+                           svl=60, m=10, psi=34, rho_S=0.7, elev=500, doy=doytemp)
+          op_temp = op_temp + 273.15 # back to K
         } else if (input$op3=="campbell") {
-          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, 
-                           S = radiation$Data, alpha_L=0.965, epsilon=epsilon, c_p=29.3, D=D, V=wind$Data)
+          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, S=radiation$Data, D=0.17, V=wind$Data)
         }
         
         op_temp[op_temp < 0] = NA
@@ -714,10 +746,15 @@ shinyServer <- function(input, output, session) {
         active = activeLower[activeLower <= 37]
         activity_hours = length(active)
         
-        # daily values
         if (method == "GLDAS"){ # 3 hourly
           activity_hours = activity_hours * 3
           CTmax_hours = CTmax_hours * 3
+        } 
+        
+        # only has data for one day
+        if(method == "microclim"){
+          activity_hours = activity_hours * 31
+          CTmax_hours = CTmax_hours * 31
         }
         
         avgQmet=0
@@ -753,16 +790,16 @@ shinyServer <- function(input, output, session) {
     d <- list(text = "Average resting metabolic rate", font = f, xref = "paper", yref = "paper",
       yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,y = 1, showarrow = FALSE)
     
-    p1 <- plot_ly(x = input$datasets3, y = avgTe_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+    p1 <- plot_ly(x = method_vec, y = avgTe_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
       layout(annotations = a)
     
-    p2 <- plot_ly(x = input$datasets3, y = CTmax_hours_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+    p2 <- plot_ly(x = method_vec, y = CTmax_hours_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
       layout(annotations = b)
     
-    p3 <- plot_ly(x = input$datasets3, y = activity_hours_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+    p3 <- plot_ly(x = method_vec, y = activity_hours_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
       layout(annotations = c)
     
-    p4 <- plot_ly(x = input$datasets3, y = avgQmet_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
+    p4 <- plot_ly(x = method_vec, y = avgQmet_vec, type = "bar", color = "blue", showlegend=FALSE) %>%
       layout(annotations = d)
     
     s1 <- subplot(p1, p2, margin = 0.07)
