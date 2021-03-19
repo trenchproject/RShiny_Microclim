@@ -471,7 +471,8 @@ shinyServer <- function(input, output, session) {
   
   # Data set selector
   output$datasetsOutput3 <- renderUI({
-    pickerInput("datasets3", "Datasets", choices = datasets[-1][-8], selected = datasets[c(8)], multiple = T,
+    operative_datasets <- c("USCRN", "ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "NicheMapR", "microclim", "microclimUS")
+    pickerInput("datasets3", "Datasets", choices = operative_datasets, selected = "USCRN", multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -719,7 +720,8 @@ shinyServer <- function(input, output, session) {
           CTmax_hours = CTmax_hours * 3
         }
         
-        avgQmet = mean(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile"))
+        avgQmet=0
+        avgQmet = mean(try(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile")))
         
         # print biostatistics
         avgTe_vec = append(avgTe_vec, avgTe)
@@ -736,7 +738,7 @@ shinyServer <- function(input, output, session) {
     
     
     # font style
-    f <- list(family = "Courier New, monospace",size = 12,color = "black")
+    f <- list(size = 12,color = "black")
     
     # annotations
     a <- list(text = "Average operative temperature", font = f, xref = "paper", yref = "paper",
