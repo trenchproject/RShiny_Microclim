@@ -271,7 +271,7 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   
   output$mapDatasetsOutput <- renderUI({
-    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NOAA_NCDC", "NicheMapR", "microclim", "microclimUS")
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NicheMapR", "microclim", "microclimUS", "NOAA_NCDC")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
     choices <- mapDatasets[mapDatasets %in% datasets[index]]
@@ -285,42 +285,14 @@ shinyServer <- function(input, output, session) {
     
     validate(need(input$mapDatasets, ""))
     
-    stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
-    
-    CRN <- grabMapData("USCRN", varsDf[input$mapVar, "USCRN"], input$month)
-    
-    if (input$mapDatasets %in% c("GRIDMET", "NOAA_NCDC")) {
-      CRN$Date <- as.Date(CRN$Date)
-      CRN <- aggregate(list(CRN[, c(-1, -2)]), by = list(CRN$Date), mean) %>%
-        set_colnames(c("Date", stations$Name))
-    }
-    
     inputVar <- varsDf[input$mapVar, input$mapDatasets]
     
-    mapDf <- grabMapData(input$mapDatasets, inputVar, input$month)
-
-    stats <- cbind(stations, "Bias" = NA, "RMSE" = NA, "PCC" = NA)
+    load(paste0("Data/Maps/",input$mapDatasets,"_0",input$month,"_",inputVar,".Rda"))
     
-    for (station in stations$Name) {
-      merged <- merge(CRN[, c("Date", station)], mapDf[, c("Date", station)], by = "Date", all = T) %>%
-        set_colnames(c("Date", "Data1", "Data2")) %>%
-        na.omit()
-      if (nrow(merged) > 7) {
-        bias <- abs((sum(merged$Data1) - sum(merged$Data2)) / nrow(merged))
-        stats[stats$Name == station, "Bias"] <- bias
-        
-        RMSE <- sum((merged$Data1 - merged$Data2)^2) / nrow(merged) # Root mean square error
-        stats[stats$Name == station, "RMSE"] <- RMSE
-        
-        PCC <- cor.test(x = merged$Data1, y = merged$Data2, method = "pearson") # Pearson correlation coefficient
-        stats[stats$Name == station, "PCC"] <- unname(PCC$estimate)
-      } else {
-        stats[stats$Name == station, c("Bias", "RMSE", "PCC")] <- NA
-      }
-    }
-
-    stats <- stats %>% na.omit()
-    stats
+    stats$RMSE <- sqrt(stats$RMSE)
+    
+    return(stats)
+    
   })
   
   
@@ -340,28 +312,44 @@ shinyServer <- function(input, output, session) {
       else if (category == "P") return (ceiling(maxRawPCC * percentile * 10) / 10)
     }
     
-    stats$BiasCat <- cut(stats$Bias,
-                      c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
-                      labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), 
-                                 paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
+    # stats$PCCCat <- cut(stats$PCC,
+    #                      c(0, roundUp(0.25, "P"), roundUp(0.5, "P"), roundUp(0.75, "P"), roundUp(1, "P")), include.lowest = T,
+    #                      labels = c(paste0("0 - ", roundUp(0.25, "P")), paste0(roundUp(0.25, "P"), " - ", roundUp(0.5, "P")), 
+    #                                 paste0(roundUp(0.5, "P"), " - ", roundUp(0.75, "P")), paste0(roundUp(0.75, "P"), " - ", roundUp(1, "P"))))
+    # stats$BiasCat <- cut(stats$Bias,
+    #                   c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
+    #                   labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), 
+    #                              paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
+    # stats$RMSECat <- cut(stats$RMSE,
+    #                      c(0, roundUp(0.25, "R"), roundUp(0.5, "R"), roundUp(0.75, "R"), roundUp(1, "R")), include.lowest = T,
+    #                      labels = c(paste0("0 - ", roundUp(0.25, "R")), paste0(roundUp(0.25, "R"), " - ", roundUp(0.5, "R")), 
+    #                                 paste0(roundUp(0.5, "R"), " - ", roundUp(0.75, "R")), paste0(roundUp(0.75, "R"), " - ", roundUp(1, "R"))))
+    # 
 
+    if(input$mapVar == "Air temperature" || input$mapVar == "Surface temperature"){
+      # Temperature Bias and RMSE have four groups:
+      # x < 1; 1 < x < 5; 5 < x < 10; 10 < x
+      stats$BiasCat <- cut(stats$Bias, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
+                           labels = c("bias < 1","1 < bias < 5", "5 < bias < 10", "bias > 10"))  
+      stats$RMSECat <- cut(stats$RMSE, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 1","1 < RMSE < 5", "5 < RMSE < 10", "RMSE > 10"))  
+    } else if (input$mapVar == "Radiation"){
+      # Radiation Bias and RMSE have four groups:
+      # x < 25; 25 < x < 75; 75 < x < 150; 150 < x
+      stats$BiasCat <- cut(stats$Bias, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
+                           labels = c("bias < 25","25 < bias < 75", "75 < bias < 150", "bias > 150"))  
+      stats$RMSECat <- cut(stats$RMSE, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 25","25 < RMSE < 75", "75 < RMSE < 150", "RMSE > 150"))  
+    }
+    
+
+    # PCC has four groups: pcc < 0.3 = None; 0.3 < pcc < 0.5 Weak; 0.5 < pcc < 0.7 Moderate; pcc > 0.7 Strong
+    stats$PCCCat <- cut(stats$PCC, c(0, 0.3, 0.5, 0.7, 1), include.lowest = T,
+                        labels = c("pcc < 0.3","0.3 < pcc < 0.5", "0.5 < pcc < 0.7", "pcc > 0.7"))
+        
+    pccCol <- colorFactor(palette = c('#e31a1c','#fd8d3c','#fecc5c','#ffffb2'), stats$PCCCat)
     biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
-    
-    
-    stats$RMSECat <- cut(stats$RMSE,
-                         c(0, roundUp(0.25, "R"), roundUp(0.5, "R"), roundUp(0.75, "R"), roundUp(1, "R")), include.lowest = T,
-                         labels = c(paste0("0 - ", roundUp(0.25, "R")), paste0(roundUp(0.25, "R"), " - ", roundUp(0.5, "R")), 
-                                    paste0(roundUp(0.5, "R"), " - ", roundUp(0.75, "R")), paste0(roundUp(0.75, "R"), " - ", roundUp(1, "R"))))
-    
     rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
-    
-    
-    stats$PCCCat <- cut(stats$PCC,
-                         c(0, roundUp(0.25, "P"), roundUp(0.5, "P"), roundUp(0.75, "P"), roundUp(1, "P")), include.lowest = T,
-                         labels = c(paste0("0 - ", roundUp(0.25, "P")), paste0(roundUp(0.25, "P"), " - ", roundUp(0.5, "P")), 
-                                    paste0(roundUp(0.5, "P"), " - ", roundUp(0.75, "P")), paste0(roundUp(0.75, "P"), " - ", roundUp(1, "P"))))
-    
-    pccCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$PCCCat)
     
     
     leaflet() %>%
@@ -395,7 +383,7 @@ shinyServer <- function(input, output, session) {
                 opacity = 1,
                 values = stats$BiasCat,
                 position = "bottomright",
-                title = "Bias")
+                title = "Bias") %>% setView(lng = -120, lat = 50, zoom = 2.4)
   })
   
   
@@ -413,28 +401,30 @@ shinyServer <- function(input, output, session) {
       else if (category == "P") return (ceiling(maxRawPCC * percentile * 10) / 10)
     }
     
-    stats$BiasCat <- cut(stats$Bias,
-                         c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
-                         labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), 
-                                    paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
+    if(input$mapVar == "Air temperature" || input$mapVar == "Surface temperature"){
+      # Temperature Bias and RMSE have four groups:
+      # x < 1; 1 < x < 5; 5 < x < 10; 10 < x
+      stats$BiasCat <- cut(stats$Bias, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
+                           labels = c("bias < 1","1 < bias < 5", "5 < bias < 10", "bias > 10"))  
+      stats$RMSECat <- cut(stats$RMSE, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 1","1 < RMSE < 5", "5 < RMSE < 10", "RMSE > 10"))  
+    } else if (input$mapVar == "Radiation"){
+      # Radiation Bias and RMSE have four groups:
+      # x < 25; 25 < x < 75; 75 < x < 150; 150 < x
+      stats$BiasCat <- cut(stats$Bias, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
+                           labels = c("bias < 25","25 < bias < 75", "75 < bias < 150", "bias > 150"))  
+      stats$RMSECat <- cut(stats$RMSE, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 25","25 < RMSE < 75", "75 < RMSE < 150", "RMSE > 150"))  
+    }
     
+    
+    # PCC has four groups: pcc < 0.3 = None; 0.3 < pcc < 0.5 Weak; 0.5 < pcc < 0.7 Moderate; pcc > 0.7 Strong
+    stats$PCCCat <- cut(stats$PCC, c(0, 0.3, 0.5, 0.7, 1), include.lowest = T,
+                        labels = c("pcc < 0.3","0.3 < pcc < 0.5", "0.5 < pcc < 0.7", "pcc > 0.7"))
+    
+    pccCol <- colorFactor(palette = c('#e31a1c','#fd8d3c','#fecc5c','#ffffb2'), stats$PCCCat)
     biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
-    
-    
-    stats$RMSECat <- cut(stats$RMSE,
-                         c(0, roundUp(0.25, "R"), roundUp(0.5, "R"), roundUp(0.75, "R"), roundUp(1, "R")), include.lowest = T,
-                         labels = c(paste0("0 - ", roundUp(0.25, "R")), paste0(roundUp(0.25, "R"), " - ", roundUp(0.5, "R")), 
-                                    paste0(roundUp(0.5, "R"), " - ", roundUp(0.75, "R")), paste0(roundUp(0.75, "R"), " - ", roundUp(1, "R"))))
-    
     rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
-    
-    
-    stats$PCCCat <- cut(stats$PCC,
-                        c(0, roundUp(0.25, "P"), roundUp(0.5, "P"), roundUp(0.75, "P"), roundUp(1, "P")), include.lowest = T,
-                        labels = c(paste0("0 - ", roundUp(0.25, "P")), paste0(roundUp(0.25, "P"), " - ", roundUp(0.5, "P")), 
-                                   paste0(roundUp(0.5, "P"), " - ", roundUp(0.75, "P")), paste0(roundUp(0.75, "P"), " - ", roundUp(1, "P"))))
-    
-    pccCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$PCCCat)
     
     if (input$mymap_groups == "Bias") {
       leafletProxy('mymap') %>% clearControls() %>%

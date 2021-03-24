@@ -76,35 +76,3 @@ grabmicro <- function(var, loc, month) {
   
   return(df)
 }
-
-mapmicro <- function(var, month) {
-  
-  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
-  
-  fullDf <- data.frame(Date = format(as.POSIXct(paste0("2017-0", month, "-15 ", 0:23, ":00")), format = "%Y-%m-%d %H:%M"))
-
-  nc <- nc_open(paste0("Data/microclim/", var, "_", month, ".nc"))
-  ncvar <- ncvar_get(nc)
-  # dimension: 2159 * 852 * 24
-  
-  for (i in 1:nrow(stations)) {
-    station <- stations$Name[i]
-    lat <- stations$Lat[i]
-    lon <- stations$Lon[i]
-    
-    lonInd <- match.closest(lon, nc$dim$longitude$vals)
-    lat <- sort(nc$dim$latitude$vals)[match.closest(lat, sort(nc$dim$latitude$vals))]
-    latInd <- match(lat, nc$dim$latitude$vals)
-    
-    array <- c()
-    for (j in 1:24) {
-      array <- c(array, ncvar[lonInd, latInd, j])
-    }
-    
-    array <- array %>% as.data.frame() %>% set_colnames(station)
-    
-    fullDf <- cbind(fullDf, array)
-  }
-  
-  return (fullDf)
-}

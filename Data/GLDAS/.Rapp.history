@@ -1,0 +1,3 @@
+load("/Users/ameyer/RShiny_Microclim/Data/GLDAS/AvgSurfT_inst_CO_01.Rda")
+a = load("/Users/ameyer/RShiny_Microclim/Data/GLDAS/AvgSurfT_inst_CO_01.Rda")
+print(a)

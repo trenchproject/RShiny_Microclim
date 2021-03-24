@@ -23,34 +23,6 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
   return (data)
 }
 
-grabMapData <- function(dataset, inputVar, month) {
-  if (dataset == "SCAN") {
-    data <- mapSCAN(inputVar, month)
-  } else if (dataset == "ERA5") {
-    data <- mapERA(inputVar, month)
-  } else if (dataset == "GLDAS") {
-    data <- mapGLDAS(inputVar, month)
-  } else if (dataset == "GRIDMET") {
-    data <- mapGRID(inputVar, month)
-  } else if (dataset == "NOAA_NCDC") {
-    data <- mapNOAA(inputVar, month)
-  } else if (dataset == "microclimUS") {
-    data <- mapmicroUS(inputVar, month) 
-  } else if (dataset == "microclim") {
-    data <- mapmicro(inputVar, month)
-  } else if (dataset == "USCRN") {
-    data <- mapUSCRN(inputVar, month)
-  } else if (dataset == "NicheMapR") {
-    data <- mapNicheR(inputVar, month)
-  }
-  
-  return (data)
-}
-
-
-
-
-
 # Tb_gates default values
 A = 1 # surface area (m^2)
 D = 0.001 # characteristic dimension for conduction (m)
