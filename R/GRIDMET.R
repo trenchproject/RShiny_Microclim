@@ -44,7 +44,7 @@ grabGRID <- function(param, loc, month) {
     AOI = aoi_get(state = "CO", county = "weld")
   } else if (loc == "OR") {
     AOI = aoi_get(state = "OR", county = "grant")
-  }
+  } 
   
   p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
   r = raster::brick(p)

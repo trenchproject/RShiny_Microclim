@@ -26,6 +26,17 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
+colorsDf <- data.frame(row.names = c("color"),
+                     "ERA5" = c('#04d9ff'),
+                     "GLDAS" = c('#ff7f0e'),
+                     "GRIDMET" = c('#2ca02c'),
+                     "NOAA_NCDC" = c('39FF14'),
+                     "microclimUS" = c('ff00c8'),
+                     "microclim" = c('160ef0'),
+                     "USCRN" = c('#000000'),
+                     "SNODAS" = c('#7f7f7f'),
+                     "NicheMapR" = c('#bcbd22'))
+
 nameDf <- data.frame(row.names = variables, 
                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
                      "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", "3-hourly relative humidity", "3-hourly average soil moisture 40-100 cm below ground", "3-hourly snow depth"),
@@ -151,7 +162,6 @@ shinyServer <- function(input, output, session) {
     else if (input$var %in% c("Relative humidity", "Soil moisture")) unit <- "(%)"
     else unit <- "(°C)"
     
-    colors = c('#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf') 
     p <- plot_ly()
 
     i = 0
@@ -160,15 +170,9 @@ shinyServer <- function(input, output, session) {
       inputVar <- varsDf[input$var, method]
       
       if (!is.na(inputVar)) {
-        if (input$loc != "PR" || !method %in% c("GRIDMET", "microclimUS", "USCRN")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
+        if (input$loc != "HI" || !method %in% c("GRIDMET", "microclimUS")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
           df <- grabAnyData(method, inputVar, input$loc, input$season)
-          if(method == "GRIDMET"){ #sets GRIDMET color so Tmin can match
-            p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colors[9]))
-          } else if(method == "NOAA_NCDC"){ #sets NOAA color so Tmin can match
-            p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colors[10]))
-          } else{ #all other colors dynamic
-            p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colors[i]))
-          } 
+          p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colorsDf["color", method]))
         }
       }
     }
@@ -178,21 +182,26 @@ shinyServer <- function(input, output, session) {
       for (method in input$datasets) {
         inputVar <- varsDf["Tmin", method]
         if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
-          if (input$loc != "PR" || !method == "GRIDMET") { # gridMET doesn't have data for PR
+          if (input$loc != "HI" || !method == "GRIDMET") { # gridMET doesn't have data for PR
             
             df <- grabAnyData(method, inputVar, input$loc, input$season)
             
-            if(method == "GRIDMET"){ #sets GRIDMET Tmin color to match Tmax
-              p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[9]))
-            } else if(method == "NOAA_NCDC"){ #sets NOAA Tmin color to match Tmax
-              p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colors[10]))
-            }
+            p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colorsDf["color", method]))
           }
         }
       }
     }
     
-    p %>% layout(xaxis = list(title = "Date"), yaxis = list(title = paste(input$var, unit)))
+    month <- ifelse(input$season == 1, "January", "July")
+    if (input$loc == "OR") {
+      loc <- "John Day, Oregon"
+    } else if (input$loc == "CO") {
+      loc <- "Weld county, Colorado"
+    } else if (input$loc == "HI") {
+      loc <- "Hilo, Hawaii"
+    }
+    
+    p %>% layout(title=paste0(input$var," in ", loc,", ", month, " 2017"), xaxis = list(title = "Date"), yaxis = list(title = paste(input$var, unit)))
     
   })
   
@@ -223,11 +232,6 @@ shinyServer <- function(input, output, session) {
       df2$Date <- as.Date(df2$Date) 
       df2 <- aggregate(df2$Data, by = list(df2$Date), mean) %>% set_colnames(c("Date", "Data"))
     }
-    
-    # Will have to work on
-    # } else if (input$statsOption[1] == "GLDAS" || input$statsOption[2] == "GLDAS") {
-    #   
-    # }
 
     colnames(df1)[colnames(df1) == "Data"] <- "Data1"
     colnames(df2)[colnames(df2) == "Data"] <- "Data2"
@@ -244,7 +248,7 @@ shinyServer <- function(input, output, session) {
     
     PCC <- cor.test(x = data1, y = data2, method = "pearson") # Pearson correlation coefficient
     bias <- abs((sum(data1) - sum(data2)) / length(data1))
-    RMSE <- sum((data1 - data2)^2) / length(data1) # Root mean square error
+    RMSE <- sqrt(sum((data1 - data2)^2) / length(data1)) # Root mean square error
       
     HTML("<b>Pearson correlation coefficient:</b> ", signif(unname(PCC$estimate), digits = 2),
          "<br><b>Bias:</b> ", round(bias, digits = 2),
@@ -353,7 +357,7 @@ shinyServer <- function(input, output, session) {
     
     
     leaflet() %>%
-      addProviderTiles("Esri.WorldImagery") %>%
+      addProviderTiles(providers$ Esri.WorldPhysical) %>%
       addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
                        color = ~biasCol(stats$BiasCat),
                        stroke = TRUE,
