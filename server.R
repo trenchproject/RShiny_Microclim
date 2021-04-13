@@ -316,20 +316,6 @@ shinyServer <- function(input, output, session) {
       else if (category == "P") return (ceiling(maxRawPCC * percentile * 10) / 10)
     }
     
-    # stats$PCCCat <- cut(stats$PCC,
-    #                      c(0, roundUp(0.25, "P"), roundUp(0.5, "P"), roundUp(0.75, "P"), roundUp(1, "P")), include.lowest = T,
-    #                      labels = c(paste0("0 - ", roundUp(0.25, "P")), paste0(roundUp(0.25, "P"), " - ", roundUp(0.5, "P")), 
-    #                                 paste0(roundUp(0.5, "P"), " - ", roundUp(0.75, "P")), paste0(roundUp(0.75, "P"), " - ", roundUp(1, "P"))))
-    # stats$BiasCat <- cut(stats$Bias,
-    #                   c(0, roundUp(0.25), roundUp(0.5), roundUp(0.75), roundUp(1)), include.lowest = T,
-    #                   labels = c(paste0("0 - ", roundUp(0.25)), paste0(roundUp(0.25), " - ", roundUp(0.5)), 
-    #                              paste0(roundUp(0.5), " - ", roundUp(0.75)), paste0(roundUp(0.75), " - ", roundUp(1))))
-    # stats$RMSECat <- cut(stats$RMSE,
-    #                      c(0, roundUp(0.25, "R"), roundUp(0.5, "R"), roundUp(0.75, "R"), roundUp(1, "R")), include.lowest = T,
-    #                      labels = c(paste0("0 - ", roundUp(0.25, "R")), paste0(roundUp(0.25, "R"), " - ", roundUp(0.5, "R")), 
-    #                                 paste0(roundUp(0.5, "R"), " - ", roundUp(0.75, "R")), paste0(roundUp(0.75, "R"), " - ", roundUp(1, "R"))))
-    # 
-
     if(input$mapVar == "Air temperature" || input$mapVar == "Surface temperature"){
       # Temperature Bias and RMSE have four groups:
       # x < 1; 1 < x < 5; 5 < x < 10; 10 < x
@@ -734,10 +720,13 @@ shinyServer <- function(input, output, session) {
         op_tempK = op_temp + 273.15
         
         # calculate biostatistics
-        avgTe = mean(op_temp)
-        CTmax_hours = length(op_temp[op_temp > 43])
+        avgTe = mean(op_temp, na.rm=TRUE)
+        ct <- op_temp[op_temp > 43]
+        ct <- ct[!is.na(ct)]
+        CTmax_hours = length(ct)
         activeLower = op_temp[op_temp >= 32]
         active = activeLower[activeLower <= 37]
+        active <- active[!is.na(active)]
         activity_hours = length(active)
         
         if (method == "GLDAS"){ # 3 hourly
@@ -752,7 +741,7 @@ shinyServer <- function(input, output, session) {
         }
         
         avgQmet=0
-        avgQmet = mean(try(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile")))
+        avgQmet = mean(try(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile")), na.rm=TRUE)
         
         # print biostatistics
         avgTe_vec = append(avgTe_vec, avgTe)
