@@ -316,31 +316,41 @@ shinyServer <- function(input, output, session) {
       else if (category == "P") return (ceiling(maxRawPCC * percentile * 10) / 10)
     }
     
-    if(input$mapVar == "Air temperature" || input$mapVar == "Surface temperature"){
-      # Temperature Bias and RMSE have four groups:
-      # x < 1; 1 < x < 5; 5 < x < 10; 10 < x
-      stats$BiasCat <- cut(stats$Bias, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
-                           labels = c("bias < 1","1 < bias < 5", "5 < bias < 10", "bias > 10"))  
-      stats$RMSECat <- cut(stats$RMSE, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
-                           labels = c("RMSE < 1","1 < RMSE < 5", "5 < RMSE < 10", "RMSE > 10"))  
+    if(input$mapVar == "Air temperature"){
+      # Air temperature bias quantiles: min; 0.84; 2.5; 4.9; max
+      stats$BiasCat <- cut(stats$Bias, c(0, .84, 2.5, 4.9, roundUp(1)), include.lowest = T,
+                           labels = c("Bias < .84",".84 < Bias < 2.5", "2.5 < Bias < 4.9", "Bias > 4.9"))  
+      # Air temperature RMSE quantiles: min; 2.5; 4.2; 5.8; max
+      stats$RMSECat <- cut(stats$RMSE, c(0, 2.5, 4.2, 5.8, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 2.5","2.5 < RMSE < 4.2", "4.2 < RMSE < 5.8", "RMSE > 5.8"))  
+      # Air temperature PCC quantiles: min; .77; .86; .92; max
+      stats$PCCCat <- cut(stats$PCC, c(-1, .77, .86, .92, 1), include.lowest = T,
+                          labels = c("PCC < 0.77","0.77 < PCC < 0.86", "0.86 < PCC < 0.92", "PCC > 0.92"))
+    } else if (input$mapVar == "Surface temperature"){
+      # Surface temperature bias quantiles: min; 1.2; 2.8; 6.1; max
+      stats$BiasCat <- cut(stats$Bias, c(0, 1.2, 2.8, 6.1, roundUp(1)), include.lowest = T,
+                           labels = c("Bias < 1.2","1.2 < Bias < 2.8", "2.8 < Bias < 6.1", "Bias > 6.1"))  
+      # Surface temperature RMSE quantiles: min; 4.0; 6.7; 10.3; max
+      stats$RMSECat <- cut(stats$RMSE, c(0, 4, 6.7, 10.3, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 4","4 < RMSE < 6.7", "6.7 < RMSE < 10.3", "RMSE > 10.3"))  
+      # Surface temperature PCC quantiles: min; .79; .88; .93; max
+      stats$PCCCat <- cut(stats$PCC, c(-1, .79, .88, .93, 1), include.lowest = T,
+                          labels = c("PCC < 0.79","0.79 < PCC < 0.88", "0.88 < PCC < 0.93", "PCC > 0.93"))
     } else if (input$mapVar == "Radiation"){
-      # Radiation Bias and RMSE have four groups:
-      # x < 25; 25 < x < 75; 75 < x < 150; 150 < x
-      stats$BiasCat <- cut(stats$Bias, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
-                           labels = c("bias < 25","25 < bias < 75", "75 < bias < 150", "bias > 150"))  
-      stats$RMSECat <- cut(stats$RMSE, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
-                           labels = c("RMSE < 25","25 < RMSE < 75", "75 < RMSE < 150", "RMSE > 150"))  
+      # Solar radiation bias quantiles: min; 12.7; 29.8; 55.7; max
+      stats$BiasCat <- cut(stats$Bias, c(0, 12.7, 29.8, 55.7, roundUp(1)), include.lowest = T,
+                           labels = c("Bias < 12.7","12.7 < Bias < 29.8", "29.8 < Bias < 55.7", "Bias > 55.7"))  
+      # Solar radiation RMSE quantiles: min; 66.4; 105.3; 146.9; max
+      stats$RMSECat <- cut(stats$RMSE, c(0, 66.4, 105.3, 146.9, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 66.4","66.4 < RMSE < 105.3", "105.3 < RMSE < 146.9", "RMSE > 146.9"))  
+      # Solar radiation PCC quantiles: min; .62; .86; .93; max
+      stats$PCCCat <- cut(stats$PCC, c(-1, .62, .86, .93, 1), include.lowest = T,
+                          labels = c("PCC < 0.62","0.62 < PCC < 0.86", "0.86 < PCC < 0.93", "PCC > 0.93"))
     }
-    
-
-    # PCC has four groups: pcc < 0.3 = None; 0.3 < pcc < 0.5 Weak; 0.5 < pcc < 0.7 Moderate; pcc > 0.7 Strong
-    stats$PCCCat <- cut(stats$PCC, c(0, 0.3, 0.5, 0.7, 1), include.lowest = T,
-                        labels = c("pcc < 0.3","0.3 < pcc < 0.5", "0.5 < pcc < 0.7", "pcc > 0.7"))
         
     pccCol <- colorFactor(palette = c('#e31a1c','#fd8d3c','#fecc5c','#ffffb2'), stats$PCCCat)
     biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
     rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
-    
     
     leaflet() %>%
       addProviderTiles(providers$ Esri.WorldPhysical) %>%
@@ -391,26 +401,37 @@ shinyServer <- function(input, output, session) {
       else if (category == "P") return (ceiling(maxRawPCC * percentile * 10) / 10)
     }
     
-    if(input$mapVar == "Air temperature" || input$mapVar == "Surface temperature"){
-      # Temperature Bias and RMSE have four groups:
-      # x < 1; 1 < x < 5; 5 < x < 10; 10 < x
-      stats$BiasCat <- cut(stats$Bias, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
-                           labels = c("bias < 1","1 < bias < 5", "5 < bias < 10", "bias > 10"))  
-      stats$RMSECat <- cut(stats$RMSE, c(0, 1, 5, 10, roundUp(1)), include.lowest = T,
-                           labels = c("RMSE < 1","1 < RMSE < 5", "5 < RMSE < 10", "RMSE > 10"))  
+    if(input$mapVar == "Air temperature"){
+      # Air temperature bias quantiles: min; 0.84; 2.5; 4.9; max
+      stats$BiasCat <- cut(stats$Bias, c(0, .84, 2.5, 4.9, roundUp(1)), include.lowest = T,
+                           labels = c("Bias < .84",".84 < Bias < 2.5", "2.5 < Bias < 4.9", "Bias > 4.9"))  
+      # Air temperature RMSE quantiles: min; 2.5; 4.2; 5.8; max
+      stats$RMSECat <- cut(stats$RMSE, c(0, 2.5, 4.2, 5.8, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 2.5","2.5 < RMSE < 4.2", "4.2 < RMSE < 5.8", "RMSE > 5.8"))  
+      # Air temperature PCC quantiles: min; .77; .86; .92; max
+      stats$PCCCat <- cut(stats$PCC, c(-1, .77, .86, .92, 1), include.lowest = T,
+                          labels = c("PCC < 0.77","0.77 < PCC < 0.86", "0.86 < PCC < 0.92", "PCC > 0.92"))
+    } else if (input$mapVar == "Surface temperature"){
+      # Surface temperature bias quantiles: min; 1.2; 2.8; 6.1; max
+      stats$BiasCat <- cut(stats$Bias, c(0, 1.2, 2.8, 6.1, roundUp(1)), include.lowest = T,
+                           labels = c("Bias < 1.2","1.2 < Bias < 2.8", "2.8 < Bias < 6.1", "Bias > 6.1"))  
+      # Surface temperature RMSE quantiles: min; 4.0; 6.7; 10.3; max
+      stats$RMSECat <- cut(stats$RMSE, c(0, 4, 6.7, 10.3, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 4","4 < RMSE < 6.7", "6.7 < RMSE < 10.3", "RMSE > 10.3"))  
+      # Surface temperature PCC quantiles: min; .79; .88; .93; max
+      stats$PCCCat <- cut(stats$PCC, c(-1, .79, .88, .93, 1), include.lowest = T,
+                          labels = c("PCC < 0.79","0.79 < PCC < 0.88", "0.88 < PCC < 0.93", "PCC > 0.93"))
     } else if (input$mapVar == "Radiation"){
-      # Radiation Bias and RMSE have four groups:
-      # x < 25; 25 < x < 75; 75 < x < 150; 150 < x
-      stats$BiasCat <- cut(stats$Bias, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
-                           labels = c("bias < 25","25 < bias < 75", "75 < bias < 150", "bias > 150"))  
-      stats$RMSECat <- cut(stats$RMSE, c(0, 25, 75, 150, roundUp(1)), include.lowest = T,
-                           labels = c("RMSE < 25","25 < RMSE < 75", "75 < RMSE < 150", "RMSE > 150"))  
+      # Solar radiation bias quantiles: min; 12.7; 29.8; 55.7; max
+      stats$BiasCat <- cut(stats$Bias, c(0, 12.7, 29.8, 55.7, roundUp(1)), include.lowest = T,
+                           labels = c("Bias < 12.7","12.7 < Bias < 29.8", "29.8 < Bias < 55.7", "Bias > 55.7"))  
+      # Solar radiation RMSE quantiles: min; 66.4; 105.3; 146.9; max
+      stats$RMSECat <- cut(stats$RMSE, c(0, 66.4, 105.3, 146.9, roundUp(1)), include.lowest = T,
+                           labels = c("RMSE < 66.4","66.4 < RMSE < 105.3", "105.3 < RMSE < 146.9", "RMSE > 146.9"))  
+      # Solar radiation PCC quantiles: min; .62; .86; .93; max
+      stats$PCCCat <- cut(stats$PCC, c(-1, .62, .86, .93, 1), include.lowest = T,
+                          labels = c("PCC < 0.62","0.62 < PCC < 0.86", "0.86 < PCC < 0.93", "PCC > 0.93"))
     }
-    
-    
-    # PCC has four groups: pcc < 0.3 = None; 0.3 < pcc < 0.5 Weak; 0.5 < pcc < 0.7 Moderate; pcc > 0.7 Strong
-    stats$PCCCat <- cut(stats$PCC, c(0, 0.3, 0.5, 0.7, 1), include.lowest = T,
-                        labels = c("pcc < 0.3","0.3 < pcc < 0.5", "0.5 < pcc < 0.7", "pcc > 0.7"))
     
     pccCol <- colorFactor(palette = c('#e31a1c','#fd8d3c','#fecc5c','#ffffb2'), stats$PCCCat)
     biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
