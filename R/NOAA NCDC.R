@@ -65,7 +65,7 @@ grabNOAA <- function(var, loc, month) {
   
   if (var %in% c("TMAX", "TMIN", "PRCP")) {
     data$data[, "value"] <- data$data[, "value"] / 10
-  } else if (loc == "PR" || (loc == "CO" && month == 7) ) {
+  } else if (loc == "HI" || month == 7 ) {
     # Case for summer in CO, and summer/winter in PR
     # wherein there is no snow data. Values set to 0.
     data <- ncdc(datasetid = 'GHCND', 

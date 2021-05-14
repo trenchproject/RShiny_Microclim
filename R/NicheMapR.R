@@ -12,7 +12,7 @@
 # 
 #     DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
 # 
-#     micro <- micro_ncep(loc = lonlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
+#     micro <- micro_ncep(loc = lo4nlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
 #                         runmoist = 0, runshade = 0)
 # 
 #     filename <- paste0("NicheR_", loc, "_", month, ".RData")
