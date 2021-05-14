@@ -56,7 +56,7 @@ shinyUI <- fluidPage(id = "page",
                            "Enter the last year you need the data for.")),
           
           # column(6, sliderInput("tempCov", "Temporal coverage", min = 1979, max = 2021, value = c(2017, 2017))),
-          column(2, tipify(awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Daily", "3-hourly", "Hourly", "Other" = "One day each month"), selected = c("Daily", "3-hourly", "Hourly", "One day each month")),
+          column(2, tipify(awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Monthly", "Daily", "6-hourly", "3-hourly", "Hourly", "Other" = "One day each month"), selected = c("Daily", "3-hourly", "Hourly", "One day each month", "6-hourly","Monthly")),
                            "This is how frequently the data are collected")),
           column(3, tipify(pickerInput("varTable", "Variables of interest", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables",
                                                                                                                                style = "btn-danger")),
