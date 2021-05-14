@@ -23,7 +23,8 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
                      "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
-                     "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
+                     "NCEP" = c("skt","air","tmp","csdsf","uwnd","prate",NA,"soilw",NA,NA),
+                     #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
 colorsDf <- data.frame(row.names = c("color"),
@@ -34,7 +35,7 @@ colorsDf <- data.frame(row.names = c("color"),
                      "microclimUS" = c('ff00c8'),
                      "microclim" = c('160ef0'),
                      "USCRN" = c('#000000'),
-                     "SNODAS" = c('#7f7f7f'),
+                     "NCEP" = c('#7f7f7f'),
                      "NicheMapR" = c('#bcbd22'))
 
 nameDf <- data.frame(row.names = variables, 
@@ -45,7 +46,8 @@ nameDf <- data.frame(row.names = variables,
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
                      "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
-                     "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
+                     "NCEP" = c("Land Skin Temperature","Air temperature at 2m","Temperature between 10-200cm below ground level","Clear Sky Downward Solar Flux at surface","Wind speed at 10m","Daily Precipitation Rate at surface","Specific Humidity at 2m","Volumetric Soil Moisture between 10-200cm Below Ground Level",NA),
+                     #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 
 datasets <- colnames(varsDf)
@@ -275,7 +277,7 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   
   output$mapDatasetsOutput <- renderUI({
-    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NicheMapR", "microclim", "microclimUS", "NOAA_NCDC")
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NicheMapR", "microclim", "microclimUS", "NCEP", "NOAA_NCDC")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
     choices <- mapDatasets[mapDatasets %in% datasets[index]]
@@ -286,24 +288,18 @@ shinyServer <- function(input, output, session) {
 
   # Stats for spatial comparison
   statsTable <- reactive({
-    
+    # Collects and returns stats table produced in map_helper.R
     validate(need(input$mapDatasets, ""))
-    
     inputVar <- varsDf[input$mapVar, input$mapDatasets]
-    
     load(paste0("Data/Maps/",input$mapDatasets,"_0",input$month,"_",inputVar,".Rda"))
-    
     stats$RMSE <- sqrt(stats$RMSE)
-    
     return(stats)
-    
   })
   
   
   output$mymap <- renderLeaflet({
     
     validate(need(statsTable(), ""))
-  
     stats <- statsTable()
     
     maxRawBias <- max(stats$Bias)

@@ -19,6 +19,8 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabSNODAS(inputVar, loc, month)
   } else if (dataset == "NicheMapR") {
     data <- grabNicheR(inputVar, loc, month)
+  } else if (dataset == "NCEP") {
+    data <- grabNCEP(inputVar, loc, month)
   }
   return (data)
 }
