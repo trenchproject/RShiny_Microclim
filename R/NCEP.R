@@ -4,7 +4,7 @@
 # air: air temperature at 2m (K)
 # csdsf: Clear Sky Downward Solar Flux at surface (W/m^2)
 # prate: Daily Precipitation Rate at surface (Kg/m^2/s)
-# shum: Specific Humidity at 2m (kg/kg)
+# shum: Specific Humidity at 2m (kg/kg) -- REMOVED
 # skt: Land Skin Temperature (K)
 # soilw: Volumetric Soil Moisture between 10-200 cm Below Ground Level (fraction)
 # tmp: Temperature between 10-200 cm below ground level (K)

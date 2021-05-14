@@ -1,15 +1,7 @@
-# source("R/SCAN.R", local = TRUE)
-# source("R/ERA5.R", local = TRUE)
-# source("R/GLDAS.R", local = TRUE)
-# source("R/GRIDMET.R", local = TRUE)
-# source("R/NOAA NCDC.R", local = TRUE)
-# source("R/microclimUS.R", local = TRUE)
-# source("R/microclim.R", local = TRUE)
-# source("R/SNODAS.R", local = TRUE)
-# source("R/USCRN.R", local = TRUE)
-# source("R/NicheMapR.R", local = TRUE)
-# source("cicerone.R", local= TRUE)
-# source("functions.R", local = TRUE)
+## Utilized only to create stats table for spatial comparison. 
+## Does not run dynamically with app.
+## Uncomment last section to recreate stats table displayed in 
+## spatial comparison.
 
 grabMapData <- function(dataset, inputVar, month) {
   if (dataset == "SCAN") {
@@ -30,6 +22,8 @@ grabMapData <- function(dataset, inputVar, month) {
     data <- mapUSCRN(inputVar, month)
   } else if (dataset == "NicheMapR") {
     data <- mapNicheR(inputVar, month)
+  } else if (dataset == "NCEP") {
+    data <- mapNCEP(inputVar, month)
   }
   
   return (data)
@@ -297,6 +291,65 @@ mapmicroUS <- function(var, month) {
   return (fullDf)
 }
 
+mapNCEP <- function(var, month) {
+  
+  stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+  
+  nc <- nc_open(paste0("Data/NCEP/", var, ".2017.nc"))
+  
+  ncvar <- ncvar_get(nc)
+  
+  days <- c()
+  for (i in 1:31) {
+    days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  fullDf <- data.frame(Date = rep(days, each = 4),
+                       "Hour" = c(0,6,12,18))
+  
+  fullDf$Date <- format(as.POSIXct(paste0(fullDf$Date, " ", fullDf$Hour, ":00")), format = "%Y-%m-%d %H:%M")
+  
+  for (i in 1:nrow(stations)) {
+    station <- stations$Name[i]
+    lat <- stations$Lat[i]
+    lon <- stations$Lon[i]
+    
+    lonInd <- match.closest(mod(locs[loc, "lon"],360), nc$dim$lon$vals)
+    lat <- sort(nc$dim$lat$vals)[match.closest(locs[loc, "lat"], sort(nc$dim$lat$vals))]
+    latInd <- match(lat, nc$dim$lat$vals)
+    
+    vals <- c()
+    extra <- ifelse(month == 1, 0, 4*day_of_year("2017-07-01"))
+    for (i in 1 : (4 * 31)) {
+      vals <- c(vals, ncvar[lonInd, latInd, i + extra])
+    }
+    
+    # Perform necessary unit conversions
+    if (var %in% c("air", "skt", "tmp")){ # K to C
+      vals <- vals - 273.15
+    } else if (var == "prate"){
+      vals <- vals * 21600
+    } else if (var == "uwnd"){
+      # Get vwnd portion
+      nc_vwnd <- nc_open(paste0("Data/NCEP/vwnd.2017.nc"))
+      ncvar_vwnd <- ncvar_get(nc_vwnd)
+      
+      vwnd <- c()
+      for (i in 1 : (4 * 31)) {
+        vwnd <- c(vwnd, ncvar_vwnd[lonInd, latInd, i + extra])
+      }
+      
+      vals <- sqrt(vals^2 + vwnd^2)
+    }
+    
+    vals <- as.data.frame(vals) %>% set_colnames(station)
+    fullDf <- cbind(fullDf, vals)
+    
+  }
+  
+  return (fullDf)
+}
+
 
 # DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
 # 
@@ -453,7 +506,7 @@ mapSCAN <- function(varIndex, month) {
 
 
 
-# 
+
 # variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 # 
 # varsDf <- data.frame(row.names = c(variables, "Tmin"),
@@ -464,8 +517,20 @@ mapSCAN <- function(varIndex, month) {
 #                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
 #                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
 #                      "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
-#                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
+#                      "NCEP" = c("skt","air","tmp","csdsf","uwnd","prate",NA,"soilw",NA,NA),
+#                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
 #                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
+# 
+# colorsDf <- data.frame(row.names = c("color"),
+#                        "ERA5" = c('#04d9ff'),
+#                        "GLDAS" = c('#ff7f0e'),
+#                        "GRIDMET" = c('#2ca02c'),
+#                        "NOAA_NCDC" = c('39FF14'),
+#                        "microclimUS" = c('ff00c8'),
+#                        "microclim" = c('160ef0'),
+#                        "USCRN" = c('#000000'),
+#                        "NCEP" = c('#7f7f7f'),
+#                        "NicheMapR" = c('#bcbd22'))
 # 
 # nameDf <- data.frame(row.names = variables,
 #                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
@@ -475,14 +540,15 @@ mapSCAN <- function(varIndex, month) {
 #                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
 #                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
 #                      "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
-#                      "SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
+#                      "NCEP" = c("Land Skin Temperature","Air temperature at 2m","Temperature between 10-200cm below ground level","Clear Sky Downward Solar Flux at surface","Wind speed at 10m","Daily Precipitation Rate at surface","Specific Humidity at 2m","Volumetric Soil Moisture between 10-200cm Below Ground Level",NA),
+#                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
 #                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 # 
 # datasets <- colnames(varsDf)
 # 
 # stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
 # 
-# for(mapDataset in c("GRIDMET")){
+# for(mapDataset in c("NCEP")){
 #   for(month in c(1,7)){
 #     for(mapVar in c("Surface temperature", "Air temperature", "Radiation")){
 #       CRN <- grabMapData("USCRN", varsDf[mapVar, "USCRN"], month)
