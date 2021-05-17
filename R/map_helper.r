@@ -20,8 +20,8 @@ grabMapData <- function(dataset, inputVar, month) {
     data <- mapmicro(inputVar, month)
   } else if (dataset == "USCRN") {
     data <- mapUSCRN(inputVar, month)
-  } else if (dataset == "NicheMapR") {
-    data <- mapNicheR(inputVar, month)
+  } else if (dataset == "micro_ncep") {
+    data <- mapMicroNCEP(inputVar, month)
   } else if (dataset == "NCEP") {
     data <- mapNCEP(inputVar, month)
   }
@@ -370,7 +370,7 @@ mapNCEP <- function(var, month) {
 # }
 
 
-mapNicheR <- function(var, month) {
+mapMicroNCEP <- function(var, month) {
   
   stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
   

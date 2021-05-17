@@ -17,8 +17,8 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabUSCRN(inputVar, loc, month)
   } else if (dataset == "SNODAS") {
     data <- grabSNODAS(inputVar, loc, month)
-  } else if (dataset == "NicheMapR") {
-    data <- grabNicheR(inputVar, loc, month)
+  } else if (dataset == "micro_ncep") {
+    data <- grabMicroNCEP(inputVar, loc, month)
   } else if (dataset == "NCEP") {
     data <- grabNCEP(inputVar, loc, month)
   }

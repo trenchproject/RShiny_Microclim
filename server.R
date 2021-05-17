@@ -8,7 +8,7 @@ source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
 source("R/SNODAS.R", local = TRUE)
 source("R/USCRN.R", local = TRUE)
-source("R/NicheMapR.R", local = TRUE)
+source("R/micro_ncep.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
 options(shiny.sanitize.errors = FALSE)
@@ -26,7 +26,7 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
                      "NCEP" = c("skt","air","tmp","csdsf","uwnd","prate",NA,"soilw",NA,NA),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
-                     "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
+                     "micro_ncep" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
 
 colorsDf <- data.frame(row.names = c("color"),
                      "ERA5" = c('#04d9ff'),
@@ -37,7 +37,7 @@ colorsDf <- data.frame(row.names = c("color"),
                      "microclim" = c('160ef0'),
                      "USCRN" = c('#000000'),
                      "NCEP" = c('#7f7f7f'),
-                     "NicheMapR" = c('#bcbd22'))
+                     "micro_ncep" = c('#bcbd22'))
 
 nameDf <- data.frame(row.names = variables, 
                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
@@ -49,7 +49,7 @@ nameDf <- data.frame(row.names = variables,
                      "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
                      "NCEP" = c("Land Skin Temperature","Air temperature at 2m","Temperature between 10-200cm below ground level","Clear Sky Downward Solar Flux at surface","Wind speed at 10m","Daily Precipitation Rate at surface","Specific Humidity at 2m","Volumetric Soil Moisture between 10-200cm Below Ground Level",NA),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
-                     "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
+                     "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
 
 datasets <- colnames(varsDf)
 
@@ -221,7 +221,7 @@ shinyServer <- function(input, output, session) {
     validate(need(length(input$statsOption) == 2, "Select two datasets\n\n\n"))
     # Have to figure out what to do with 3-hourly and daily values. take the average?
     
-    # hourly: SCAN, ERA5, microclimUS, NicheMapR
+    # hourly: SCAN, ERA5, microclimUS, micro_ncep
     # 3-hourly: GLDAS
     # daily: gridMET, NOAA NCDC, SNODAS
     # sub-hourly: USCRN
@@ -278,7 +278,7 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   
   output$mapDatasetsOutput <- renderUI({
-    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NicheMapR", "microclim", "microclimUS", "NCEP", "NOAA_NCDC")
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "micro_ncep", "microclim", "microclimUS", "NCEP", "NOAA_NCDC")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
     choices <- mapDatasets[mapDatasets %in% datasets[index]]
@@ -481,7 +481,7 @@ shinyServer <- function(input, output, session) {
   
   # Data set selector
   output$datasetsOutput3 <- renderUI({
-    operative_datasets <- c("microclim", "NOAA_NCDC", "GRIDMET", "GLDAS", "ERA5", "microclimUS", "NicheMapR", "USCRN")
+    operative_datasets <- c("microclim", "NOAA_NCDC", "GRIDMET", "GLDAS", "ERA5", "microclimUS", "micro_ncep", "USCRN")
     pickerInput("datasets3", "Datasets", choices = operative_datasets, selected = "USCRN", multiple = T,
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
