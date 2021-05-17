@@ -17,6 +17,11 @@ library(ncdf4)
 library(raster)
 library(AOI)
 
+day_of_year<- function(day, format="%Y-%m-%d"){
+  day=  as.POSIXlt(day, format=format)
+  return(as.numeric(strftime(day, format = "%j")))
+}
+
 grabNCEP <- function(var, loc, month) {
   locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
                      "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
