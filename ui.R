@@ -99,7 +99,8 @@ shinyUI <- fluidPage(id = "page",
                                  options = list(style = "btn-success"), multiple = F),
                    ),
                    
-                   uiOutput("datasetsOutput"),
+                   uiOutput("datasetsOutputTemp1"),
+                   uiOutput("datasetsOutputTemp2"),
                    
                    div(
                      id = "sealoc-wrapper",

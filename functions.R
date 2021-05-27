@@ -19,6 +19,10 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabSNODAS(inputVar, loc, month)
   } else if (dataset == "micro_ncep") {
     data <- grabMicroNCEP(inputVar, loc, month)
+  } else if (dataset == "micro_usa") {
+    data <- grabMicroUSA(inputVar, loc, month)
+  } else if (dataset == "micro_global") {
+    data <- grabMicroGlobal(inputVar, loc, month)
   } else if (dataset == "NCEP") {
     data <- grabNCEP(inputVar, loc, month)
   }

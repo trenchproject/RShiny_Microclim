@@ -21,12 +21,14 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "SWdown_f_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "SnowDepth_inst", "Tmin"),
                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, NA, "tmin"),
                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
-                     "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
-                     "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
+                     "microclimUS" = c("soil0cm_0pctShade", "TA1cm_0pctShade", "soil100cm_0pctShade", "SOLR", "V1cm", NA, "RH1cm_0pctShade", "moist100cm_0pctShade", "SNOWDEP_0pctShade", "Tmin"),
+                     "microclim" = c("D0cm_soil_0", "TA1cm_soil_0", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH1cm_soil_0", NA, NA, "Tmin"),
                      "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
                      "NCEP" = c("skt","air","tmp","csdsf","uwnd","prate",NA,"soilw",NA,NA),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
-                     "micro_ncep" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
+                     "micro_ncep" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+                     "micro_usa" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+                     "micro_global" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA))
 
 colorsDf <- data.frame(row.names = c("color"),
                      "ERA5" = c('#04d9ff'),
@@ -37,19 +39,24 @@ colorsDf <- data.frame(row.names = c("color"),
                      "microclim" = c('160ef0'),
                      "USCRN" = c('#000000'),
                      "NCEP" = c('#7f7f7f'),
-                     "micro_ncep" = c('#bcbd22'))
+                     "micro_ncep" = c('#bcbd22'),
+                     "micro_usa" = c('#6a40c6'),
+                     "micro_global" = c('#a99261')
+                     )
 
 nameDf <- data.frame(row.names = variables, 
-                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
+                     "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m aboveground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
                      "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", "3-hourly relative humidity", "3-hourly average soil moisture 40-100 cm below ground", "3-hourly snow depth"),
                      "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", "Daily precipitation amount", NA, NA, NA),
                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Daily precipitation", NA, NA, "Daily snow Depth"),
-                     "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
-                     "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
+                     "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m belowground (0 % shade)", "Hourly solar radiation (horizontal ground)", "Wind speed 1cm aboveground", NA, "Relative humidity 1cm aboveground", "Hourly soil moisture 1m belowground (0 % shade)", NA),
+                     "microclim" = c("Surface temperature (0% shade)", "Air temperature 1cm aboveground", "Soil temperature 1m belowground", "Solar radiation", "Wind speed 1cm aboveground", NA, "Relative humidity 1cm aboveground", NA, NA),
                      "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
                      "NCEP" = c("Land Skin Temperature","Air temperature at 2m","Temperature between 10-200cm below ground level","Clear Sky Downward Solar Flux at surface","Wind speed at 10m","Daily Precipitation Rate at surface","Specific Humidity at 2m","Volumetric Soil Moisture between 10-200cm Below Ground Level",NA),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
-                     "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
+                     "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+                     "micro_usa" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+                     "micro_global" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"))
 
 datasets <- colnames(varsDf)
 
@@ -120,12 +127,22 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   #____________________________________________________________________________
   
-  output$datasetsOutput <- renderUI({
+  output$datasetsOutputTemp1 <- renderUI({
     
     index <- which(!is.na(varsDf[input$var, ]))
     
-    pickerInput("datasets", "Datasets", 
-                choices = datasets[index][datasets[index] != "SCAN"],
+    pickerInput("datasets", "Forcing & Station Datasets", 
+                choices = c("USCRN","ERA5","GLDAS","GRIDMET","NOAA_NCDC","NCEP"),
+                selected = "USCRN", multiple = T, 
+                options = list(style = "btn-success", `actions-box` = TRUE))
+  })
+  
+  output$datasetsOutputTemp2 <- renderUI({
+    
+    index <- which(!is.na(varsDf[input$var, ]))
+    
+    pickerInput("datasetstemp2", "Microclimate Functions & Downscaled (1cm) Datasets", 
+                choices = c("microclimUS","microclim","micro_ncep","micro_usa","micro_global"),
                 selected = "USCRN", multiple = T, 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
@@ -149,6 +166,9 @@ shinyServer <- function(input, output, session) {
     for (method in input$datasets) {
       text <- paste0(text, "<br><b>", method, ":</b> ", nameDf[input$var, method])
     }
+    for (method in input$datasetstemp2) {
+      text <- paste0(text, "<br><b>", method, ":</b> ", nameDf[input$var, method])
+    }
     HTML("<b><u>Data showing</u></b>", text,
          "<br><br><b>Station name:</b> ", station, 
          "<br><b>Location:</b> ", loc,
@@ -157,7 +177,7 @@ shinyServer <- function(input, output, session) {
   
   
   output$plot <- renderPlotly({
-    validate(need(input$datasets, "Select datasets"))
+    validate(need(append(input$datasets,input$datasetstemp2), "Select datasets"))
   
     if (input$var == "Wind speed") unit <- "(m/s)"
     else if (input$var == "Radiation") unit <- HTML("(W/m<sup>2</sup>)")
@@ -168,12 +188,12 @@ shinyServer <- function(input, output, session) {
     p <- plot_ly()
 
     i = 0
-    for (method in input$datasets) {
+    for (method in append(input$datasets,input$datasetstemp2)) {
       i = i + 1
       inputVar <- varsDf[input$var, method]
       
       if (!is.na(inputVar)) {
-        if (input$loc != "HI" || !method %in% c("GRIDMET", "microclimUS")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
+        if (input$loc != "HI" || !method %in% c("GRIDMET", "microclimUS", "micro_usa")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
           df <- grabAnyData(method, inputVar, input$loc, input$season)
           p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colorsDf["color", method]))
         }
@@ -182,7 +202,7 @@ shinyServer <- function(input, output, session) {
     
     # Adding  GRIDMET and NOAA_NCDC Tmin when Air temperature is selected
     if (input$var == "Air temperature") {
-      for (method in input$datasets) {
+      for (method in append(input$datasets,input$datasetstemp2)) {
         inputVar <- varsDf["Tmin", method]
         if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
           if (input$loc != "HI" || !method == "GRIDMET") { # gridMET doesn't have data for PR
@@ -210,10 +230,10 @@ shinyServer <- function(input, output, session) {
   
   # Stats for temporal comparison
   output$datasetComparison <- renderUI({
-    validate(need(input$datasets, ""))
+    validate(need(append(input$datasets,input$datasetstemp2), ""))
 
     checkboxGroupButtons("statsOption", "Select two datasets to see their relatedness", 
-                         choices = input$datasets, status = "success", 
+                         choices = append(input$datasets,input$datasetstemp2), status = "success", 
                          checkIcon = list(yes = icon("ok", lib = "glyphicon")))
   })
   
@@ -566,7 +586,7 @@ shinyServer <- function(input, output, session) {
       wind <- varsDf["Wind speed", method]
       
       # If it is not a continental-US-only dataset
-      if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+      if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS", "micro_usa")) { 
         
         # Get air temperature data
         aTemp <- grabAnyData(method, aTemp, input$loc3, input$season3)
@@ -676,7 +696,7 @@ shinyServer <- function(input, output, session) {
       wind <- varsDf["Wind speed", method]
       
       # If it is not a continental-US-only dataset
-      if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS")) { 
+      if (input$loc3 != c("HI") || !method %in% c("GRIDMET", "microclimUS", "micro_usa")) { 
         
         method_vec = append(method_vec, method) 
         

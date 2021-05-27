@@ -32,7 +32,7 @@
 #     save(micro, file = filename)
     
 #     # micro_ncep()
-#     micro <- micro_ncep(loc = lo4nlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
+#     micro <- micro_ncep(loc = lonlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
 #                         runmoist = 0, runshade = 0, Usrhyt = 0.01)
 #     filename <- paste0("micro_ncep_", loc, "_", month, ".RData")
 #     save(micro, file = filename)

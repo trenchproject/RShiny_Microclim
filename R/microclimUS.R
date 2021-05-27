@@ -7,13 +7,14 @@ library(MALDIquant)
 # Variables
 # 96 * 40 * 8760 (24 * 365)
 
-# TA200cm
-# soil0cm_0pctShade
-# soil100cm_0pctShade
-# TA1cm_0pctShade: Air temp 1cm height (degC * 10)
+# soil0cm_0pctShade: Surface temperature (C * 10) at 0% shade
+# soil100cm_0pctShade: Substrate temperature (C * 10) at 0% shade
+# TA1cm_0pctShade: Air temp 1cm height (C * 10)
 # SOLR: Solar radiation (horizontal ground) W/m^2 * 10
-# RH200cm: Humidity 
+# RH1cm_0pctShade: Humidity 1cm (% * 10)
 # moist100cm_0pctShade: Soil moisture (% * 10)
+# V1cm: wind speed 1 cm above ground
+# SNOWDEP_0pctShade: Snow depth (cm * 10)
 
 # Tmin (for map)
 
@@ -22,7 +23,7 @@ grabmicroUS <- function(var, loc, month) {
   locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
                      "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
                      "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
-                     "offset" = c(-8, -7, -4, -8, -10))
+                     "offset" = c(-8, -7, -4, -7, -10))
   
   nc <- nc_open(paste0("Data/microclimUS/", var, "_2017.nc"))
 
@@ -41,6 +42,10 @@ grabmicroUS <- function(var, loc, month) {
   days <- c()
   for (i in 1:31) {
     days <- c(days, paste0("2017-0", month, "-", i))
+  }
+  
+  if(var == "SNOWDEP_0pctShade"){
+    vals <- vals * 10
   }
 
   df <- data.frame("Date" = rep(days, each = 24),

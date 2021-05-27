@@ -2,23 +2,23 @@
 
 # install_github('mrke/NicheMapR')
 # install_github('ilyamaclean/microclima')
-
-
-# for (loc in c("WA", "CO", "PR")) {
+# 
+# 
+# for (loc in c("OR", "CO", "HI")) {
 #   for (month in c(1, 7)) {
-#     lonlat <- c(locs[loc, "lon"], locs[loc, "lat"]) # (longitude, latitude)
-#     dstart <- paste0("01/0", month, "/2017") # start date
-#     dfinish <- paste0("31/0", month, "/2017") # end date
+#      lonlat <- c(locs[loc, "lon"], locs[loc, "lat"]) # (longitude, latitude)
+#      dstart <- paste0("01/0", month, "/2017") # start date
+#      dfinish <- paste0("31/0", month, "/2017") # end date
 # 
-#     DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
+#      DEP <- c(0, 3, 5, 10, 15, 20, 30, 50, 100, 200) # specify depths. need 10
 # 
-#     micro <- micro_ncep(loc = lo4nlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
-#                         runmoist = 0, runshade = 0)
+#      micro <- micro_ncep(loc = lo4nlat, dstart = dstart, dfinish = dfinish, DEP = DEP,
+#                          runmoist = 0, runshade = 0, Usrhyt = 0.01)
 # 
-#     filename <- paste0("NicheR_", loc, "_", month, ".RData")
+#      filename <- paste0("micro_ncep_", loc, "_", month, ".RData")
 # 
-#     save(micro, file = filename)
-#   }
+#      save(micro, file = filename)
+#    }
 # }
 
 
@@ -80,7 +80,7 @@ grabMicroNCEP <- function(var, loc, month) {
   locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
                      "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
                      "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
-                     "offset" = c(-8, -7, -4, -8, -10))
+                     "offset" = c(-8, -7, -4, -7, -10))
   
   # metout: The above ground micrometeorological conditions under the minimum specified shade
   # shadmet: The above ground micrometeorological conditions under the maximum specified shade
@@ -97,6 +97,9 @@ grabMicroNCEP <- function(var, loc, month) {
     vals <- micro$metout[, var]
   }
   
+  valsDOY <- micro$metout[, "DOY"]
+  valsHOUR <- micro$metout[, "TIME"]
+  
   if (var == "SNOWDEP") { # cm to mm
     vals <- vals * 10 
   }
@@ -107,11 +110,11 @@ grabMicroNCEP <- function(var, loc, month) {
   }
   
   offset <- -locs[loc, "offset"] # Data are stored as UCT. So we need adjustment to be aligned to the local time.
-  
+
   
   df <- data.frame("Date" = rep(days, each = 24)[1 : (24 * 31 - offset)],
                    "Hour" = rep(0 : 23, 31)[1 : (24 * 31 - offset)],
-                   "Data" = vals[(offset + 1) : (24 * 31)])
+                   "Data" = vals[(offset+1) : (24 * 31)])
   
   
   df$Date <- format(as.POSIXct(paste0(df$Date, " ", df$Hour, ":00")), format = "%Y-%m-%d %H:%M")

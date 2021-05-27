@@ -1,13 +1,12 @@
 # microclim
 
 # Variables
-# TA120cm
 # V1cm: wind speed 1 cm above ground
-# TA1cm_soil_0
-# SOLR
-# D100cm_soil_0
-# D0cm_soil_0
-# RH120cm
+# TA1cm_soil_0: Air temperature (deg C) 1cm aboveground assuming soil substrate and 0% shade
+# SOLR: Solar radiation (W/m2) on horizontal ground
+# D100cm_soil_0: Substrate temperature (C) at 100cm, assuming soil substrate and 0% shade
+# D0cm_soil_0: Substrate temperature (C) at 0cm, assuming soil substrate and 0% shade
+# RH1cm_soil_0: Relative humidity (%) 1cm aboveground assuming soil substrate and 0% shade
 # Tmin (for map)
 
 # For outside of US
@@ -20,7 +19,7 @@ grabmicro <- function(var, loc, month) {
   locs <- data.frame(row.names = c("WA", "CO", "PR", "OR", "HI"), 
                      "lon" = c(-118.5657, -104.7552, -66.98880, -119.65, -155.07), 
                      "lat" = c(47.0022, 40.8066, 18.15110, 44.55, 19.7), 
-                     "offset" = c(-8, -7, -4, -8, -10))
+                     "offset" = c(-8, -7, -4, -7, -10))
   
   nc <- nc_open(paste0("Data/microclim/", var, "_", month, ".nc"))
   ncvar <- ncvar_get(nc)
