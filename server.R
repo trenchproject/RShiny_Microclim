@@ -28,7 +28,8 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "micro_ncep" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
                      "micro_usa" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
-                     "micro_global" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA))
+                     "micro_global" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+                     "NEW01" = c(NA, "TMAXX", NA, NA, "WNMAXX", "RAINFALL", "RHMAXX", NA, NA, "TMINN"))
 
 colorsDf <- data.frame(row.names = c("color"),
                      "ERA5" = c('#04d9ff'),
@@ -41,7 +42,8 @@ colorsDf <- data.frame(row.names = c("color"),
                      "NCEP" = c('#7f7f7f'),
                      "micro_ncep" = c('#bcbd22'),
                      "micro_usa" = c('#6a40c6'),
-                     "micro_global" = c('#a99261')
+                     "micro_global" = c('#a99261'),
+                     "NEW01" = c('#DF382B')
                      )
 
 nameDf <- data.frame(row.names = variables, 
@@ -56,7 +58,8 @@ nameDf <- data.frame(row.names = variables,
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
                      "micro_usa" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
-                     "micro_global" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"))
+                     "micro_global" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+                     "NEW01" = c(NA, "Maximum monthly air temperature (C)", NA, NA, "Maximum 10m monthly wind speed (m/s)", "Total rainfall during that month (mm/month)", "% Relative humidity", NA, NA))
 
 datasets <- colnames(varsDf)
 
@@ -129,21 +132,22 @@ shinyServer <- function(input, output, session) {
   
   output$datasetsOutputTemp1 <- renderUI({
     
-    index <- which(!is.na(varsDf[input$var, ]))
+    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NOAA_NCDC","NCEP","NEW01")
+    index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasets", "Forcing & Station Datasets", 
-                choices = c("USCRN","ERA5","GLDAS","GRIDMET","NOAA_NCDC","NCEP"),
+                choices = sets[index],
                 selected = "USCRN", multiple = T, 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
   output$datasetsOutputTemp2 <- renderUI({
     
-    index <- which(!is.na(varsDf[input$var, ]))
+    sets <- c("microclimUS","microclim","micro_ncep","micro_usa","micro_global")
+    index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasetstemp2", "Microclimate Functions & Downscaled (1cm) Datasets", 
-                choices = c("microclimUS","microclim","micro_ncep","micro_usa","micro_global"),
-                selected = "USCRN", multiple = T, 
+                choices = sets[index], selected=NA, multiple = T, 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -193,9 +197,12 @@ shinyServer <- function(input, output, session) {
       inputVar <- varsDf[input$var, method]
       
       if (!is.na(inputVar)) {
-        if (input$loc != "HI" || !method %in% c("GRIDMET", "microclimUS", "micro_usa")) {  # Won't run when PR and the three datasets that don't have data for PR are selected 
+        if (input$loc != "HI" || !method %in% c("GRIDMET", "microclimUS", "micro_usa")) {  # Won't run when HI and the three datasets that don't have data for PR are selected 
           df <- grabAnyData(method, inputVar, input$loc, input$season)
-          p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colorsDf["color", method]))
+          
+          if(method=="NEW01") p <- p %>% add_trace(x = as.POSIXct(df$Date), y = df$Data, name = method, marker = list(color = colorsDf["color", method]), mode = 'markers')
+          else p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colorsDf["color", method]))
+        
         }
       }
     }
@@ -204,12 +211,13 @@ shinyServer <- function(input, output, session) {
     if (input$var == "Air temperature") {
       for (method in append(input$datasets,input$datasetstemp2)) {
         inputVar <- varsDf["Tmin", method]
-        if (method %in% c("GRIDMET", "NOAA_NCDC")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
+        if (method %in% c("GRIDMET", "NOAA_NCDC", "NEW01")) { # gridMET and NOAA NCDC have daily Tmax and Tmin
           if (input$loc != "HI" || !method == "GRIDMET") { # gridMET doesn't have data for PR
             
             df <- grabAnyData(method, inputVar, input$loc, input$season)
             
-            p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colorsDf["color", method]))
+            if(method=="NEW01") p <- p %>% add_trace(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), marker = list(color = colorsDf["color", method]), mode = 'markers')
+            else p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colorsDf["color", method]))
           }
         }
       }

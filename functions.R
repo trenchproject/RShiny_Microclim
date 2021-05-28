@@ -25,6 +25,8 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabMicroGlobal(inputVar, loc, month)
   } else if (dataset == "NCEP") {
     data <- grabNCEP(inputVar, loc, month)
+  } else if (dataset == "NEW01") {
+    data <- grabNEW01(inputVar, loc, month)
   }
   return (data)
 }
