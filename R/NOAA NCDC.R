@@ -78,6 +78,7 @@ grabNOAA <- function(var, loc, month) {
     data$data[, "value"] <- 0
   }
   
+  
   df <- data$data[, c("date", "value")] %>% as.data.frame() %>% 
     magrittr::set_colnames(c("Date", "Data"))
   
