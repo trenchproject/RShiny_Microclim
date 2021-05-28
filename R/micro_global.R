@@ -71,7 +71,7 @@ grabMicroGlobal <- function(var, loc, month) {
   
   vals <- c()
   begin <- ifelse(month == 1, 0, 24 * 180)+1
-  end <-extra+24*31
+  end <- begin+24*31
   vals <- variable[begin:end]
   valsDOY <- variableDOY[begin:end]
   valsHOUR <- variableHOUR[begin:end]
