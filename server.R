@@ -308,7 +308,7 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   
   output$mapDatasetsOutput <- renderUI({
-    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "micro_ncep", "microclim", "microclimUS", "NCEP", "NOAA_NCDC")
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "micro_ncep", "microclim", "microclimUS", "NCEP")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
     choices <- mapDatasets[mapDatasets %in% datasets[index]]
@@ -512,7 +512,7 @@ shinyServer <- function(input, output, session) {
   # Data set selector
   output$datasetsOutput3 <- renderUI({
     
-    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NOAA_NCDC","NCEP","NEW01")
+    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NCEP","NEW01")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasets3", "Forcing & Station Datasets", 
