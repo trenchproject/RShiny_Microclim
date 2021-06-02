@@ -15,7 +15,9 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabmicro(inputVar, loc, month)
   } else if (dataset == "USCRN") {
     data <- grabUSCRN(inputVar, loc, month)
-  } else if (dataset == "SNODAS") {
+  } else if (dataset == "USCRN1cm") {
+    data <- grabUSCRN1cm(inputVar, loc, month)
+  }else if (dataset == "SNODAS") {
     data <- grabSNODAS(inputVar, loc, month)
   } else if (dataset == "micro_ncep") {
     data <- grabMicroNCEP(inputVar, loc, month)
@@ -199,4 +201,12 @@ Qmetabolism_from_mass_temp<-function(m, T_b, taxa){
   if(taxa=="amphibian") Qmet= exp(-5760/T_b+16.68)*m^0.75/60
   if(taxa=="invertebrate") Qmet= exp(-9150/T_b+27.62)*m^0.75/60
   return(Qmet)
+}
+
+air_temp_profile_neutral<-function(T_r, zr, z0, z, T_s){
+  
+  stopifnot(zr>=0, z0>=0, z>=0)
+  
+  T_z= (T_r-T_s)*log(z/z0+1)/log(zr/z0+1)+T_s 
+  return(T_z)
 }

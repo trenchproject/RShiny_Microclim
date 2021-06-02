@@ -25,7 +25,7 @@
 #library(RNCEP)
 library(elevatr)
 library(devtools)
-library(NicheMapR)
+#library(NicheMapR)
 #library(microclima)
 
 

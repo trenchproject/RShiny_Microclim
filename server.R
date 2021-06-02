@@ -8,6 +8,7 @@ source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
 source("R/SNODAS.R", local = TRUE)
 source("R/USCRN.R", local = TRUE)
+source("R/USCRN1cm.R", local = TRUE)
 source("R/micro_ncep.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
@@ -24,6 +25,7 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
                      "microclimUS" = c("soil0cm_0pctShade", "TA1cm_0pctShade", "soil100cm_0pctShade", "SOLR", "V1cm", NA, "RH1cm_0pctShade", "moist100cm_0pctShade", "SNOWDEP_0pctShade", "Tmin"),
                      "microclim" = c("D0cm_soil_0", "TA1cm_soil_0", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH1cm_soil_0", NA, NA, "Tmin"),
                      "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
+                     "USCRN1cm" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
                      "NCEP" = c("skt","air","tmp","csdsf","uwnd","prate",NA,"soilw",NA,NA),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
                      "micro_ncep" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
@@ -43,8 +45,7 @@ colorsDf <- data.frame(row.names = c("color"),
                      "micro_ncep" = c('#bcbd22'),
                      "micro_usa" = c('#6a40c6'),
                      "micro_global" = c('#a99261'),
-                     "NEW01" = c('#DF382B')
-                     )
+                     "NEW01" = c('#DF382B'))
 
 nameDf <- data.frame(row.names = variables, 
                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m aboveground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
@@ -54,6 +55,7 @@ nameDf <- data.frame(row.names = variables,
                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m belowground (0 % shade)", "Hourly solar radiation (horizontal ground)", "Wind speed 1cm aboveground", NA, "Relative humidity 1cm aboveground", "Hourly soil moisture 1m belowground (0 % shade)", NA),
                      "microclim" = c("Surface temperature (0% shade)", "Air temperature 1cm aboveground", "Soil temperature 1m belowground", "Solar radiation", "Wind speed 1cm aboveground", NA, "Relative humidity 1cm aboveground", NA, NA),
                      "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
+                     "USCRN1cm" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
                      "NCEP" = c("Land Skin Temperature","Air temperature at 2m","Temperature between 10-200cm below ground level","Clear Sky Downward Solar Flux at surface","Wind speed at 10m","Daily Precipitation Rate at surface","Specific Humidity at 2m","Volumetric Soil Moisture between 10-200cm Below Ground Level",NA),
                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
                      "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
@@ -143,7 +145,7 @@ shinyServer <- function(input, output, session) {
   
   output$datasetsOutputTemp2 <- renderUI({
     
-    sets <- c("microclimUS","microclim","micro_ncep","micro_usa","micro_global")
+    sets <- c("USCRN1cm","microclimUS","microclim","micro_ncep","micro_usa","micro_global")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasetstemp2", "Microclimate Functions & Downscaled (1cm) Datasets", 
