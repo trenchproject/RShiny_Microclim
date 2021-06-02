@@ -1,5 +1,4 @@
 *.DS_Store
-Data/microclim/*
 .Rhistory
 .Rproj.user/
 .RData

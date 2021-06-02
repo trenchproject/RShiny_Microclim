@@ -4,8 +4,8 @@
 # RAINFALL <- CLIMATE[,2:13] : Rainfall (mm/month)
 # WNMAXX <- CLIMATE[,26:37]/10 : 10m windspeed max (m/s)
 # WNMINN<-WNMAXX*0.1 # impose diurnal cycle : 10m windspeed min (m/s)
-# TMINN <- CLIMATE[,38:49]/10 : Maximum temperature (C)
-# TMAXX <- CLIMATE[,50:61]/10 : Minimum temperature (C)
+# TMINN <- CLIMATE[,38:49]/10 : 1.2m Maximum temperature (C)
+# TMAXX <- CLIMATE[,50:61]/10 : 1.2m Minimum temperature (C)
 # RHMINN <- CLIMATE[,62:73]/10 : Minimum relative humidity (%)
 # RHMAXX <- CLIMATE[,74:85]/10 : Maximum relative humidity (%)
 

@@ -8,8 +8,8 @@
 # 4            shum    sph                    daily_mean_specific_humidity                        kg/kg
 # 5            srad   srad       daily_mean_shortwave_radiation_at_surface                        W/m^2
 # 6        wind_dir     th                       daily_mean_wind_direction Degrees Clockwise from north
-# 7            tmin   tmmn                       daily_minimum_temperature                         degK
-# 8            tmax   tmmx                       daily_maximum_temperature                         degK
+# 7            tmin   tmmn                       2m daily_minimum_temperature                         degK
+# 8            tmax   tmmx                       2m daily_maximum_temperature                         degK
 # 9        wind_vel     vs                           daily_mean_wind_speed                          m/s
 # 10     burn_index     bi                      daily_mean_burning_index_g                     Unitless
 # 11     fmoist_100  fm100                        dead_fuel_moisture_100hr                      Percent

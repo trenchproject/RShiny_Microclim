@@ -17,7 +17,7 @@
 # "SoilTMP40_100cm_inst" Soil temperature (40-100 cm underground) (K)
 # "SoilTMP100_200cm_inst" Soil temperature (100-200 cm underground) (K)
 # "Wind_f_inst" Wind speed (m s-1)         
-# "Tair_f_inst" Air temperature (K)
+# "Tair_f_inst" 2m air temperature (K)
 # "Qair_f_inst" Specific humidity (kg/kg)
 # "Rainf_f_tavg" Total precipitation rate (kg m-2 s-1)
 # "SoilMoi40_100cm_inst" = Soil moisture content (40-100 cm underground) (kg m-2)

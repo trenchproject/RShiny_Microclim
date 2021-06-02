@@ -511,8 +511,23 @@ shinyServer <- function(input, output, session) {
   
   # Data set selector
   output$datasetsOutput3 <- renderUI({
-    operative_datasets <- c("microclim", "NOAA_NCDC", "GRIDMET", "GLDAS", "ERA5", "microclimUS", "micro_ncep", "USCRN")
-    pickerInput("datasets3", "Datasets", choices = operative_datasets, selected = "USCRN", multiple = T,
+    
+    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NOAA_NCDC","NCEP","NEW01")
+    index <- which(!is.na(varsDf[input$var, sets]))
+    
+    pickerInput("datasets3", "Forcing & Station Datasets", 
+                choices = sets[index],
+                selected = "USCRN", multiple = T, 
+                options = list(style = "btn-success", `actions-box` = TRUE))
+  })
+  
+  output$datasetsOutput30 <- renderUI({
+    
+    sets <- c("USCRN1cm","microclimUS","microclim","micro_ncep","micro_usa","micro_global")
+    index <- which(!is.na(varsDf[input$var, sets]))
+    
+    pickerInput("datasets30", "Microclimate Functions & Downscaled (1cm) Datasets", 
+                choices = sets[index], selected=NA, multiple = T, 
                 options = list(style = "btn-success", `actions-box` = TRUE))
   })
   
@@ -577,7 +592,7 @@ shinyServer <- function(input, output, session) {
   # Rendering plot
   output$plot3 <- renderPlotly({
     
-    validate(need(input$datasets3, "Select datasets"))
+    validate(need(append(input$datasets3,input$datasets30), "Select datasets"))
     
     colors_special <- list('#b35806', '#542788', '#8073ac', '#e08214', '#b2abd2', '#fdb863', '#fee0b6', '#d8daeb')
     fig <- plot_ly() %>%
@@ -587,7 +602,7 @@ shinyServer <- function(input, output, session) {
     dates <- vector()
     
     # For each selected method
-    for (method in input$datasets3) {
+    for (method in append(input$datasets3,input$datasets30)) {
       
       # Get variable name/location
       aTemp <- varsDf["Air temperature", method]
@@ -636,8 +651,8 @@ shinyServer <- function(input, output, session) {
         
         # Use selected method to calculate operative temperature
         if (input$op3=="gates") {
-          op_temp = mapply(Tb_Gates, A=1, D=0.001, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
-                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data, epsilon=0.95, H_L=10, K=0.15)
+          op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
+                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Gates Model)")
           
         } else if (input$op3=="lizard") {
@@ -697,7 +712,7 @@ shinyServer <- function(input, output, session) {
     avgQmet_vec <- vector()
     
     # For each selected method
-    for (method in input$datasets3) {
+    for (method in append(input$datasets3,input$datasets30)) {
       
       # Get variable name/location
       aTemp <- varsDf["Air temperature", method]
@@ -752,8 +767,8 @@ shinyServer <- function(input, output, session) {
         
         # use selected method to calculate operative temperature
         if (input$op3=="gates") {
-          op_temp = mapply(Tb_Gates, A=1, D=0.001, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
-                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data, epsilon=0.95, H_L=10, K=0.15)
+          op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
+                            T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
         } else if (input$op3=="lizard") {
           doytemp = sapply(aTemp$Date,day_of_year)
           op_temp = mapply(Tb_lizard, T_a=aTemp$Data-273.15, T_g=sTemp$Data-273.15, u=wind$Data, 

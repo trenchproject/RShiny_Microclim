@@ -207,6 +207,7 @@ shinyUI <- fluidPage(id = "page",
                      Tb_NormanCampbell, and Tb_lizard functions in the TrenchR package."),
                    
                    uiOutput("datasetsOutput3"),
+                   uiOutput("datasetsOutput30"),
                    
                    div(
                      id = "sealoc-wrapper3",
