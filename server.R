@@ -134,7 +134,7 @@ shinyServer <- function(input, output, session) {
   
   output$datasetsOutputTemp1 <- renderUI({
     
-    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NOAA_NCDC","NCEP","NEW01")
+    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NCEP","NEW01")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasets", "Forcing & Station Datasets", 
