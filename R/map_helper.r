@@ -4,6 +4,7 @@
 ## spatial comparison.
 
 grabMapData <- function(dataset, inputVar, month) {
+
   if (dataset == "SCAN") {
     data <- mapSCAN(inputVar, month)
   } else if (dataset == "ERA5") {
@@ -201,7 +202,33 @@ mapGRID <- function(param, month) {
   t_fullDf <- transpose(fullDf[, 3 : length(fullDf)]) # first two columns are x and y
   setnames(t_fullDf, rownames(fullDf))
   
+  cat("pre param=tmax")
   if (param == "tmax") {
+    cat("entered param=tmax")
+    p_tmin = getGridMET(AOI, param = "tmin", startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
+    
+    df_tmin <- rasterToPoints(p_tmin[[1]]) %>% as.data.frame()
+    
+    stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+    
+    fullDf_tmin <- data.frame()
+    for (i in 1:nrow(stations)) {
+      station <- stations$Name[i]
+      lat <- stations$Lat[i]
+      lon <- stations$Lon[i]
+      data_tmin <- df_tmin[df_tmin$x == sort(df_tmin$x)[match.closest(lon, sort(df_tmin$x))] & df_tmin$y == sort(df_tmin$y)[match.closest(lat, sort(df_tmin$y))], ]
+      if (nrow(data_tmin) == 0) {
+        data_tmin[1, ] <- NA
+      }
+      rownames(data_tmin) <- station
+      
+      fullDf_tmin <- rbind(fullDf_tmin, data_tmin)
+    }
+    
+    t_fullDf_tmin <- transpose(fullDf_tmin[, 3 : length(fullDf_tmin)]) # first two columns are x and y
+    setnames(t_fullDf_tmin, rownames(fullDf_tmin))
+    
+    t_fullDf <- (t_fullDf + t_fullDf_tmin)/2
     t_fullDf <- t_fullDf - 273.15
   }
   
@@ -514,55 +541,113 @@ mapSCAN <- function(varIndex, month) {
 #                      "GLDAS" = c("AvgSurfT_inst", "Tair_f_inst", "SoilTMP40_100cm_inst", "SWdown_f_tavg", "Wind_f_inst", "Rainf_f_tavg", "Qair_f_inst", "SoilMoi40_100cm_inst", "SnowDepth_inst", "Tmin"),
 #                      "GRIDMET" = c(NA, "tmax", NA, "srad", "wind_vel", "prcp", NA, NA, NA, "tmin"),
 #                      "NOAA_NCDC" = c(NA, "TMAX", NA, NA, NA, "PRCP", NA, NA, "SNWD", "TMIN"),
-#                      "microclimUS" = c("soil0cm_0pctShade", "TA200cm", "soil100cm_0pctShade", "SOLR", NA, NA, "RH200cm", "moist100cm_0pctShade", NA, "Tmin"),
-#                      "microclim" = c("D0cm_soil_0", "TA120cm", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH120cm", NA, NA, "Tmin"),
+#                      "microclimUS" = c("soil0cm_0pctShade", "TA1cm_0pctShade", "soil100cm_0pctShade", "SOLR", "V1cm", NA, "RH1cm_0pctShade", "moist100cm_0pctShade", "SNOWDEP_0pctShade", "Tmin"),
+#                      "microclim" = c("D0cm_soil_0", "TA1cm_soil_0", "D100cm_soil_0", "SOLR", "V1cm", NA, "RH1cm_soil_0", NA, NA, "Tmin"),
 #                      "USCRN" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
+#                      "USCRN1cm" = c("SUR_TEMP", "T_MAX", "SOIL_TEMP_100", "SOLARAD", NA, NA, "RH_HR_AVG", "SOIL_MOISTURE_100", NA, NA),
 #                      "NCEP" = c("skt","air","tmp","csdsf","uwnd","prate",NA,"soilw",NA,NA),
 #                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "SNOWH", NA),
-#                      "NicheMapR" = c("D0cm", "TAREF", "D100cm", "SOLR", "VREF", NA, "RH", NA, "SNOWDEP", NA))
-# 
-# colorsDf <- data.frame(row.names = c("color"),
-#                        "ERA5" = c('#04d9ff'),
-#                        "GLDAS" = c('#ff7f0e'),
-#                        "GRIDMET" = c('#2ca02c'),
-#                        "NOAA_NCDC" = c('39FF14'),
-#                        "microclimUS" = c('ff00c8'),
-#                        "microclim" = c('160ef0'),
-#                        "USCRN" = c('#000000'),
-#                        "NCEP" = c('#7f7f7f'),
-#                        "NicheMapR" = c('#bcbd22'))
+#                      "micro_ncep" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+#                      "micro_usa" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+#                      "micro_global" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+#                      "NEW01" = c(NA, "TMAXX", NA, NA, "WNMAXX", "RAINFALL", "RHMAXX", NA, NA, "TMINN"))
 # 
 # nameDf <- data.frame(row.names = variables,
-#                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m above ground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
+#                      "ERA5" = c("Hourly skin temperature", "Hourly air temperature 2 m aboveground", "Hourly soil temperature 28-100 cm below ground", "Hourly surface net solar radiation", "Hourly wind speed 10 m above ground", "Total precipitation", NA, NA, "Hourly snow depth"),
 #                      "GLDAS" = c("3-hourly average surface skin temperature", "3-hourly average air temperature", "3-hourly average soil temperature 40-100 cm below ground", "3-hourly net longwave radiation flux", "3-hourly average wind speed", "Total precipitation", "3-hourly relative humidity", "3-hourly average soil moisture 40-100 cm below ground", "3-hourly snow depth"),
 #                      "GRIDMET" = c(NA, "Daily Tmax and Tmin", NA, "Daily mean shortwave radiation at surface", "Daily mean wind speed", "Daily precipitation amount", NA, NA, NA),
 #                      "NOAA_NCDC" = c(NA, "Daily Tmax and Tmin", NA, NA, NA, "Daily precipitation", NA, NA, "Daily snow Depth"),
-#                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 2 m above ground", "Hourly soil temperature 1 m below ground (0 % shade)", "Hourly solar radiation (horizontal ground)", NA, NA, "Hourly relative humidity 2 m above ground", "Hourly soil moisture 1 m below ground (0 % shade)", NA),
-#                      "microclim" = c("Substrate temperature (soil surface 0 % shade)", "Air temperature 1.2 m above ground", "Soil temperature 1 m below ground", "Solar radiation", "Wind speed 1 cm above ground", NA, "Relative humidity 1.2 m above ground", NA, NA),
+#                      "microclimUS" = c("Hourly surface temperature (0% shade)", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m belowground (0 % shade)", "Hourly solar radiation (horizontal ground)", "Wind speed 1cm aboveground", NA, "Relative humidity 1cm aboveground", "Hourly soil moisture 1m belowground (0 % shade)", NA),
+#                      "microclim" = c("Surface temperature (0% shade)", "Air temperature 1cm aboveground", "Soil temperature 1m belowground", "Solar radiation", "Wind speed 1cm aboveground", NA, "Relative humidity 1cm aboveground", NA, NA),
 #                      "USCRN" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
+#                      "USCRN1cm" = c("Hourly infrared surface temperature", "Hourly air temperature", "Hourly soil temperature 1m belowground", "Average global solar radiation received", NA, NA, "Hourly relative humidity", "Hourly soil moisture 1m belowground", NA),
 #                      "NCEP" = c("Land Skin Temperature","Air temperature at 2m","Temperature between 10-200cm below ground level","Clear Sky Downward Solar Flux at surface","Wind speed at 10m","Daily Precipitation Rate at surface","Specific Humidity at 2m","Volumetric Soil Moisture between 10-200cm Below Ground Level",NA),
 #                      #"SNODAS" = c(NA, NA, NA, NA, NA, NA, NA, NA, "Snow depth"),
-#                      "NicheMapR" = c("Hourly soil temperature at 0cm", "Hourly air temperature 2 m above ground", "Hourly soil temperature 100 cm below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 2 m above ground", NA, "Hourly relative humidity 2 m above ground", NA, "Hourly predicted snow depth"))
+#                      "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+#                      "micro_usa" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+#                      "micro_global" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+#                      "NEW01" = c(NA, "Maximum monthly air temperature (C)", NA, NA, "Maximum 10m monthly wind speed (m/s)", "Total rainfall during that month (mm/month)", "% Relative humidity", NA, NA))
 # 
-# datasets <- colnames(varsDf)
 # 
 # stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
-# 
-# for(mapDataset in c("NCEP")){
-#   for(month in c(1,7)){
-#     for(mapVar in c("Surface temperature", "Air temperature", "Radiation")){
+
+
+# for(mapDataset in c("GRIDMET")){
+#   for(month in c(7,1)){
+#     for(mapVar in c("Air temperature", "Surface temperature", "Radiation")){
 #       CRN <- grabMapData("USCRN", varsDf[mapVar, "USCRN"], month)
 # 
 #       if (mapDataset %in% c("GRIDMET", "NOAA_NCDC")) {
 #         CRN$Date <- as.Date(CRN$Date)
-#         CRN <- aggregate(list(CRN[, c(-1, -2)]), by = list(CRN$Date), mean) %>%
+#         CRN <- aggregate(list(CRN[, c(-1, -2)]), by = list(CRN$Date), mean, na.rm = TRUE) %>%
 #           set_colnames(c("Date", stations$Name))
 #       }
 # 
 #       inputVar <- varsDf[mapVar, mapDataset]
 # 
 #       if(!is.na(inputVar)){
-#         mapDf <- grabMapData(mapDataset, inputVar, month)
+#         AOI = aoi_get(state = "conus")
+#         
+#         param = inputVar
+#         p = getGridMET(AOI, param = param, startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
+#         
+#         df <- rasterToPoints(p[[1]]) %>% as.data.frame()
+#         
+#         stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+#         
+#         fullDf <- data.frame()
+#         for (i in 1:nrow(stations)) {
+#           station <- stations$Name[i]
+#           lat <- stations$Lat[i]
+#           lon <- stations$Lon[i]
+#           data <- df[df$x == sort(df$x)[match.closest(lon, sort(df$x))] & df$y == sort(df$y)[match.closest(lat, sort(df$y))], ]
+#           if (nrow(data) == 0) {
+#             data[1, ] <- NA
+#           }
+#           rownames(data) <- station
+#           
+#           fullDf <- rbind(fullDf, data)
+#         }
+#         
+#         t_fullDf <- transpose(fullDf[, 3 : length(fullDf)]) # first two columns are x and y
+#         setnames(t_fullDf, rownames(fullDf))
+#         
+#         cat("pre param=tmax")
+#         if (param == "tmax") {
+#           cat("entered param=tmax")
+#           p_tmin = getGridMET(AOI, param = "tmin", startDate = paste0("2017-0", month, "-01"), endDate = paste0("2017-0", month, "-31"))
+#           
+#           df_tmin <- rasterToPoints(p_tmin[[1]]) %>% as.data.frame()
+#           
+#           stations <- fread("CRN_stations.csv", sep = ",") %>% as.data.frame()
+#           
+#           fullDf_tmin <- data.frame()
+#           for (i in 1:nrow(stations)) {
+#             station <- stations$Name[i]
+#             lat <- stations$Lat[i]
+#             lon <- stations$Lon[i]
+#             data_tmin <- df_tmin[df_tmin$x == sort(df_tmin$x)[match.closest(lon, sort(df_tmin$x))] & df_tmin$y == sort(df_tmin$y)[match.closest(lat, sort(df_tmin$y))], ]
+#             if (nrow(data_tmin) == 0) {
+#               data_tmin[1, ] <- NA
+#             }
+#             rownames(data_tmin) <- station
+#             
+#             fullDf_tmin <- rbind(fullDf_tmin, data_tmin)
+#           }
+#           
+#           t_fullDf_tmin <- transpose(fullDf_tmin[, 3 : length(fullDf_tmin)]) # first two columns are x and y
+#           setnames(t_fullDf_tmin, rownames(fullDf_tmin))
+#           
+#           t_fullDf <- (t_fullDf + t_fullDf_tmin)/2
+#           t_fullDf <- t_fullDf - 273.15
+#         }
+#         
+#         days <- c()
+#         for (i in 1:31) {
+#           days <- c(days, paste0("2017-0", month, "-", i))
+#         }
+#         
+#         mapDf <- cbind(Date = as.Date(days), t_fullDf)
 # 
 #         stats <- cbind(stations, "Bias" = NA, "RMSE" = NA, "PCC" = NA)
 # 
@@ -596,5 +681,5 @@ mapSCAN <- function(varIndex, month) {
 #     }
 #   }
 # }
-# 
-# 
+
+

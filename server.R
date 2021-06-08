@@ -8,6 +8,7 @@ source("R/microclimUS.R", local = TRUE)
 source("R/microclim.R", local = TRUE)
 source("R/SNODAS.R", local = TRUE)
 source("R/USCRN.R", local = TRUE)
+source("R/NCEP.R", local = TRUE)
 source("R/USCRN1cm.R", local = TRUE)
 source("R/micro_ncep.R", local = TRUE)
 source("cicerone.R", local= TRUE)
@@ -113,7 +114,7 @@ shinyServer <- function(input, output, session) {
     } else {
       dataTable <- cbind(dataTable, data.frame("TempCovRange" = character(0)))
     }
-    dataTable[dataTable == "NA-NA"] <- "Varies"
+    dataTable[dataTable == "NA-NA"] <- "Infinite"
     dataTable[dataTable == "T"] <- as.character(icon("ok", lib = "glyphicon"))
     dataTable[dataTable == "F"] <- as.character(icon("remove", lib = "glyphicon"))
     
@@ -134,7 +135,7 @@ shinyServer <- function(input, output, session) {
   
   output$datasetsOutputTemp1 <- renderUI({
     
-    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NCEP","NEW01")
+    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NEW01","NCEP")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasets", "Forcing & Station Datasets", 
@@ -308,7 +309,7 @@ shinyServer <- function(input, output, session) {
   #____________________________________________________________________________
   
   output$mapDatasetsOutput <- renderUI({
-    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "micro_ncep", "microclim", "microclimUS", "NCEP")
+    mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NCEP", "microclim", "microclimUS")
     
     index <- which(!is.na(varsDf[input$mapVar, ]))
     choices <- mapDatasets[mapDatasets %in% datasets[index]]
@@ -410,7 +411,7 @@ shinyServer <- function(input, output, session) {
                 opacity = 1,
                 values = stats$BiasCat,
                 position = "bottomright",
-                title = "Bias") %>% setView(lng = -120, lat = 50, zoom = 2.4)
+                title = "Bias") %>% setView(lng = -100, lat = 40, zoom = 3)
   })
   
   
@@ -512,7 +513,7 @@ shinyServer <- function(input, output, session) {
   # Data set selector
   output$datasetsOutput3 <- renderUI({
     
-    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NCEP","NEW01")
+    sets <- c("USCRN","ERA5","GLDAS","GRIDMET","NEW01","NCEP")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasets3", "Forcing & Station Datasets", 
