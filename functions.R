@@ -3,9 +3,13 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabSCAN(inputVar, loc, month)
   } else if (dataset == "ERA5") {
     data <- grabERA(inputVar, loc, month)
-  } else if (dataset == "GLDAS") {
+  } else if (dataset == "ERA51cm") {
+    data <- grabERA1cm(inputVar, loc, month)
+  }else if (dataset == "GLDAS") {
     data <- grabGLDAS(inputVar, loc, month)
-  } else if (dataset == "GRIDMET") {
+  } else if (dataset == "GLDAS1cm") {
+    data <- grabGLDAS1cm(inputVar, loc, month)
+  }else if (dataset == "GRIDMET") {
     data <- grabGRID(inputVar, loc, month)
   } else if (dataset == "NOAA_NCDC") {
     data <- grabNOAA(inputVar, loc, month)
@@ -27,7 +31,9 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabMicroGlobal(inputVar, loc, month)
   } else if (dataset == "NCEP") {
     data <- grabNCEP(inputVar, loc, month)
-  } else if (dataset == "NEW01") {
+  } else if (dataset == "NCEP1cm") {
+    data <- grabNCEP1cm(inputVar, loc, month)
+  }else if (dataset == "NEW01") {
     data <- grabNEW01(inputVar, loc, month)
   }
   return (data)
@@ -209,4 +215,24 @@ air_temp_profile_neutral<-function(T_r, zr, z0, z, T_s){
   
   T_z= (T_r-T_s)*log(z/z0+1)/log(zr/z0+1)+T_s 
   return(T_z)
+}
+
+heat_transfer_coefficient_approximation<-function(V, D, K, nu, taxa="sphere"){
+  
+  stopifnot(V>=0, D>=0, K>=0, nu>=0, taxa %in% c("sphere","frog","lizard","flyinginsect","spider"))
+  
+  taxas= c("sphere","frog","lizard","flyinginsect","spider")
+  
+  # Dimensionless constant (Cl)
+  Cls= c(0.34,0.196,0.56,0.0714,0.52)
+  ns= c(0.6,0.667,0.6, 0.78,0.5) 
+  
+  #find index  
+  ind= match(taxa, taxas)
+  
+  Re= V*D/nu #Reynolds number 
+  Nu <- Cls[ind] * Re^ns[ind]  #Nusselt number
+  H_L= Nu * K / D
+  
+  return(H_L)
 }

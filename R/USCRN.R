@@ -63,6 +63,33 @@ grabUSCRN <- function(var, loc, month) {
   return (df) 
 }
 
+grabUSCRN1cm <- function(var, loc, month) {
+  
+  fulldf <- read.delim(paste0("Data/CRN/", loc, "_CRN.txt"), sep = "", header = F)
+  
+  headers <- read.delim("Data/CRN/HEADERS_hourly.txt", sep = "", header = T, skip = 1)
+  
+  colnames(fulldf) <- colnames(headers)
+  
+  time <- paste0(floor(fulldf$LST_TIME / 100), ":", fulldf$LST_TIME %% 100)
+  df <- data.frame("Date" = format(as.POSIXct(paste(fulldf$LST_DATE, time), format = "%Y%m%d %H:%M"), format = "%Y-%m-%d %H:%M"),
+                   "Data" = fulldf[, var]) %>% na.omit()
+  
+  df <- df[df$Date >= as.Date(paste0("2017-0", month, "-01")) & 
+             df$Date <= as.Date(paste0("2017-0", month, "-31")), ]
+  
+  if(var=="T_MAX"){
+    dfsurf <- data.frame("Date" = format(as.POSIXct(paste(fulldf$LST_DATE, time), format = "%Y%m%d %H:%M"), format = "%Y-%m-%d %H:%M"),
+                         "Data" = fulldf[, "SUR_TEMP"]) %>% na.omit()
+    dfsurf <- dfsurf[dfsurf$Date >= as.Date(paste0("2017-0", month, "-01")) & 
+                       dfsurf$Date <= as.Date(paste0("2017-0", month, "-31")), ]
+    
+    df$Data = mapply(air_temp_profile_neutral, df$Data, zr=2, z0=0.05, z=0.01, dfsurf$Data)
+  }
+  
+  return (df) 
+}
+
 
 
 # crn::downloadCRN(url = CRN.HOURLY.URL, directory = HOURLY_DIR, years = 2017)

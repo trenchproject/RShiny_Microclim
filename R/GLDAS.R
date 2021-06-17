@@ -35,3 +35,15 @@ grabGLDAS <- function(var, loc, month) {
   return (df)
 }
 
+grabGLDAS1cm <- function(var, loc, month) {
+  load(paste0("Data/GLDAS/",var,"_",loc,"_0",month,".Rda"))
+  
+  if(var == "Tair_f_inst"){
+    dfair <- df
+    load(paste0("Data/GLDAS/AvgSurfT_inst","_",loc,"_0",month,".Rda"))
+    dfsurf <- df
+    df$Data = mapply(air_temp_profile_neutral, dfair$Data, zr=2, z0=0.05, z=0.01, dfsurf$Data)
+  }
+  return (df)
+}
+
