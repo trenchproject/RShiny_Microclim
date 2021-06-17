@@ -169,7 +169,7 @@ get_figure_1 <- function() {
 }
 
 # RUN below to get figure 1
-get_figure_1()
+#get_figure_1()
 
 
 # ------------------------------------------------------------------
