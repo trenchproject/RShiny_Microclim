@@ -1,19 +1,5 @@
 # Creating figures for manuscript
-
-source("R/SCAN.R", local = TRUE)
-source("R/ERA5.R", local = TRUE)
-source("R/GLDAS.R", local = TRUE)
-source("R/GRIDMET.R", local = TRUE)
-source("R/NOAA NCDC.R", local = TRUE)
-source("R/microclimUS.R", local = TRUE)
-source("R/microclim.R", local = TRUE)
-source("R/SNODAS.R", local = TRUE)
-source("R/USCRN.R", local = TRUE)
-source("R/NEW01.R", local = TRUE)
-source("R/NCEP.R", local = TRUE)
-source("R/micro_ncep.R", local = TRUE)
-source("R/micro_usa.R", local = TRUE)
-source("R/micro_global.R", local = TRUE)
+source("server.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
 options(shiny.sanitize.errors = FALSE)
@@ -183,7 +169,7 @@ get_figure_1 <- function() {
 }
 
 # RUN below to get figure 1
-# get_figure_1()
+get_figure_1()
 
 
 # ------------------------------------------------------------------
