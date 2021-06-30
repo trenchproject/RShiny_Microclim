@@ -1,4 +1,8 @@
 # Creating figures for manuscript
+
+#remotes::install_github("mikejohnson51/AOI")
+#remotes::install_github("mikejohnson51/climateR")
+
 source("server.R", local = TRUE)
 source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
@@ -9,7 +13,6 @@ library(plotly)
 library(formattable)
 library(knitr)
 library(TrenchR)
-
 
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
 

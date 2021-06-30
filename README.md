@@ -1,8 +1,8 @@
 # RShiny_Microclim
 
-RShiny_Microclim is an interactive shiny app that allows anyone who is interested in getting microclimate data to facilitate the selection of the most appropriate dataset.
+RShiny_Microclim is an interactive shiny app that facilitates the selection of microclimate datasets.
 The app compares 8 different datasets (SCAN, ERA5-Land, GLDAS, gridMET, NOAA NCDC, microclim, microclimUS, USCRN) both temporally and spatially.
-This shiny app should be used with [this document](https://bookdown.org/connect/#/apps/6271/access), which explains how to download data using each dataset.
+Once users selects a dataset, we offer [this](https://bookdown.org/huckley/microclimate_users_guide/) user guide, which explains how to access and download each dataset.
 
 ## Prerequisites for opening in Rstudio
 Git and Rstudio ([Instructions](https://resources.github.com/whitepapers/github-and-rstudio/))  
