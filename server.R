@@ -692,12 +692,12 @@ shinyServer <- function(input, output, session) {
   
   output$stats3 <- renderText({
     
-    statistics <- "<h3>Operative Temperature Biostatistics of a Sceloporus Lizard</h3>"
-    statistics = paste0(statistics,"<p><i>Calculates average operative temperature (avgTe), ")
-    statistics = paste0(statistics,"hours above critical threshold temperature of 43 degC (CTmax_hours), ")
-    statistics = paste0(statistics,"hours of activity defined as operative temperative between 32C and 37C (activity_hours), ")
-    statistics = paste0(statistics,"and average basal metabolism rate calculated as the Qmetabolism_from_mass_temp() function ")
-    statistics = paste0(statistics,"from the TrenchR package with 0.5g mass and lizard taxa (avgQmet).</i></p>")
+    statistics <- "<h3>Operative Temperature Statistics</h3>"
+    statistics = paste0(statistics,"<p><i>Compares average operative temperatures (°C); ")
+    statistics = paste0(statistics,"hours above a critical thermal maximum of 43 °C; ")
+    statistics = paste0(statistics,"hours of potential activity, defined as operative temperatures falling between 32°C and 37°C; ")
+    statistics = paste0(statistics,"and average resting metabolic rate (W) calculated uing the Qmetabolism_from_mass_temp() function ")
+    statistics = paste0(statistics,"from the TrenchR package assuming 8.9g mass and lizard taxa.</i></p>")
     
     HTML(statistics)
     
@@ -804,7 +804,7 @@ shinyServer <- function(input, output, session) {
         }
         
         avgQmet=0
-        avgQmet = mean(try(mapply(Qmetabolism_from_mass_temp, m=.5, T_b=op_tempK, taxa="reptile")), na.rm=TRUE)
+        avgQmet = mean(try(mapply(Qmetabolism_from_mass_temp, m=8.9, T_b=op_tempK, taxa="reptile")), na.rm=TRUE)
         
         # print biostatistics
         avgTe_vec = append(avgTe_vec, avgTe)
@@ -824,16 +824,16 @@ shinyServer <- function(input, output, session) {
     f <- list(size = 12,color = "black")
     
     # annotations
-    a <- list(text = "Average operative temperature", font = f, xref = "paper", yref = "paper",
+    a <- list(text = "Average operative temperature (°C)", font = f, xref = "paper", yref = "paper",
       yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,y = 1, showarrow = FALSE)
     
-    b <- list(text = "Hours above critical temperature (42degC)", font = f, xref = "paper", yref = "paper",
+    b <- list(text = "Hours above critical thermal maxima (43°C)", font = f, xref = "paper", yref = "paper",
       yanchor = "bottom", xanchor = "center", align = "center", x = 0.5, y = 1, showarrow = FALSE)
     
-    c <- list(text = "Hours of activity (32C - 37C)", font = f, xref = "paper", yref = "paper",
+    c <- list(text = "Potential activity hours (32°C - 37°C)", font = f, xref = "paper", yref = "paper",
       yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,y = 1, showarrow = FALSE)
     
-    d <- list(text = "Average resting metabolic rate", font = f, xref = "paper", yref = "paper",
+    d <- list(text = "Average resting metabolic rate (W)", font = f, xref = "paper", yref = "paper",
       yanchor = "bottom", xanchor = "center", align = "center", x = 0.5,y = 1, showarrow = FALSE)
     
     p1 <- plot_ly(x = method_vec, y = avgTe_vec, type = "bar", color = "blue", showlegend=FALSE) %>%

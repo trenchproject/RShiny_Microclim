@@ -31,11 +31,11 @@ shinyUI <- fluidPage(id = "page",
   use_cicerone(),
   useShinyjs(),
   
-  theme = shinytheme("united"),
-  setBackgroundColor(color = "#F5F5F5"), 
-  
-  title = "Microclim",
-  titlePanel("Visual comparison of microclimate datasets"),
+ theme = shinytheme("united"),
+  setBackgroundColor(color = "#C7DAE0"),
+ 
+  title = "Microclimate selection",
+  titlePanel("TrEnCh Project Microclimate Selection Tool"),
   hr(),
   includeHTML("intro.html"),
   
@@ -51,13 +51,13 @@ shinyUI <- fluidPage(id = "page",
         fluidRow(
           column(2, radioButtons("spaCov", "Area of interest", choices = c("US", "Outside of US"), selected = "US")),
           column(2, tipify(numericInput("tempCov_start", "Beginning of temporal coverage", min = 1979, max = 2021, value = 2017), 
-                           "Enter the first year that you need the data for.")),
+                           "Enter the first year for which you need data.")),
           column(2, tipify(numericInput("tempCov_end", "End of temporal coverage", min = 1979, max = 2021, value = 2017),
-                           "Enter the last year you need the data for.")),
+                           "Enter the last year for which you need data.")),
           
           # column(6, sliderInput("tempCov", "Temporal coverage", min = 1979, max = 2021, value = c(2017, 2017))),
           column(2, tipify(awesomeCheckboxGroup("tempRes", "Temporal resolution", choices = c("Monthly", "Daily", "6-hourly", "3-hourly", "Hourly", "Other" = "One day each month"), selected = c("Daily", "3-hourly", "Hourly", "One day each month", "6-hourly","Monthly")),
-                           "This is how frequently the data are collected")),
+                           "This is temporal how frequently the data are collected")),
           column(3, tipify(pickerInput("varTable", "Variables of interest", choices = variablesTable, multiple = T, selected = NA, options = list(title = "Select variables",
                                                                                                                                style = "btn-danger")),
                            "Select all the climatic variables you want from the dataset.", placement = "top"))
@@ -74,8 +74,8 @@ shinyUI <- fluidPage(id = "page",
                sidebarLayout(
                  sidebarPanel(
                    h4("Temporal comparison"),
-                   p("Select a climatic variable of interest and some datasets that contain that variable. 
-                     The plot will show how much the data can differ temporally for a given location and a given month, depending on the dataset."),
+                   p("Select a climatic variable of interest and some datasets to compare for a given season and location. 
+                     The time series plot depicts how much the data differ temporally and you can specify two datasets to statistically compare."),
                    actionBttn(
                      inputId = "reset1",
                      label = "Reset", 
@@ -83,7 +83,7 @@ shinyUI <- fluidPage(id = "page",
                      color = "danger",
                      size = "xs"
                    ),
-                   bsTooltip("reset1", "If you have already changed the variables, reset them to default here before starting the tour."),
+                   bsTooltip("reset1", "If you have already changed the selections, reset them to default here before starting the tour."),
                    
                    actionBttn(
                      inputId = "tour1",
@@ -152,7 +152,7 @@ shinyUI <- fluidPage(id = "page",
                  sidebarLayout(
                    sidebarPanel(
                      h4("Spatial comparison"),
-                     p("Select a climatic variable of intereste and a dataset that contains that variable. 
+                     p("Select a climatic variable of interest and a dataset that contains that variable. 
                        The map will display the bias, root mean squared error, and Pearson correlation coefficient between the data from the chosen dataset and USCRN data for each station in the US."),
                      
                      actionBttn(
@@ -162,7 +162,7 @@ shinyUI <- fluidPage(id = "page",
                        color = "danger",
                        size = "xs"
                      ),
-                     bsTooltip("reset2", "If you have already changed the variables, reset them to default here before starting the tour."),
+                     bsTooltip("reset2", "If you have already changed the selections, reset them to default here before starting the tour."),
                      
                      actionBttn(
                        inputId = "tour2",
@@ -201,10 +201,11 @@ shinyUI <- fluidPage(id = "page",
                sidebarLayout(
                  sidebarPanel(
                    h4("Operative temperature comparison"),
-                   p("These plots predict operative temperature for an ectotherm in the 
-                     environmental conditions given by the selected datasets. Available 
-                     operative temperature estimation models are the Tb_Gates(), 
-                     Tb_NormanCampbell, and Tb_lizard functions in the TrenchR package."),
+                   p("These plots predict operative temperature for an ectotherm based on the 
+                     environmental conditions specified by the selected dataset(s). Operative temperatures are the predicted equilibrium body temperature of the specified ectotherm in the selected location and season.
+                     We assume the ectotherm is a ", em("Sceloporus")," lizard with a mass of 8.9g.
+                     Available operative temperature estimation models are the Tb_Gates(), 
+                     Tb_NormanCampbell, and Tb_lizard functions in the TrenchR package. Green shading highlight datasets with sub-hourly temporal resolution."),
                    
                    uiOutput("datasetsOutput3"),
                    uiOutput("datasetsOutput30"),
