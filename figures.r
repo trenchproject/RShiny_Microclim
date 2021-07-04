@@ -407,7 +407,7 @@ get_figure_3 <- function(loc, column) {
 }
 
 # RUN below -- uncomment before pushing
-get_figure_3("OR",1)
+#get_figure_3("OR",1)
 
 
 # ------------------------------------------------------------------
