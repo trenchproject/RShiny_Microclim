@@ -29,6 +29,8 @@ grabAnyData <- function(dataset, inputVar, loc, month) {
     data <- grabMicroUSA(inputVar, loc, month)
   } else if (dataset == "micro_global") {
     data <- grabMicroGlobal(inputVar, loc, month)
+  } else if (dataset == "micro_era5") {
+    data <- grabMicroERA5(inputVar, loc, month)
   } else if (dataset == "NCEP") {
     data <- grabNCEP(inputVar, loc, month)
   } else if (dataset == "NCEP1cm") {

@@ -28,6 +28,7 @@ varsDf <- data.frame(row.names = c(variables, "Tmin"),
  "micro_ncep" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
  "micro_usa" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
  "micro_global" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
+ "micro_era5" = c("D0cm", "TALOC", "D100cm", "SOLR", "VLOC", NA, "RHLOC", NA, "SNOWDEP", NA),
  "NEW01" = c(NA, "TMAXX", NA, NA, "WNMAXX", "RAINFALL", "RHMAXX", NA, NA, "TMINN"))
 
 colorsDf <- data.frame(row.names = c("color"),
@@ -63,6 +64,7 @@ nameDf <- data.frame(row.names = variables,
  "micro_ncep" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
  "micro_usa" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
  "micro_global" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
+ "micro_era5" = c("Hourly soil temperature at 0cm", "Hourly air temperature 1cm above ground", "Hourly soil temperature 1m below ground", "Hourly solar radiation, unshaded", "Hourly wind speed 1cm above ground", NA, "Hourly relative humidity 1cm above ground", NA, "Hourly predicted snow depth"),
  "NEW01" = c(NA, "Maximum monthly air temperature (C)", NA, NA, "Maximum 10m monthly wind speed (m/s)", "Total rainfall during that month (mm/month)", "% Relative humidity", NA, NA))
 
 
@@ -333,10 +335,33 @@ plotOpTemp <- function(loc, month, op, methods) {
     # Initialize operative temperature vector
     op_temp = array(0, dim=c(length(aTemp$Data)))
 
-    # Use selected method to calculate operative temperature
-    op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.063, psa_dir=0.6, psa_ref=0.4, psa_air=0.95, psa_g=0.05,
-                     T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, 
-                     H_L=heat_transfer_coefficient_approximation(V=0.1, D=0.063, K=25.7 * 10^(-3), nu=15.3 * 10^(-6), taxa = "lizard"), K=0.15)
+    # CALCULATE OPERATIVE TEMPERATURE
+    # Areas
+    GMASS=8.9
+    ATOTAL=(10.4713*GMASS*0.688)/10000
+    AV=(0.425*GMASS*0.85)/10000 
+    ASILN=(3.798*GMASS*.683)/10000 # MAX. SILHOUETTE AREA (NORMAL TO THE SUN)
+    ASILP=(0.694*GMASS*.743)/10000 # MIN. SILHOUETTE AREA (POINTING TOWARD THE SUN)
+    As=(ASILN + ASILP)/2           # MEAN SILHOUTTE AREA
+    
+    #A=sa_from_mass(8.9, "lizard")
+    
+    # characteristic dimension -- cube root of volume
+    D=(volume_from_length(l=0.063,"lizard"))^(1/3)
+    
+    # radiation absorbed
+    # diffuse is received by half the total area and diffuse below (from reflected, based on substrate reflectivity=0.3) is also received by half the total
+    # solar absorptivity 0.9 from Gates 1980
+    # assumes albedo of 0.3
+    S=radiation$Data # W/m2 measured solar radiation
+    df= partition_solar_radiation(method="Liu_Jordan", kt=0.6) # diffuse fraction of solar radiation, assumes kt=0.6. 
+    Qabs=0.9*(As*S*(1-df)+A/2*S*(df)+A/2*S*(1-df)*0.3) # direct, diffuse, reflected
+
+    H_L=heat_transfer_coefficient_approximation(V=0.1, D=(volume_from_length(l=0.063,"lizard"))^(1/3), K=25.7 * 10^(-3), nu=15.3 * 10^(-6), taxa = "lizard")
+    #Documentation: https://trenchproject.github.io/TrenchR/reference/heat_transfer_coefficient_approximation.html
+    
+    op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=(volume_from_length(l=0.063,"lizard"))^(1/3), psa_dir=0.6, psa_ref=0.4, psa_air=0.95, psa_g=0.05, 
+                     T_g=sTemp$Data, T_a=aTemp$Data, Qabs=Qabs, epsilon=0.95, H_L=H_L, K=0.15)
     op_temp = op_temp - 273.15 # K to C
 
     # add to figure
@@ -363,7 +388,7 @@ get_figure_3 <- function(loc, column) {
   Qabs_default = 800         # solar radiation 
   
   if(column==1)      methods <- c("GLDAS","NCEP","ERA5","GRIDMET","USCRN")
-  else if(column==2) methods <- c("micro_global","micro_ncep","micro_usa","USCRN1cm")
+  else if(column==2) methods <- c("micro_global","micro_ncep","micro_era5","micro_usa","USCRN1cm")
   else if(column==3) methods <- c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","microclimUS", "USCRN1cm")
   
   data1 <- vector()
@@ -382,7 +407,7 @@ get_figure_3 <- function(loc, column) {
 }
 
 # RUN below -- uncomment before pushing
-# get_figure_3("CO",3)
+get_figure_3("OR",1)
 
 
 # ------------------------------------------------------------------
@@ -390,196 +415,196 @@ get_figure_3 <- function(loc, column) {
 # -------------------------- FIGURE 4 ------------------------------
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
-# # methodsOP <- c("ERA5","GLDAS","GRIDMET","microclim","microclimUS","NicheMapR","NOAA_NCDC")
-# 
-# # plotBox <- function(var) {
-# #   fig <- plot_ly()
-# 
-# #   # For each selected method
-# #   for(l in c("OR","CO")) {
-# #     for(m in c(1,7)){
-# #       vec <- vector()
-# #       methods_plot <- vector()
-# #       uscrn <- 0
-# #       aTemp <- varsDf["Air temperature", 'USCRN']
-# #       sTemp <- varsDf["Surface temperature", 'USCRN']
-# #       radiation<- varsDf["Radiation", 'USCRN']
-# #       if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
-# #       else {
-# #         aTemp <- grabAnyData('USCRN', aTemp, l, m)
-# #         aTemp$Data = aTemp$Data + 273.15 # C to K
-# #       }
-# #       if (is.na(sTemp)) {
-# #         if (l == c("CO") && m==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
-# #         if (l == c("CO") && m==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
-# #         if (l == c("OR") && m==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
-# #         if (l == c("OR") && m==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
-# #       }
-# #       else {
-# #         sTemp <- grabAnyData("USCRN", sTemp, l, m)
-# #         sTemp$Data = sTemp$Data + 273.15 # C to K
-# #       }
-# #       if (is.na(radiation)) radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
-# #       else radiation <- grabAnyData("USCRN", radiation, l, m)
-# 
-# #       op_temp = array(0, dim=c(length(aTemp$Data)))
-# #       op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2,
-# #                        T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
-# #       op_temp = op_temp - 273.15
-# #       op_tempK = op_temp + 273.15
-# 
-# #       df <- data.frame(Column1=aTemp$Date, Column2=op_temp)
-# #       write.csv(df, paste0("uscrn",m,l,".csv"))
-# #       if(var == "avgTe"){
-# #         avgTe = mean(op_temp, na.rm=TRUE)
-# #         if(is.na(avgTe)) uscrn = 0
-# #         else {
-# #           uscrn = avgTe
-# #         }
-# #       } else if (var == "CTmax_hours"){
-# #         ct <- op_temp[op_temp > 43]
-# #         ct <- ct[!is.na(ct)]
-# #         CTmax_hours = length(ct)
-# #         if(is.na(CTmax_hours)) CTmax_hours = 0
-# #         uscrn = CTmax_hours
-# 
-# #       } else if (var == "activity_hours"){
-# #         activeLower = op_temp[op_temp >= 32]
-# #         active = activeLower[activeLower <= 37]
-# #         active <- active[!is.na(active)]
-# #         activity_hours = length(active)
-# #         if(is.na(activity_hours)) activity_hours = 0
-# #         uscrn = activity_hours
-# #       } else if (var == "avgQmet"){
-# #         avgQmet=0
-# 
-# #         Qmet = mapply(Qmetabolism_from_mass_temp, m=8.9, T_b=na.omit(op_tempK), taxa="reptile")
-# #         avgQmet = mean(Qmet, na.rm=TRUE)
-# #         if(is.na(avgQmet)) avgQmet = 0
-# #         uscrn = avgQmet
-# #       }
-# 
-# #       for (met in methodsOP) {
-# 
-# #         # Get variable name/location
-# #         aTemp <- varsDf["Air temperature", met]
-# #         sTemp <- varsDf["Surface temperature", met]
-# #         radiation<- varsDf["Radiation", met]
-# 
-# #         # Get air temperature data
-# #         if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
-# #         else {
-# #           aTemp <- grabAnyData(met, aTemp, l, m)
-# #           if(met == "GRIDMET"){
-# #             aTempTmin <- grabAnyData(met, "tmin", l, m)
-# #             aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
-# #           } else if(met == "NOAA_NCDC"){
-# #             aTempTmin <- grabAnyData(met, "TMIN", l, m)
-# #             aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
-# #           }
-# #           aTemp$Data = aTemp$Data + 273.15 # C to K
-# #         }
-# 
-# #         # Get surface temperature data
-# #         if (is.na(sTemp)) {
-# #           if (l == c("CO") && m==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
-# #           if (l == c("CO") && m==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
-# #           if (l == c("OR") && m==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
-# #           if (l == c("OR") && m==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
-# #         }
-# #         else {
-# #           sTemp <- grabAnyData(met, sTemp, l, m)
-# #           sTemp$Data = sTemp$Data + 273.15 # C to K
-# #         }
-# 
-# #         # Get radiation data
-# #         if (is.na(radiation)) radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
-# #         else radiation <- grabAnyData(met, radiation, l, m)
-# 
-# #         # method data stored in aTemp, sTemp, radiation, wind
-# 
-# #         op_temp = array(0, dim=c(length(aTemp$Data)))
-# 
-# #         # use selected method to calculate operative temperature
-# #         op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2,
-# #                          T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
-# 
-# #         op_temp = op_temp - 273.15
-# #         op_tempK = op_temp + 273.15
-# 
-# #         df <- data.frame(Column1=aTemp$Date, Column2=op_temp)
-# #         write.csv(df, paste0(met,m,l,".csv"))
-# 
-# #         # calculate biostatistics
-# #         if(var == "avgTe"){
-# #           avgTe = mean(op_temp, na.rm=TRUE)
-# #           if(is.na(avgTe)) vec = append(vec, NA)
-# #           else {
-# #             vec = append(vec, avgTe-uscrn)
-# #           }
-# #         } else if (var == "CTmax_hours"){
-# #           ct <- op_temp[op_temp > 43]
-# #           ct <- ct[!is.na(ct)]
-# #           CTmax_hours = length(ct)
-# #           if (met == "GLDAS"){ # 3 hourly
-# #             CTmax_hours = CTmax_hours * 3
-# #           } else if(met == "microclim"){
-# #             CTmax_hours = CTmax_hours * 31
-# #           }
-# #           if(met %in% c("NOAA_NCDC","GRIDMET")){
-# #             vec = append(vec, 25)
-# #           } else {
-# #             vec = append(vec, CTmax_hours-uscrn)
-# #           }
-# #         } else if (var == "activity_hours"){
-# #           activeLower = op_temp[op_temp >= 32]
-# #           active = activeLower[activeLower <= 37]
-# #           active <- active[!is.na(active)]
-# #           activity_hours = length(active)
-# #           if (met == "GLDAS"){ # 3 hourly
-# #             activity_hours = activity_hours * 3
-# #           } else if(met == "microclim"){
-# #             activity_hours = activity_hours * 31
-# #           }
-# 
-# #           if(met == "NOAA_NCDC"){
-# #             vec = append(vec, 30)
-# #           } else if(met == "GRIDMET"){
-# #             vec = append(vec, 30)
-# #           } else {
-# #             vec = append(vec, activity_hours-uscrn)
-# #           }
-# #         } else if (var == "avgQmet"){
-# #           avgQmet=0
-# #           Qmet = mapply(Qmetabolism_from_mass_temp, m=8.9, T_b=na.omit(op_tempK), taxa="reptile")
-# #           avgQmet = mean(Qmet, na.rm=TRUE)
-# #           df = data.frame(col1=uscrn, col2=avgQmet, col3=Qmet)
-# #           colnames(df) <- c("uscrn","avgQmet","Qmet")
-# #           write(df, paste0("qmet",met,l,m,".csv"))
-# 
-# #           vec = append(vec, avgQmet-uscrn)
-# #         }
-# #       }
-# 
-# #       name <-""
-# #       color<-""
-# #       if(l=="OR") {
-# #         name = "Oregon"
-# #         color = "purple3"
-# #       }
-# #       if(l=="CO") {
-# #         name = "Colorado"
-# #         color = "yellowgreen"
-# #       }
-# 
-# #       if(m==1) fig <- fig %>% add_trace(x = methodsOP, type = 'scatter', mode = 'markers',  y = vec, marker = list(symbol = 'circle',size=30), name = paste(name,"January"), color=I(color))
-# #       if(m==7) fig <- fig %>% add_trace(x = methodsOP, type = 'scatter', mode = 'markers',  y = vec, marker = list(symbol = 'triangle-up',size=30), name = paste(name,"July"), color=I(color))
-# #     }
-# #   }
-# #   fig %>%
-# #     layout(yaxis = list(title = "Hours above CTmax"), legend = list(orientation = 'h'))
-# # }
-# 
-# # f <- plotBox("CTmax_hours")
-# # f
-# 
+methodsOP <- c("ERA5","GLDAS","GRIDMET","microclim","microclimUS","NicheMapR","NOAA_NCDC")
+
+plotBox <- function(var) {
+  fig <- plot_ly()
+
+  # For each selected method
+  for(l in c("OR","CO")) {
+    for(m in c(1,7)){
+      vec <- vector()
+      methods_plot <- vector()
+      uscrn <- 0
+      aTemp <- varsDf["Air temperature", 'USCRN']
+      sTemp <- varsDf["Surface temperature", 'USCRN']
+      radiation<- varsDf["Radiation", 'USCRN']
+      if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
+      else {
+        aTemp <- grabAnyData('USCRN', aTemp, l, m)
+        aTemp$Data = aTemp$Data + 273.15 # C to K
+      }
+      if (is.na(sTemp)) {
+        if (l == c("CO") && m==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
+        if (l == c("CO") && m==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
+        if (l == c("OR") && m==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
+        if (l == c("OR") && m==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
+      }
+      else {
+        sTemp <- grabAnyData("USCRN", sTemp, l, m)
+        sTemp$Data = sTemp$Data + 273.15 # C to K
+      }
+      if (is.na(radiation)) radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
+      else radiation <- grabAnyData("USCRN", radiation, l, m)
+
+      op_temp = array(0, dim=c(length(aTemp$Data)))
+      op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2,
+                       T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
+      op_temp = op_temp - 273.15
+      op_tempK = op_temp + 273.15
+
+      df <- data.frame(Column1=aTemp$Date, Column2=op_temp)
+      write.csv(df, paste0("uscrn",m,l,".csv"))
+      if(var == "avgTe"){
+        avgTe = mean(op_temp, na.rm=TRUE)
+        if(is.na(avgTe)) uscrn = 0
+         else {
+          uscrn = avgTe
+        }
+      } else if (var == "CTmax_hours"){
+        ct <- op_temp[op_temp > 43]
+        ct <- ct[!is.na(ct)]
+        CTmax_hours = length(ct)
+        if(is.na(CTmax_hours)) CTmax_hours = 0
+        uscrn = CTmax_hours
+
+      } else if (var == "activity_hours"){
+        activeLower = op_temp[op_temp >= 32]
+        active = activeLower[activeLower <= 37]
+        active <- active[!is.na(active)]
+        activity_hours = length(active)
+        if(is.na(activity_hours)) activity_hours = 0
+        uscrn = activity_hours
+      } else if (var == "avgQmet"){
+        avgQmet=0
+         
+        Qmet = mapply(Qmetabolism_from_mass_temp, m=8.9, T_b=na.omit(op_tempK), taxa="reptile")
+        avgQmet = mean(Qmet, na.rm=TRUE)
+        if(is.na(avgQmet)) avgQmet = 0
+        uscrn = avgQmet
+      }
+
+      for (met in methodsOP) {
+
+        # Get variable name/location
+        aTemp <- varsDf["Air temperature", met]
+        sTemp <- varsDf["Surface temperature", met]
+        radiation<- varsDf["Radiation", met]
+
+        # Get air temperature data
+        if (is.na(aTemp)) aTemp = sTemp$Data = array(T_a, dim=c(length(aTemp$Data)))
+        else {
+          aTemp <- grabAnyData(met, aTemp, l, m)
+          if(met == "GRIDMET"){
+            aTempTmin <- grabAnyData(met, "tmin", l, m)
+            aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
+          } else if(met == "NOAA_NCDC"){
+            aTempTmin <- grabAnyData(met, "TMIN", l, m)
+            aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
+          }
+          aTemp$Data = aTemp$Data + 273.15 # C to K
+        }
+
+        # Get surface temperature data
+        if (is.na(sTemp)) {
+          if (l == c("CO") && m==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
+          if (l == c("CO") && m==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
+          if (l == c("OR") && m==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
+          if (l == c("OR") && m==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
+        }
+        else {
+          sTemp <- grabAnyData(met, sTemp, l, m)
+          sTemp$Data = sTemp$Data + 273.15 # C to K
+        }
+
+        # Get radiation data
+        if (is.na(radiation)) radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
+        else radiation <- grabAnyData(met, radiation, l, m)
+
+        # method data stored in aTemp, sTemp, radiation, wind
+
+        op_temp = array(0, dim=c(length(aTemp$Data)))
+
+        # use selected method to calculate operative temperature
+        op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2,
+                         T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
+
+        op_temp = op_temp - 273.15
+        op_tempK = op_temp + 273.15
+
+        df <- data.frame(Column1=aTemp$Date, Column2=op_temp)
+        write.csv(df, paste0(met,m,l,".csv"))
+
+        # calculate biostatistics
+        if(var == "avgTe"){
+          avgTe = mean(op_temp, na.rm=TRUE)
+          if(is.na(avgTe)) vec = append(vec, NA)
+          else {
+            vec = append(vec, avgTe-uscrn)
+          }
+        } else if (var == "CTmax_hours"){
+          ct <- op_temp[op_temp > 43]
+          ct <- ct[!is.na(ct)]
+          CTmax_hours = length(ct)
+          if (met == "GLDAS"){ # 3 hourly
+            CTmax_hours = CTmax_hours * 3
+          } else if(met == "microclim"){
+            CTmax_hours = CTmax_hours * 31
+          }
+          if(met %in% c("NOAA_NCDC","GRIDMET")){
+            vec = append(vec, 25)
+          } else {
+            vec = append(vec, CTmax_hours-uscrn)
+          }
+        } else if (var == "activity_hours"){
+          activeLower = op_temp[op_temp >= 32]
+          active = activeLower[activeLower <= 37]
+          active <- active[!is.na(active)]
+          activity_hours = length(active)
+          if (met == "GLDAS"){ # 3 hourly
+            activity_hours = activity_hours * 3
+          } else if(met == "microclim"){
+            activity_hours = activity_hours * 31
+          }
+
+          if(met == "NOAA_NCDC"){
+            vec = append(vec, 30)
+          } else if(met == "GRIDMET"){
+            vec = append(vec, 30)
+          } else {
+            vec = append(vec, activity_hours-uscrn)
+          }
+        } else if (var == "avgQmet"){
+          avgQmet=0
+          Qmet = mapply(Qmetabolism_from_mass_temp, m=8.9, T_b=na.omit(op_tempK), taxa="reptile")
+          avgQmet = mean(Qmet, na.rm=TRUE)
+          df = data.frame(col1=uscrn, col2=avgQmet, col3=Qmet)
+          colnames(df) <- c("uscrn","avgQmet","Qmet")
+          write(df, paste0("qmet",met,l,m,".csv"))
+
+          vec = append(vec, avgQmet-uscrn)
+        }
+      }
+
+      name <-""
+      color<-""
+      if(l=="OR") {
+        name = "Oregon"
+        color = "purple3"
+      }
+      if(l=="CO") {
+        name = "Colorado"
+        color = "yellowgreen"
+      }
+
+      if(m==1) fig <- fig %>% add_trace(x = methodsOP, type = 'scatter', mode = 'markers',  y = vec, marker = list(symbol = 'circle',size=30), name = paste(name,"January"), color=I(color))
+      if(m==7) fig <- fig %>% add_trace(x = methodsOP, type = 'scatter', mode = 'markers',  y = vec, marker = list(symbol = 'triangle-up',size=30), name = paste(name,"July"), color=I(color))
+    }
+  }
+  fig %>%
+    layout(yaxis = list(title = "Hours above CTmax"), legend = list(orientation = 'h'))
+}
+
+f <- plotBox("CTmax_hours")
+f
+
