@@ -648,24 +648,56 @@ shinyServer <- function(input, output, session) {
         if (is.na(wind)) wind$Data = array(u_default, dim=c(length(aTemp$Data)))
         else wind <- grabAnyData(method, wind, input$loc3, input$season3)
       
+        #----
+        #Set up To calculations
+        
+        # Areas
+        GMASS=8.9
+        ATOTAL=(10.4713*GMASS*0.688)/10000
+        AV=(0.425*GMASS*0.85)/10000 
+        ASILN=(3.798*GMASS*.683)/10000 # MAX. SILHOUETTE AREA (NORMAL TO THE SUN)
+        ASILP=(0.694*GMASS*.743)/10000 # MIN. SILHOUETTE AREA (POINTING TOWARD THE SUN)
+        As=(ASILN + ASILP)/2           # MEAN SILHOUTTE AREA
+        
+        A=sa_from_mass(8.9, "lizard")
+        
+        # characteristic dimension -- cube root of volume
+        D=(volume_from_length(l=0.063,"lizard"))^(1/3)
+        
+        df= partition_solar_radiation(method="Liu_Jordan", kt=0.6) # diffuse fraction of solar radiation, assumes kt=0.6. 
+        
+        H_L=heat_transfer_coefficient_approximation(V=0.1, D=(volume_from_length(l=0.063,"lizard"))^(1/3), K=25.7 * 10^(-3), nu=15.3 * 10^(-6), taxa = "lizard")
+        #Documentation: https://trenchproject.github.io/TrenchR/reference/heat_transfer_coefficient_approximation.html
+        
+        # CALCULATE OPERATIVE TEMPERATURE
+        # radiation absorbed
+        # diffuse is received by half the total area and diffuse below (from reflected, based on substrate reflectivity=0.3) is also received by half the total
+        # solar absorptivity 0.9 from Gates 1980
+        # assumes albedo of 0.3
+        S=radiation$Data # W/m2 measured solar radiation
+        Qabs=0.9*(As*S*(1-df)+A/2*S*(df)+A/2*S*(1-df)*0.3) # direct, diffuse, reflected
+        #---
+        
         # Initialize operative temperature vector
         op_temp = array(0, dim=c(length(aTemp$Data)))
         
         # Use selected method to calculate operative temperature
         if (input$op3=="gates") {
-          op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=0.06, psa_dir=0.6, psa_ref=0.4, psa_air=0.6, psa_g=0.2, 
-                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=radiation$Data * sa_from_mass(8.9, "lizard") * 0.6, epsilon=0.95, H_L=10, K=0.15)
+          
+          op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=(volume_from_length(l=0.063,"lizard"))^(1/3), psa_dir=0.6, psa_ref=0.4, psa_air=0.95, psa_g=0.05, 
+                           T_g=sTemp$Data, T_a=aTemp$Data, Qabs=Qabs, epsilon=0.95, H_L=H_L, K=0.15)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Gates Model)")
           
         } else if (input$op3=="lizard") {
           doytemp = sapply(aTemp$Date,day_of_year)
+          #FIX SVL, PSI, rho_S
           op_temp = mapply(Tb_lizard, T_a=aTemp$Data-273.15, T_g=sTemp$Data-273.15, u=wind$Data, 
-                           svl=60, m=10, psi=34, rho_S=0.7, elev=500, doy=doytemp)
+                           svl=60, m=8.9, psi=34, rho_S=0.7, elev=500, doy=doytemp)
           op_temp = op_temp + 273.15 # back to K
           fig <- fig %>% layout(title="Sceloporus Lizard Operative Temperature")
           
         } else if (input$op3=="campbell") {
-          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, S=radiation$Data, D=0.17, V=wind$Data)
+          op_temp = mapply(Tb_CampbellNorman, T_a=aTemp$Data, T_g=sTemp$Data, S=radiation$Data, D=(volume_from_length(l=0.063,"lizard"))^(1/3), V=wind$Data)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Campbell-Norman Model)")
         }
         
