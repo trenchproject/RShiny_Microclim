@@ -451,7 +451,8 @@ To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")
 To.fig= ggplot(data=To.long, aes(x=date, y=To, color=ForcingData, lty=factor(Scaled)))+ 
   facet_grid(.~column, scales="free", switch="y")+geom_line(aes(alpha=0.5))+
   theme_bw()+ylab("Operative Temperature (°C)")+xlab("Date")+ggtitle(titles[ind])+
-  guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data")
+  guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data") 
+#+theme(legend.position = "bottom")
 
 To.fig= To.fig + geom_hline(yintercept=43, color="red", lty="dashed")+
   annotate("rect", xmin = To.long$date[1], xmax = max(To.long$date, na.rm=TRUE), ymin = 32, ymax = 37,

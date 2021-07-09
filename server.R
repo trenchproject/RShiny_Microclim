@@ -681,6 +681,10 @@ shinyServer <- function(input, output, session) {
         # Initialize operative temperature vector
         op_temp = array(0, dim=c(length(aTemp$Data)))
         
+        #set lat, lon elev
+        if (input$loc3 == c("OR")) {lat=44.55; lon=-119.65; elev=691}
+        if (input$loc3 == c("CO")) {lat=40.87; lon=-104.73; elev=1458}
+        
         # Use selected method to calculate operative temperature
         if (input$op3=="gates") {
           
@@ -690,9 +694,10 @@ shinyServer <- function(input, output, session) {
           
         } else if (input$op3=="lizard") {
           doytemp = sapply(aTemp$Date,day_of_year)
-          #FIX SVL, PSI, rho_S
+          hours = hour(as.POSIXct(aTemp$Date))
+          
           op_temp = mapply(Tb_lizard, T_a=aTemp$Data-273.15, T_g=sTemp$Data-273.15, u=wind$Data, 
-                           svl=60, m=8.9, psi=34, rho_S=0.7, elev=500, doy=doytemp)
+                           svl=63, m=8.9, psi=zenith_angle(doy=doytemp, lat=lat, lon=lon, hour=hours), rho_S=0.3, elev=elev, doy=doytemp)
           op_temp = op_temp + 273.15 # back to K
           fig <- fig %>% layout(title="Sceloporus Lizard Operative Temperature")
           
