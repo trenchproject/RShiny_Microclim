@@ -17,6 +17,9 @@ library(TrenchR)
 library(ggplot2)
 library(reshape)
 library(reshape2)
+library(tidyr)
+library(patchwork)
+library(viridis)
 
 #-----
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
@@ -407,306 +410,141 @@ for(metk in 1:length(methods)){
   
   out=getOpTemp("OR", 7, methods[metk])
   To[2,2,metk,1:nrow(out),]=out
-  
 }
 
 #=================================================
 #Plot figure 3
 
+PlotTo= function(loc,mo, ind){ 
+
+titles=c("Weld County, Colorado, January 2017", "Weld County, Colorado, July 2017","John Day, Oregon, January 2017", "John Day, Oregon, July 2017")
+  
 #Gather data in long format
-To.long <- reshape2::melt(To[,,,,1], value.name = "date")
-To.long2 <- reshape2::melt(To[,,,,2], value.name = "value")
+To.long <- reshape2::melt(To[loc,mo,,,1], value.name = "date")
+To.long2 <- reshape2::melt(To[loc,mo,,,2], value.name = "value")
 To.long$To= as.numeric(To.long2$value)
 To.long$date= as.POSIXct(To.long$date, format="%Y-%m-%d %H:%M")
 
-fig1= ggplot(data=To.long, aes(x=date, y=To, color=dataset,lty=site))+ 
-  facet_grid(site~t, scales="free", switch="y")+geom_point()+geom_line()+
-  geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")
+#make columns
+To.long$column= NA
+To.long$column[To.long$dataset %in% c("GLDAS","NCEP","ERA5","GRIDMET","USCRN")]= "Environmental Forcing Data"
+To.long$column[To.long$dataset %in% c("micro_global","micro_ncep","micro_era5","micro_usa","USCRN1cm")]= "Microclimate Model Output"
+To.long$column[To.long$dataset %in% c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","microclimUS","USCRN1cm")]= "Microclimate Datasets"
 
-To1= To.long[which(To.long$site=="CO" & To.long$month=="January"),]
+#code source data
+To.long$ForcingData=NA
+To.long$ForcingData[To.long$dataset %in% c("GLDAS","GLDAS1cm")]="GLDAS"
+To.long$ForcingData[To.long$dataset %in% c("micro_global","microclim")]="NEW01"
+To.long$ForcingData[To.long$dataset %in% c("NCEP","micro_ncep","NCEP1cm")]="NCEP"
+To.long$ForcingData[To.long$dataset %in% c("ERA5","micro_era5","ERA51cm")]="ERA5"
+To.long$ForcingData[To.long$dataset %in% c("GRIDMET","micro_usa","microclimUS")]="GRIDMET"
+To.long$ForcingData[To.long$dataset %in% c("USCRN","USCRN1cm")]="USCRN"
 
-fig1= ggplot(data=To1, aes(x=as.Date(date), y=To, color=dataset))+ 
-  facet_grid(.~t, scales="free", switch="y")+geom_line()
+#Make factor
+To.long$ForcingData= factor(To.long$ForcingData, levels=c("USCRN","GLDAS","NCEP","ERA5","GRIDMET","NEW01"), ordered=TRUE)
+To.long$column= factor(To.long$column, levels=c("Environmental Forcing Data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
 
+#Specify those vertically scaled to 1cm
+To.long$Scaled=0
+To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] =1
 
-To1= na.omit(as.data.frame(To[1,2,1,,]))
-To1$To= as.POSIXct(To1$To, format="%Y-%m-%d %H:%M")
-To1$Date= as.numeric(To1$Date)
-To1$dataset=methods[1]
+To.fig= ggplot(data=To.long, aes(x=date, y=To, color=ForcingData, lty=factor(Scaled)))+ 
+  facet_grid(.~column, scales="free", switch="y")+geom_line(aes(alpha=0.5))+
+  theme_bw()+ylab("Operative Temperature (°C)")+xlab("Date")+ggtitle(titles[ind])+
+  guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data")
 
-To2= na.omit(as.data.frame(To[1,2,2,,]))
-To2$To= as.POSIXct(To2$To, format="%Y-%m-%d %H:%M")
-To2$Date= as.numeric(To2$Date)
-To2$dataset=methods[2]
+To.fig= To.fig + geom_hline(yintercept=43, color="red", lty="dashed")+
+  annotate("rect", xmin = To.long$date[1], xmax = max(To.long$date, na.rm=TRUE), ymin = 32, ymax = 37,
+           alpha = .3,fill = "darkgreen")
 
-To3= na.omit(as.data.frame(To[1,2,3,,]))
-To3$To= as.POSIXct(To3$To, format="%Y-%m-%d %H:%M")
-To3$Date= as.numeric(To3$Date)
-To3$dataset=methods[3]
-
-To4= na.omit(as.data.frame(To[1,2,4,,]))
-To4$To= as.POSIXct(To4$To, format="%Y-%m-%d %H:%M")
-To4$Date= as.numeric(To4$Date)
-To4$dataset=methods[4]
-
-To.all= rbind(To1, To2, To3, To4)
-
-fig1= ggplot(data=To.all, aes(x=To, y=Date, color=dataset))+ 
-  geom_line()
-
-#------------------
-#PLOTLY
-
-plotTo= function(loc, mo, methodsOP){
-
-fig <- plot_ly()
-vec <- vector()
-methods_plot <- vector()
-
-for (method in methodsOP) {
-
-metk= match(method, methods)  
-  
-dates= as.POSIXct(To[loc,mo,metk,,1], format="%Y-%m-%d %H:%M") 
-op_temp= as.numeric(To[loc,mo,metk,,2])
-  
-fig <- fig %>% add_lines(x = dates, y = op_temp, name = method, opacity = 0.75, line = list(color = colorsDf["color", method]))
-
+return(To.fig)
 }
 
-# Add activity range
-fig <- layout(fig,shapes = list(list(type = "rect", fillcolor = "green", line = list(color = "green"), opacity = 0.3,
-                                     x0 = dates[1], x1 = dates[length(dates)], xref = "x", y0 = 32, y1 = 37, yref = "y")))
+#plot together
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 
-fig <- fig %>% add_lines(x = dates, y = 43, opacity = 0.75, line = list(color = "#FF0000", dash = 'dash'))
+pdf("Fig3_To.pdf",height = 12, width = 12)
 
-fig
-}
+PlotTo(1,1, 1) +PlotTo(1,2, 2) +PlotTo(2,1, 3) +PlotTo(2,2, 4) +plot_layout(ncol = 1)+ plot_layout(guides = "collect")
 
-#Call figure function
-methodsOP=methods2
-
-data1 <- vector()
-data2 <- vector()
-
-data1= plotTo(loc=1, mo=1, methods=methods2)
-data2= plotTo(loc=1, mo=2, methods=methods2)
-
-plot111=plotTo(loc=1, mo=1, methods=methods1)
-plot121=plotTo(loc=1, mo=2, methods=methods1)
-plot211=plotTo(loc=2, mo=1, methods=methods1)
-plot221=plotTo(loc=2, mo=2, methods=methods1)
-
-plot112=plotTo(loc=1, mo=1, methods=methods2)
-plot122=plotTo(loc=1, mo=2, methods=methods2)
-plot212=plotTo(loc=2, mo=1, methods=methods2)
-plot222=plotTo(loc=2, mo=2, methods=methods2)
-
-plot113=plotTo(loc=1, mo=1, methods=methods3)
-plot123=plotTo(loc=1, mo=2, methods=methods3)
-plot213=plotTo(loc=2, mo=1, methods=methods3)
-plot223=plotTo(loc=2, mo=2, methods=methods3)
-
-subplot(plot111, plot112, plot113, 
-        plot121, plot122, plot123, 
-        plot211, plot212, plot213, 
-        plot221, plot222, plot223,
-        nrows = 4, titleX = FALSE, titleY= TRUE, shareX = FALSE) %>%
-  layout(showlegend = FALSE)
-
-
-#-----------------------
-#store data for each column
-
-
-
-
-for(loc in 1:2){
-  for(mo in 1:2){
-    
-    m1= as.data.frame(rbind(CalcMetric(loc, mo, 1,"avgTe"),CalcMetric(loc, mo, 1,"CTmax_hours"),CalcMetric(loc, mo, 1,"activity_hours"),CalcMetric(loc, mo, 1,"avgQmet") ))
-    names(m1)= c("GLDAS","NCEP","ERA5","GRIDMET")
-    m1$site= c("CO","OR")[loc]
-    m1$month= c("Jan","Jul")[mo]
-    m1$column="Environmental forcing data"
-    m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
-    
-    if(loc==1&mo==1)m.all=m1
-    if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
-  }
-}
-m1.all=m.all
-
-for(loc in 1:2){
-  for(mo in 1:2){
-    
-    m1= as.data.frame(rbind(CalcMetric(loc, mo, 2,"avgTe"),CalcMetric(loc, mo, 2,"CTmax_hours"),CalcMetric(loc, mo, 2,"activity_hours"),CalcMetric(loc, mo, 2,"avgQmet") ))
-    names(m1)= c("micro_global","micro_ncep","micro_era5","micro_usa")
-    m1$site= c("CO","OR")[loc]
-    m1$month= c("Jan","Jul")[mo]
-    m1$column="Microclimate Model Output"
-    m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
-    
-    if(loc==1&mo==1)m.all=m1
-    if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
-  }
-}
-m2.all=m.all
-
-for(loc in 1:2){
-  for(mo in 1:2){
-    
-    m1= as.data.frame(rbind(CalcMetric(loc, mo, 3,"avgTe"),CalcMetric(loc, mo, 3,"CTmax_hours"),CalcMetric(loc, mo, 3,"activity_hours"),CalcMetric(loc, mo, 3,"avgQmet") ))
-    names(m1)= c("GLDAS 1cm","microclim","NCEP 1cm","ERA5 1cm","microclimUS")
-    m1$site= c("CO","OR")[loc]
-    m1$month= c("Jan","Jul")[mo]
-    m1$column="Microclimate Datasets"
-    m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
-    
-    if(loc==1&mo==1)m.all=m1
-    if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
-  }
-}
-m3.all=m.all
-
-#to long format
-m1.long <- melt(m1.all, id.vars=c("site", "month","column","metric"))
-m2.long <- melt(m2.all, id.vars=c("site", "month","column","metric"))
-m3.long <- melt(m3.all, id.vars=c("site", "month","column","metric"))
-m.long=rbind(m1.long, m2.long, m3.long)
-m.long$group= paste(m.long$site, m.long$month,sep="")
-
-#make ordered factors
-m.long$column= factor(m.long$column, levels=c("Environmental forcing data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
-m.long$variables= factor(m.long$variables, levels=c("Δ Operative Temperature (°C)","Δ Metabolism (W)","Δ Potential Hours of Activity","Δ Hours above CTmax"), ordered=TRUE)
-
-ggplot(data=m.long, aes(x=variable, y=value, color=site,lty=month, group=group))+ 
-  facet_grid(metric~column, scales="free", switch="y")+geom_point()+geom_line()+
-  geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")
-
-
+dev.off()
 
 #=================================================
 #Plot figure 4
 
-CalcMetric <- function(loc, mo, meth.set,var) {
+CalcMetric <- function(loc, mo, var) {
   
-  if(meth.set==1) op_temp_obs=as.numeric(To[loc,mo,5,,2]) #5 for USCRN
-  if(meth.set==2) op_temp_obs=as.numeric(To[loc,mo,10,,2])
-  if(meth.set==3) op_temp_obs=as.numeric(To[loc,mo,16,,2])
-      
-  #extract Tos
-  if(meth.set==1) op_temp=To[loc,mo,1:4,,2] #5 for USCRN
-  if(meth.set==2) op_temp=To[loc,mo,6:9,,2]
-  if(meth.set==3) op_temp=To[loc,mo,11:15,,2]
+  op_temp= To[loc,mo,,,2]
   #make numeric
   class(op_temp)<- "numeric"
+  op_temp= as.data.frame(t(op_temp))
+  
+  lengths= apply(op_temp, 2, FUN= function(x) length(na.omit(x)))
   
   #pick metric
-      if(var == "avgTe"){
-        avgTe_obs = mean(op_temp_obs, na.rm=TRUE)
-        avgTe= rowMeans(op_temp, na.rm=TRUE)
-        out= avgTe-avgTe_obs
-        }
-      
-     if (var == "CTmax_hours"){
-        
-       CTmax_hours_obs <- length(which(op_temp_obs > 43))
-       CTmax_hours= apply(op_temp, 1, FUN= function(x) length(which(x > 43)) )
-       
-       if(meth.set==1) CTmax_hours[c(1,3)]= CTmax_hours[c(1,3)]*3 #Adjust three hourly.
-       if(meth.set==2) CTmax_hours[c(2)]= CTmax_hours[c(2)]*3 #Adjust three hourly
-       if(meth.set==3) CTmax_hours[c(1,3)]= CTmax_hours[c(1,3)]*3 #Adjust three hourly
-       #NEED TO FIX GRIDMET
-       out= CTmax_hours-CTmax_hours_obs
-       }
-        
-      if (var == "activity_hours"){
-        
-        activity_hours_obs <- length(which(op_temp_obs >=32 & op_temp_obs<=37))
-        activity_hours= apply(op_temp, 1, FUN= function(x) length(which(x >=32 & x<=37)) )
-        
-        if(meth.set==1) activity_hours[c(1,3)]= activity_hours[c(1,3)]*3 #Adjust three hourly.
-        if(meth.set==2) activity_hours[c(2)]= activity_hours[c(2)]*3 #Adjust three hourly
-        if(meth.set==3) activity_hours[c(1,3)]= activity_hours[c(1,3)]*3 #Adjust three hourly
-        #NEED TO FIX GRIDMET
-        out= activity_hours-activity_hours_obs
-      } 
-        
-        if (var == "avgQmet"){
-        avgQmet_obs=mean( sapply(na.omit(op_temp_obs+273.15), FUN=Qmetabolism_from_mass_temp, m=8.9, taxa="reptile"), na.rm=TRUE)
-        
-        avgQmet= apply(op_temp+273.15, 1, FUN=function(x) mean(Qmetabolism_from_mass_temp(na.omit(x), m=8.9, taxa="reptile")) )
-        
-        out= avgQmet - avgQmet_obs
-        }
+  if(var == "avgTe") est= colMeans(op_temp, na.rm=TRUE)
+  
+  if (var == "avgQmet") est= apply(op_temp+273.15, 2, FUN=function(x) mean(Qmetabolism_from_mass_temp(na.omit(x), m=8.9, taxa="reptile")) )
+   
+  if (var == "CTmax_hours") est= apply(op_temp, 2, FUN= function(x) length(which(x > 43)) )
  
-  return(out) 
+  if (var == "activity_hours") est= apply(op_temp, 2, FUN= function(x) length(which(x >=32 & x<=37)) )
+    
+  #Scale to number observations
+  if(var %in% c("CTmax_hours","activity_hours")) est= est * lengths[names(lengths)=="USCRN"]/lengths
+  
+  #calculate delta
+  deltas= est-est[which(names(est)=="USCRN1cm")[1]]
+  
+  inds= which(names(est) %in% c("GLDAS","NCEP","ERA5","GRIDMET","USCRN") )
+  deltas[inds]= est[inds]-est[names(est)=="USCRN"]
+  
+  return(deltas) 
 }
 
 #store data for each column
 for(loc in 1:2){
   for(mo in 1:2){
-      
-m1= as.data.frame(rbind(CalcMetric(loc, mo, 1,"avgTe"),CalcMetric(loc, mo, 1,"CTmax_hours"),CalcMetric(loc, mo, 1,"activity_hours"),CalcMetric(loc, mo, 1,"avgQmet") ))
-names(m1)= c("GLDAS","NCEP","ERA5","GRIDMET")
-m1$site= c("CO","OR")[loc]
-m1$month= c("January","July")[mo]
-m1$column="Environmental forcing data"
-m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
-
-if(loc==1&mo==1)m.all=m1
-if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
-}
-}
-m1.all=m.all
-
-for(loc in 1:2){
-  for(mo in 1:2){
     
-    m1= as.data.frame(rbind(CalcMetric(loc, mo, 2,"avgTe"),CalcMetric(loc, mo, 2,"CTmax_hours"),CalcMetric(loc, mo, 2,"activity_hours"),CalcMetric(loc, mo, 2,"avgQmet") ))
-    names(m1)= c("micro_global","micro_ncep","micro_era5","micro_usa")
+    m1= as.data.frame(rbind(CalcMetric(loc, mo,"avgTe"),CalcMetric(loc, mo,"CTmax_hours"),CalcMetric(loc, mo,"activity_hours"),CalcMetric(loc, mo,"avgQmet") ))
     m1$site= c("CO","OR")[loc]
     m1$month= c("January","July")[mo]
-    m1$column="Microclimate Model Output"
     m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
     
     if(loc==1&mo==1)m.all=m1
     if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
   }
 }
-m2.all=m.all
 
-for(loc in 1:2){
-  for(mo in 1:2){
-    
-    m1= as.data.frame(rbind(CalcMetric(loc, mo, 3,"avgTe"),CalcMetric(loc, mo, 3,"CTmax_hours"),CalcMetric(loc, mo, 3,"activity_hours"),CalcMetric(loc, mo, 3,"avgQmet") ))
-    names(m1)= c("GLDAS 1cm","microclim","NCEP 1cm","ERA5 1cm","microclimUS")
-    m1$site= c("CO","OR")[loc]
-    m1$month= c("January","July")[mo]
-    m1$column="Microclimate Datasets"
-    m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
-    
-    if(loc==1&mo==1)m.all=m1
-    if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
-  }
-}
-m3.all=m.all
+#drop observation columns
+m.all= m.all[-which(names(m.all)%in%c("USCRN","USCRN1cm") )]
 
 #to long format
-m1.long <- melt(m1.all, id.vars=c("site", "month","column","metric"))
-m2.long <- melt(m2.all, id.vars=c("site", "month","column","metric"))
-m3.long <- melt(m3.all, id.vars=c("site", "month","column","metric"))
-m.long=rbind(m1.long, m2.long, m3.long)
+m.long <- melt(m.all, id.vars=c("site", "month","metric"))
 m.long$group= paste(m.long$site, m.long$month,sep="")
 
-#make ordered factors
-m.long$column= factor(m.long$column, levels=c("Environmental forcing data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
-m.long$variables= factor(m.long$variables, levels=c("Δ Operative Temperature (°C)","Δ Metabolism (W)","Δ Potential Hours of Activity","Δ Hours above CTmax"), ordered=TRUE)
+#determine columns
+names(m.long)[4]="dataset"
+m.long$column= NA
+m.long$column[m.long$dataset %in% c("GLDAS","NCEP","ERA5","GRIDMET")]= "Environmental Forcing Data"
+m.long$column[m.long$dataset %in% c("micro_global","micro_ncep","micro_era5","micro_usa")]= "Microclimate Model Output"
+m.long$column[m.long$dataset %in% c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","microclimUS")]= "Microclimate Datasets"
 
-ggplot(data=m.long, aes(x=variable, y=value, color=site,lty=month, group=group))+ 
+#make ordered factors
+m.long$column= factor(m.long$column, levels=c("Environmental Forcing Data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
+m.long$metric= factor(m.long$metric, levels=c("Δ Operative Temperature (°C)","Δ Metabolism (W)","Δ Potential Hours of Activity","Δ Hours above CTmax"), ordered=TRUE)
+
+#plot
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+
+pdf("Fig4_Metrics.pdf",height = 12, width = 12)
+
+ggplot(data=m.long, aes(x=dataset, y=value, color=site,lty=month, group=group))+ 
   facet_grid(metric~column, scales="free", switch="y")+geom_point()+geom_line()+
   geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")
 
+dev.off()
 
-  
+
+
+
