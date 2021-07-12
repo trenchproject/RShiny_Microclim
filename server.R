@@ -153,7 +153,7 @@ shinyServer <- function(input, output, session) {
   
   output$datasetsOutputTemp2 <- renderUI({
     
-    sets <- c("USCRN1cm","GLDAS1cm","NCEP1cm","microclimUS","microclim","micro_ncep","micro_usa","micro_global","micro_era5")
+    sets <- c("USCRN1cm","ERA51cm","GLDAS1cm","NCEP1cm","microclimUS","microclim","micro_ncep","micro_usa","micro_global","micro_era5")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasetstemp2", "Microclimate Functions & Downscaled (1cm) Datasets", 
@@ -324,6 +324,10 @@ shinyServer <- function(input, output, session) {
     # Collects and returns stats table produced in map_helper.R
     validate(need(input$mapDatasets, ""))
     inputVar <- varsDf[input$mapVar, input$mapDatasets]
+    #change for microclim and microclimus
+    if(inputVar=="TA1cm_0pctShade") inputVar= "TA200cm"
+    if(inputVar=="TA1cm_soil_0") inputVar= "TA120cm"
+    
     load(paste0("Data/Maps/",input$mapDatasets,"_0",input$month,"_",inputVar,".Rda"))
     stats$RMSE <- sqrt(stats$RMSE)
     return(stats)
@@ -525,7 +529,7 @@ shinyServer <- function(input, output, session) {
   
   output$datasetsOutput30 <- renderUI({
     
-    sets <- c("USCRN1cm","GLDAS1cm","NCEP1cm","microclimUS","microclim","micro_ncep","micro_usa","micro_global","micro_era5")
+    sets <- c("USCRN1cm","ERA51cm","GLDAS1cm","NCEP1cm","microclimUS","microclim","micro_ncep","micro_usa","micro_global","micro_era5")
     index <- which(!is.na(varsDf[input$var, sets]))
     
     pickerInput("datasets30", "Microclimate Functions & Downscaled (1cm) Datasets", 
