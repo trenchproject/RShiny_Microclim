@@ -70,7 +70,7 @@ grabMicroERA5 <- function(var, loc, month) {
   variableHOUR <- micro$metout[, "TIME"]
   
   vals <- c()
-  begin <- ifelse(month == 1, 0, 24 * 180)+1
+  begin <-1 #ifelse(month == 1, 0, 24 * 180)+1
   end <- begin+24*31
   vals <- variable[begin:end]
   valsDOY <- variableDOY[begin:end]

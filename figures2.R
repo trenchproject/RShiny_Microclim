@@ -308,7 +308,7 @@ get_table_1 <- function() {
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
-getOpTemp <- function(loc, month, method) {
+getOpTemp <- function(loc, mo, method) {
   
   # Defaults
   T_g_OR1 = .27 - 5 + 273.15 # surface temperature average for oregon january
@@ -345,27 +345,27 @@ getOpTemp <- function(loc, month, method) {
     radiation<- varsDf["Radiation", method]
     
     # Get air temperature data
-    aTemp <- grabAnyData(method, aTemp, loc, month)
+    aTemp <- grabAnyData(method, aTemp, loc, mo)
     if(method == "GRIDMET"){
-      aTempTmin <- grabAnyData(method, varsDf["Tmin", method], loc, month)
+      aTempTmin <- grabAnyData(method, varsDf["Tmin", method], loc, mo)
       aTemp$Data <- rowMeans(cbind(aTemp$Data,aTempTmin$Data))
     }
     aTemp$Data = aTemp$Data + 273.15 # C to K
     
     # Get surface temperature data
     if (is.na(sTemp)) {
-      if (loc == c("CO") && month==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
-      if (loc == c("CO") && month==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
-      if (loc == c("OR") && month==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
-      if (loc == c("OR") && month==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
+      if (loc == c("CO") && mo==1) sTemp$Data = array(T_g_CO1, dim=c(length(aTemp$Data)))
+      if (loc == c("CO") && mo==7) sTemp$Data = array(T_g_CO7, dim=c(length(aTemp$Data)))
+      if (loc == c("OR") && mo==1) sTemp$Data = array(T_g_OR1, dim=c(length(aTemp$Data)))
+      if (loc == c("OR") && mo==7) sTemp$Data = array(T_g_OR7, dim=c(length(aTemp$Data)))
     }else {
-      sTemp <- grabAnyData(method, sTemp, loc, month)
+      sTemp <- grabAnyData(method, sTemp, loc, mo)
       sTemp$Data = sTemp$Data + 273.15 # C to K
     }
     
     # Get radiation data
     if (is.na(radiation)) {radiation$Data = array(Qabs_default, dim=c(length(aTemp$Data)))
-    }else radiation <- grabAnyData(method, radiation, loc, month)
+    }else radiation <- grabAnyData(method, radiation, loc, mo)
     
     # Initialize operative temperature vector
     op_temp = array(0, dim=c(length(aTemp$Data)))
@@ -538,13 +538,15 @@ m.long$metric= factor(m.long$metric, levels=c("Δ Operative Temperature (°C)","
 #plot
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 
-pdf("Fig4_Metrics.pdf",height = 12, width = 12)
+pdf("Fig4_Metrics.pdf",height = 10, width = 14)
 
 ggplot(data=m.long, aes(x=dataset, y=value, color=site,lty=month, group=group))+ 
   facet_grid(metric~column, scales="free", switch="y")+geom_point()+geom_line()+
   geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")
 
 dev.off()
+
+
 
 
 
