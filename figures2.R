@@ -22,7 +22,9 @@ library(reshape2)
 library(tidyr)
 library(patchwork)
 library(viridis)
-library(mapview)
+#library(mapview)
+library(ggmap)
+library(patchwork)
 
 #-----
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
@@ -309,22 +311,34 @@ get_table_1 <- function() {
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
-getMap= function(m.var="Air temperature", m.dataset="ERA5", m.stat="Bias", mo=7, add.legend=FALSE){  
-
+getMap= function(m.stat="Bias", mo=7){  
+  
+  # compute the bounding box
+  bbox <- c(-130, 25, -65, 50)
+  #get map
+  us.map <- get_map(location = bbox, source = "stamen", maptype = "terrain")
+  
   # Collects and returns stats table produced in map_helper.R
-  var.ind= match(m.var, row.names(varsDf))
-  ds.ind= match(m.dataset, colnames(varsDf))
+  vars= c("Air temperature","Surface temperature","Radiation")
+  
+  for(var.k in 1:3){
+    
+    mapDatasets <- c("ERA5", "GLDAS", "NCEP", "GRIDMET")
+    if(var.k==2) mapDatasets <- c("ERA5", "GLDAS", "NCEP")
+    
+    for(dat.k in 1:length(mapDatasets)){
+  
+  var.ind= match(vars[var.k], row.names(varsDf))
+  ds.ind= match(mapDatasets[dat.k], colnames(varsDf))
+  m.var= vars[var.k]
   
   inputVar <- varsDf[var.ind, ds.ind]
-  #change for microclim and microclimus
-  if(inputVar=="TA1cm_0pctShade") inputVar= "TA200cm"
-  if(inputVar=="TA1cm_soil_0") inputVar= "TA120cm"
   
   setwd(wd)
-  load(paste0("Data/Maps/",m.dataset,"_0",mo,"_",inputVar,".Rda"))
+  load(paste0("Data/Maps/",mapDatasets[dat.k],"_0",mo,"_",inputVar,".Rda"))
   stats$RMSE <- sqrt(stats$RMSE)
   
-  #MAP
+  #set up map parameters
   maxRawBias <- max(stats$Bias)
   maxRawRMSE <- max(stats$RMSE)
   maxRawPCC <- max(stats$PCC)
@@ -338,188 +352,140 @@ getMap= function(m.var="Air temperature", m.dataset="ERA5", m.stat="Bias", mo=7,
   if(m.var == "Air temperature"){
     # Air temperature bias quantiles: min; 0.84; 2.5; 4.9; max
     stats$BiasCat <- cut(stats$Bias, c(0, .84, 2.5, 4.9, roundUp(1)), include.lowest = T,
-                         labels = c("Bias < .84",".84 < Bias < 2.5", "2.5 < Bias < 4.9", "Bias > 4.9"))  
+                         labels = c("<.84","<2.5", "<4.9", ">4.9"))  
     # Air temperature RMSE quantiles: min; 2.5; 4.2; 5.8; max
     stats$RMSECat <- cut(stats$RMSE, c(0, 2.5, 4.2, 5.8, roundUp(1)), include.lowest = T,
-                         labels = c("RMSE < 2.5","2.5 < RMSE < 4.2", "4.2 < RMSE < 5.8", "RMSE > 5.8"))  
+                         labels = c("<2.5","<4.2", "<5.8", ">5.8"))  
     # Air temperature PCC quantiles: min; .77; .86; .92; max
     stats$PCCCat <- cut(stats$PCC, c(-1, .77, .86, .92, 1), include.lowest = T,
-                        labels = c("PCC < 0.77","0.77 < PCC < 0.86", "0.86 < PCC < 0.92", "PCC > 0.92"))
+                        labels = c("<0.77","<0.86", "<0.92", ">0.92"))
   } else if (m.var == "Surface temperature"){
     # Surface temperature bias quantiles: min; 1.2; 2.8; 6.1; max
     stats$BiasCat <- cut(stats$Bias, c(0, 1.2, 2.8, 6.1, roundUp(1)), include.lowest = T,
-                         labels = c("Bias < 1.2","1.2 < Bias < 2.8", "2.8 < Bias < 6.1", "Bias > 6.1"))  
+                         labels = c("<1.2","<2.8", "<6.1", ">6.1"))  
     # Surface temperature RMSE quantiles: min; 4.0; 6.7; 10.3; max
     stats$RMSECat <- cut(stats$RMSE, c(0, 4, 6.7, 10.3, roundUp(1)), include.lowest = T,
-                         labels = c("RMSE < 4","4 < RMSE < 6.7", "6.7 < RMSE < 10.3", "RMSE > 10.3"))  
+                         labels = c("<4","<6.7", "<10.3", ">10.3"))  
     # Surface temperature PCC quantiles: min; .79; .88; .93; max
     stats$PCCCat <- cut(stats$PCC, c(-1, .79, .88, .93, 1), include.lowest = T,
-                        labels = c("PCC < 0.79","0.79 < PCC < 0.88", "0.88 < PCC < 0.93", "PCC > 0.93"))
+                        labels = c("<0.79","<0.88", "<0.93", ">0.93"))
   } else if (m.var == "Radiation"){
     # Solar radiation bias quantiles: min; 12.7; 29.8; 55.7; max
     stats$BiasCat <- cut(stats$Bias, c(0, 12.7, 29.8, 55.7, roundUp(1)), include.lowest = T,
-                         labels = c("Bias < 12.7","12.7 < Bias < 29.8", "29.8 < Bias < 55.7", "Bias > 55.7"))  
+                         labels = c("<12.7","<29.8", "<55.7", ">55.7"))  
     # Solar radiation RMSE quantiles: min; 66.4; 105.3; 146.9; max
     stats$RMSECat <- cut(stats$RMSE, c(0, 66.4, 105.3, 146.9, roundUp(1)), include.lowest = T,
-                         labels = c("RMSE < 66.4","66.4 < RMSE < 105.3", "105.3 < RMSE < 146.9", "RMSE > 146.9"))  
+                         labels = c("<66.4","<105.3", "<146.9", ">146.9"))  
     # Solar radiation PCC quantiles: min; .62; .86; .93; max
     stats$PCCCat <- cut(stats$PCC, c(-1, .62, .86, .93, 1), include.lowest = T,
-                        labels = c("PCC < 0.62","0.62 < PCC < 0.86", "0.86 < PCC < 0.93", "PCC > 0.93"))
+                        labels = c("<0.62","<0.86", "<0.93", ">0.93"))
   }
   
-  pccCol <- colorFactor(palette = c('#e31a1c','#fd8d3c','#fecc5c','#ffffb2'), stats$PCCCat)
-  biasCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$BiasCat)
-  rmseCol <- colorFactor(palette = c('#ffffb2','#fecc5c','#fd8d3c','#e31a1c'), stats$RMSECat)
+  #combine stats across datasets
+  stats$dataset=mapDatasets[dat.k]
+  if(dat.k==1) stats.all=stats
+  if(dat.k>1) stats.all=rbind(stats.all,stats)
+  
+    } #end loop datasets
+    
+  #combine stats across variables
+  stats.all$var= vars[var.k]
+  
+  if(var.k==1) map.dat=stats.all
+  if(var.k>1) map.dat=rbind(map.dat, stats.all)
+  
+  } #end loop variables
+  
+  #order variables
+  map.dat$var== factor(map.dat$var, levels=c("Air temperature","Surface temperature","Radiation"), ordered=TRUE) 
+  map.dat$dataset== factor(map.dat$dataset, levels=c("ERA5", "GLDAS",  "GRIDMET", "NCEP"), ordered=TRUE) 
+  
+  #add blank facet for GRIDMET surface temperature
+  map.dat.na= map.dat[1,]
+  map.dat.na[]=NA
+  map.dat.na$var="Surface temperature"
+  map.dat.na$dataset="GRIDMET"
+  map.dat=rbind(map.dat,map.dat.na)
   
   if(m.stat=="Bias"){
-  map= leaflet() %>%
-    addProviderTiles(providers$ Esri.WorldPhysical) %>%
-    fitBounds(-115, 30, -70, 60)%>%
-    addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
-                     color = ~biasCol(stats$BiasCat),
-                     stroke = TRUE,
-                     radius = 3.5, 
-                     opacity = 1, 
-                     fillOpacity = 1, 
-                     group = stat,
-                     popup = paste0(str_replace_all(string = stats$Name, pattern =  "_", replacement = " "), ": ", round(stats$Bias, digits = 2))) 
+    #by variable
+    map1= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=BiasCat), data = map.dat[map.dat$var=="Air temperature",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="")+
+      theme(strip.text.x = element_text(size = 16))
     
-    if(add.legend==TRUE){
-    map= map %>% addLegend(pal = biasCol,
-              opacity = 1,
-              values = stats$BiasCat,
-              position = "bottomright",
-              title = "Bias") }
+    map2= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=BiasCat), data = map.dat[map.dat$var=="Surface temperature",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="")+
+      theme(strip.text.x = element_text(size = 16))
+   
+    map3= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=BiasCat), data = map.dat[map.dat$var=="Radiation",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="")+
+      theme(strip.text.x = element_text(size = 16))
   }
   
   if(m.stat=="RMSE"){
-    map= leaflet() %>%
-      addProviderTiles(providers$ Esri.WorldPhysical) %>%
-      fitBounds(-115, 30, -70, 60)%>%
-      addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
-                       color = ~rmseCol(stats$RMSECat),
-                       stroke = TRUE,
-                       radius = 3.5, 
-                       opacity = 1, 
-                       fillOpacity = 1, 
-                       group = stat,
-                       popup = paste0(str_replace_all(string = stats$Name, pattern =  "_", replacement = " "), ": ", round(stats$RMSE, digits = 2)))
-      
-      if(add.legend==TRUE){
-        map= map %>% addLegend(pal = rmseCol,
-                               opacity = 1,
-                               values = stats$RMSECat,
-                               position = "bottomright",
-                               title = "Root mean squared error") }
+    #by variable
+    map1= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=RMSECat), data = map.dat[map.dat$var=="Air temperature",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="Root mean squared error")+
+      theme(strip.text.x = element_text(size = 16))
+    
+    map2= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=RMSECat), data = map.dat[map.dat$var=="Surface temperature",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="Root mean squared error")+
+      theme(strip.text.x = element_text(size = 16))
+    
+    map3= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=RMSECat), data = map.dat[map.dat$var=="Radiation",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="Root mean squared error")+
+      theme(strip.text.x = element_text(size = 16))
   }
   
   if(m.stat=="PCC"){
-    map= leaflet() %>%
-      addProviderTiles(providers$ Esri.WorldPhysical) %>%
-      fitBounds(-115, 30, -70, 60)%>%
-      addCircleMarkers(data = stats, lng = ~Lon, lat = ~Lat,
-                       color = ~pccCol(stats$PCCCat),
-                       stroke = TRUE,
-                       radius = 3.5, 
-                       opacity = 1, 
-                       fillOpacity = 1, 
-                       group = stat,
-                       popup = paste0(str_replace_all(string = stats$Name, pattern =  "_", replacement = " "), ": ", round(stats$PCC, digits = 2)))
-      
-      if(add.legend==TRUE){
-        map= map %>% addLegend(pal = pccCol,
-                               opacity = 1,
-                               values = stats$PCCCat,
-                               position = "bottomright",
-                               title = "Pearson Correlation Coefficient") }
+    #by variable
+    map1= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=PCCCat), data = map.dat[map.dat$var=="Air temperature",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="Pearson Correlation Coefficient")+
+      theme(strip.text.x = element_text(size = 16))
+    
+    map2= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=PCCCat), data = map.dat[map.dat$var=="Surface temperature",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="Pearson Correlation Coefficient")+
+      theme(strip.text.x = element_text(size = 16))
+    
+    map3= ggmap(us.map)+
+      geom_point(aes(x = Lon, y = Lat, color=PCCCat), data = map.dat[map.dat$var=="Radiation",],
+                 alpha = .5, size = 3)+facet_grid(dataset~var, switch="y")+theme_void()+
+      theme(legend.position = "bottom")+ scale_colour_manual(values=rev(heat.colors(4)), name="Pearson Correlation Coefficient")+
+      theme(strip.text.x = element_text(size = 16))
   }
   
-  return(map)
-  }
- 
-# map2= latticeView(map, map)
- 
-#Write out 
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-
-mapDatasets <- c("ERA5", "GLDAS", "GRIDMET", "NCEP")
-vars= c("Air temperature","Surface temperature","Radiation")
-stat.l= c("Bias", "RMSE", "PCC")
-
-#save maps
-#air temperature
-map11= getMap(m.var="Air temperature", m.dataset="ERA5", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map11, file="map11.png", remove_controls = c("zoomControl"))
-map11= image_read("map11.png")
-
-map21= getMap(m.var="Air temperature", m.dataset="GLDAS", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map21, file="map21.png", remove_controls = c("zoomControl"))
-map11= image_read("map11.png")
-
-map31= getMap(m.var="Air temperature", m.dataset="GRIDMET", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map31, file="map31.png", remove_controls = c("zoomControl"))
-
-map41= getMap(m.var="Air temperature", m.dataset="NCEP", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map41, file="map41.png", remove_controls = c("zoomControl"))
-
-#surface temperature
-map12= getMap(m.var="Surface temperature", m.dataset="ERA5", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map12, file="map12.png", remove_controls = c("zoomControl"))
-
-map22= getMap(m.var="Surface temperature", m.dataset="GLDAS", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map22, file="map22.png", remove_controls = c("zoomControl"))
-
-map32= getMap(m.var="Surface temperature", m.dataset="GRIDMET", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map32, file="map32.png", remove_controls = c("zoomControl"))
-
-map42= getMap(m.var="Surface temperature", m.dataset="NCEP", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map42, file="map42.png", remove_controls = c("zoomControl"))
-
-#radiation
-map13= getMap(m.var="Radiation", m.dataset="ERA5", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map13, file="map13.png", remove_controls = c("zoomControl"))
-
-map23= getMap(m.var="Radiation", m.dataset="GLDAS", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map23, file="map23.png", remove_controls = c("zoomControl"))
-
-map33= getMap(m.var="Radiation", m.dataset="GRIDMET", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map33, file="map33.png", remove_controls = c("zoomControl"))
-
-map43= getMap(m.var="Radiation", m.dataset="NCEP", m.stat="Bias", mo=7, add.legend=TRUE)
-setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/fig2_maps/")
-mapshot(map43, file="map43.png", remove_controls = c("zoomControl"))
-
-
-
-#read in and combine
-library(magick)
-input <- rep(logo, 12)
-image_montage(map13, geometry = 'x100+10+10', tile = '4x3', bg = 'pink', shadow = TRUE)
+  if(mo==1) map.all= map1+map2+map3+plot_annotation(
+    title = 'January 2017')
+  if(mo==7) map.all= map1+map2+map3+plot_annotation(
+    title = 'July 2017')
   
-montage <- image_montage(map11)  
- 
-#=======================
-library(ggmap)
+  return(map.all)
+}
 
-# compute the bounding box
-bbox <- c(-130, 25, -65, 50)
+m1= getMap(m.stat="Bias", mo=1)
+m7= getMap(m.stat="Bias", mo=7)
 
-# grab the map
-us.map <- get_map(location = bbox, source = "stamen", maptype = "terrain")
-ggmap(us.map)
-
-
+#plot
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+pdf("Fig2_Maps.pdf",height = 10, width = 10)
+m1 / m7 + plot_annotation(tag_levels = 'A')
+dev.off()
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
