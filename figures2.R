@@ -25,6 +25,9 @@ library(viridis)
 #library(mapview)
 library(ggmap)
 library(patchwork)
+#library(htmltools)
+#library(webshot)
+library(tidyr)
 
 #-----
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
@@ -196,6 +199,8 @@ get_figure_1 <- function() {
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------ 
 
+setwd(wd)
+
 stat <- function(method1, param, loc, month, statistic){
 
   # grab data to compare
@@ -262,6 +267,8 @@ get_table_1 <- function() {
   valuesCO1 <- c()
   valuesCO7 <- c()
   
+  setwd(wd)
+  
   for (method in methods){
     for (var in variables){
       for (statistic in statistics){
@@ -280,30 +287,115 @@ get_table_1 <- function() {
     }
   }
   
-  tab <- matrix(valuesCO7, ncol=9, byrow=TRUE)
-  tab <- cbind(methods, tab)
-  columns_temp = columns <- c("Methods", " ", "Air", "  ",
-                              "   ", "Surface", "    ",
-                              "     ", "Solar", "      ")
-  colnames(tab) <- columns_temp
-  tab <- data.table(tab)
-  formattable(tab, align =c("l","c","c","c","c","c","c","c","c","c"),
-              list(`Methods` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
-                   ` `= custom_color_tile('#ffedd6','#ff8c00'),
-                   `Air`= custom_color_tile('#00bd0d','#c4ffc8'),
-                   `  `= custom_color_tile('#d07af5','#f1d7fc'),
-                   `   `= custom_color_tile('#ffedd6','#ff8c00'),
-                   `Surface`= custom_color_tile('#00bd0d','#c4ffc8'),
-                   `    `= custom_color_tile('#d07af5','#f1d7fc'),
-                   `     `= custom_color_tile('#ffedd6','#ff8c00'),
-                   `Solar`= custom_color_tile('#00bd0d','#c4ffc8'),
-                   `      `= custom_color_tile('#d07af5','#f1d7fc')
-  ))
-}
+  #output data
+  tab1 <- matrix(valuesOR1, ncol=9, byrow=TRUE)
+  tab1 <- cbind(methods, tab1)
+  tab1= as.data.frame(tab1)
+  tab1$loc.mo="OR January"
+  tab1$Location="OR"
+  tab1$Month="January"
+  
+  tab2 <- matrix(valuesOR7, ncol=9, byrow=TRUE)
+  tab2 <- cbind(methods, tab2)
+  tab2= as.data.frame(tab2)
+  tab2$loc.mo="OR July"
+  tab2$Location="OR"
+  tab2$Month="July"
+  
+  tab3 <- matrix(valuesCO1, ncol=9, byrow=TRUE)
+  tab3 <- cbind(methods, tab3)
+  tab3= as.data.frame(tab3)
+  tab3$loc.mo="CO January"
+  tab3$Location="CO"
+  tab3$Month="January"
+  
+  tab4 <- matrix(valuesCO7, ncol=9, byrow=TRUE)
+  tab4 <- cbind(methods, tab4)
+  tab4= as.data.frame(tab4)
+  tab4$loc.mo="CO July"
+  tab4$Location="CO"
+  tab4$Month="July"
+  
+  tab.all= rbind(tab1, tab2, tab3, tab4)
+  colnames(tab.all)[2:10]=c("Air.PCC","Air.Bias","Air.RMSE","Surface.PCC","Surface.Bias","Surface.RMSE","Radiation.PCC","Radiation.Bias","Radiation.RMSE" )
+  
+  #to long format
+  tab.long= gather(tab.all, metric, value, Air.PCC:Radiation.RMSE)
+  tab.long$var="Air Temperature"
+  tab.long$var[grep("Surface", tab.long$metric)]="Surface Temperature"
+  tab.long$var[grep("Radiation", tab.long$metric)]="Radiation"
+  
+  #remove labels
+  tab.long$metric= sub("Air.", "", tab.long$metric)
+  tab.long$metric= sub("Surface.", "", tab.long$metric)
+  tab.long$metric= sub("Radiation.", "", tab.long$metric)
+  
+  #value to numeric
+  tab.long$value= as.numeric(tab.long$value)
+  
+  #spread metrics
+  tab.wide <- spread(tab.long, metric, value)
+  
+  #-------
+  # tab <- matrix(valuesCO7, ncol=9, byrow=TRUE)
+  # tab <- cbind(methods, tab)
+  # 
+  # columns_temp = columns <- c("Methods", " ", "Air", "  ",
+  #                             "   ", "Surface", "    ",
+  #                             "     ", "Solar", "      ")
+  # colnames(tab) <- columns_temp
+  # tab <- data.table(tab)
+  # formattable(tab, align =c("l","c","c","c","c","c","c","c","c","c"),
+  #             list(`Methods` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")),
+  #                  ` `= custom_color_tile('#ffedd6','#ff8c00'),
+  #                  `Air`= custom_color_tile('#00bd0d','#c4ffc8'),
+  #                  `  `= custom_color_tile('#d07af5','#f1d7fc'),
+  #                  `   `= custom_color_tile('#ffedd6','#ff8c00'),
+  #                  `Surface`= custom_color_tile('#00bd0d','#c4ffc8'),
+  #                  `    `= custom_color_tile('#d07af5','#f1d7fc'),
+  #                  `     `= custom_color_tile('#ffedd6','#ff8c00'),
+  #                  `Solar`= custom_color_tile('#00bd0d','#c4ffc8'),
+  #                  `      `= custom_color_tile('#d07af5','#f1d7fc')
+  # ))
+
+  return(tab.wide)
+  }
 
 # get_table_1 is wrapped in a function, but I usually run through it step by 
 # step and check "tab <- matrix(valuesCO7, ncol=9, byrow=TRUE)" values___ to 
 # get what I need
+
+export_formattable <- function(f, file, width = "100%", height = NULL, 
+                               background = "white", delay = 0.2)
+{
+  w <- as.htmlwidget(f, width = width, height = height)
+  path <- html_print(w, background = background, viewer = NULL)
+  url <- paste0("file:///", gsub("\\\\", "/", normalizePath(path)))
+  webshot(url,
+          file = file,
+          selector = ".formattable_widget",
+          delay = delay)
+}
+
+#export_formattable(tab1, "tab1.png")
+
+#----
+#plot
+
+tab.wide= get_table_1()
+
+#order facets
+tab.wide$var= factor(tab.wide$var, levels=c("Air Temperature", "Surface Temperature", "Radiation"), ordered=TRUE)
+
+met.fig=ggplot(data=tab.wide, aes(x=PCC, y = RMSE, size=Bias, color=methods, shape=loc.mo))+ 
+  geom_point()+facet_grid(var~., scales="free")+
+  theme_bw()+ylab("Root mean squared error")+xlab("Pearson's correlation coefficient")+
+  scale_shape_manual(values=c(0,15,1,16))+ labs(color="Dataset", shape = "Location & Month")
+  
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+pdf("Fig_Metrics.pdf",height = 10, width =5)
+met.fig
+dev.off()
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
