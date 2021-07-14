@@ -987,8 +987,8 @@ pdf("Fig4_Metrics.pdf",height = 10, width = 12)
 ggplot(data=m.long, aes(x=dataset, y=value, color=site,lty=month, group=group))+ 
   facet_grid(metric~column, scales="free", switch="y")+geom_point(size=2)+geom_line(lwd=0.8)+
   geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")+
-  scale_color_manual(values=c("darkorange", "blue"))+theme(legend.position="bottom")
-
+  scale_color_manual(values=c("darkorange", "blue"))+theme(legend.position="bottom")+
+  scale_linetype_manual(values=c("dotted", "solid"))
 dev.off()
 
 
