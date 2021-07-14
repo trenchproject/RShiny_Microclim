@@ -299,7 +299,7 @@ for(metk in 1:length(methods)){
   Ts.fig1= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Air temperature","Surface temperature"),], aes(x=dh, y=value, color=dataset))+ 
     facet_grid(LocMo~metric, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
     theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
-    guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") 
+    guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset")
   
   #add GRIDMET
   Ts.gm= Ts.wide[Ts.wide$dataset=="GRIDMET",]
@@ -319,13 +319,16 @@ for(metk in 1:length(methods)){
   
   Ts.fig1= Ts.fig1 + geom_point(data=Ts.new1, size=1.5, aes(x=dh, y=value, color=dataset))+
     geom_point(data=Ts.new2, size=1.5, aes(x=dh, y=value, color=dataset))+
-    guides(size=FALSE)+theme(legend.position = "none")
+    guides(size=FALSE)+
+    theme(legend.position = "bottom")+ 
+    guides(fill = guide_legend(override.aes = list(shape = NA)))
   
   #radiation plot
   Ts.fig2= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Radiation"),], aes(x=dh, y=value, color=dataset))+ 
     facet_grid(LocMo~metric, scales="free_y")+geom_line(aes(alpha=0.5))+
     theme_bw()+ylab("Radiation (W/m2)")+xlab("Date")+
-    guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())
+    guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())+
+    theme(legend.position = "none")
   
 #plot together
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
@@ -752,7 +755,7 @@ getOpTemp <- function(loc, mo, method) {
   A=sa_from_mass(8.9, "lizard")
   
   # characteristic dimension -- cube root of volume
-  D=(volume_from_length(l=0.063,"lizard"))^(1/3)
+  D=(volume_from_length(l=0.063,"lizard"))^(1/3) #SVL from Levy 2017
   
   df= partition_solar_radiation(method="Liu_Jordan", kt=0.6) # diffuse fraction of solar radiation, assumes kt=0.6. 
   
@@ -801,6 +804,11 @@ getOpTemp <- function(loc, mo, method) {
     
     op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=(volume_from_length(l=0.063,"lizard"))^(1/3), psa_dir=0.6, psa_ref=0.4, psa_air=0.95, psa_g=0.05, 
                      T_g=sTemp$Data, T_a=aTemp$Data, Qabs=Qabs, epsilon=0.95, H_L=H_L, K=0.15)
+    
+    #Compare with another version of Gates
+    #op_temp = mapply(Tb_Gates2, A=sa_from_mass(8.9, "lizard"), D=(volume_from_length(l=0.063,"lizard"))^(1/3), 
+    #             T_g=sTemp$Data, T_a=aTemp$Data, Qabs=Qabs, epsilon=0.95, V=0.1)
+    
     op_temp = op_temp - 273.15 # K to C
     
 
@@ -868,18 +876,29 @@ To.long$ForcingData= factor(To.long$ForcingData, levels=c("USCRN","GLDAS","NCEP"
 To.long$column= factor(To.long$column, levels=c("Environmental Forcing Data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
 
 #Specify those vertically scaled to 1cm
-To.long$Scaled=0
-To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] =1
+#To.long$Scaled=0
+#To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] =1
 
-To.fig= ggplot(data=To.long, aes(x=date, y=To, color=ForcingData, lty=factor(Scaled)))+ 
+To.fig= ggplot(data=To.long, aes(x=date, y=To, color=ForcingData))+ 
   facet_grid(.~column, scales="free", switch="y")+geom_line(aes(alpha=0.5))+
   theme_bw()+ylab("Operative Temperature (°C)")+xlab("Date")+ggtitle(titles[ind])+
-  guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data") 
-#+theme(legend.position = "bottom")
+  guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data") +
+  theme(legend.position = "bottom")
 
 To.fig= To.fig + geom_hline(yintercept=43, color="red", lty="dashed")+
   annotate("rect", xmin = To.long$date[1], xmax = max(To.long$date, na.rm=TRUE), ymin = 32, ymax = 37,
            alpha = .3,fill = "darkgreen")
+
+#add USCRN 1cm on top and to middle column
+To.obs1= To.long[To.long$dataset=="USCRN1cm",]
+To.obs2= To.obs1
+To.obs2$column= "Microclimate Model Output"
+To.obs= rbind(To.obs1, To.obs2)
+
+To.fig= To.fig+geom_line(data=To.obs,aes(alpha=0.5))
+
+#remove legend except for last combination
+if(ind<4) To.fig= To.fig + theme(legend.position = "none")
 
 return(To.fig)
 }
@@ -889,7 +908,9 @@ setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/"
 
 pdf("Fig3_To.pdf",height = 12, width = 12)
 
-PlotTo(1,1, 1) +PlotTo(1,2, 2) +PlotTo(2,1, 3) +PlotTo(2,2, 4) +plot_layout(ncol = 1)+ plot_layout(guides = "collect")
+PlotTo(1,1, 1) +PlotTo(1,2, 2) +PlotTo(2,1, 3) +PlotTo(2,2, 4) +plot_layout(ncol = 1) + plot_layout(heights = c(1,1,1,1.2))
+
+# + plot_layout(guides = "collect")
 
 dev.off()
 
@@ -933,7 +954,7 @@ for(loc in 1:2){
     m1= as.data.frame(rbind(CalcMetric(loc, mo,"avgTe"),CalcMetric(loc, mo,"CTmax_hours"),CalcMetric(loc, mo,"activity_hours"),CalcMetric(loc, mo,"avgQmet") ))
     m1$site= c("CO","OR")[loc]
     m1$month= c("January","July")[mo]
-    m1$metric=c("Δ Operative Temperature (°C)","Δ Hours above CTmax","Δ Potential Hours of Activity","Δ Metabolism (W)")
+    m1$metric=c("Delta Operative Temperature (°C)","Delta Hours above CTmax","Delta Potential Hours of Activity","Delta Metabolism (W)")
     
     if(loc==1&mo==1)m.all=m1
     if(!(loc==1&mo==1))m.all=rbind(m.all,m1)
@@ -956,16 +977,17 @@ m.long$column[m.long$dataset %in% c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","
 
 #make ordered factors
 m.long$column= factor(m.long$column, levels=c("Environmental Forcing Data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
-m.long$metric= factor(m.long$metric, levels=c("Δ Operative Temperature (°C)","Δ Metabolism (W)","Δ Potential Hours of Activity","Δ Hours above CTmax"), ordered=TRUE)
+m.long$metric= factor(m.long$metric, levels=c("Delta Operative Temperature (°C)","Delta Metabolism (W)","Delta Potential Hours of Activity","Delta Hours above CTmax"), ordered=TRUE)
 
 #plot
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 
-pdf("Fig4_Metrics.pdf",height = 10, width = 14)
+pdf("Fig4_Metrics.pdf",height = 10, width = 12)
 
 ggplot(data=m.long, aes(x=dataset, y=value, color=site,lty=month, group=group))+ 
-  facet_grid(metric~column, scales="free", switch="y")+geom_point()+geom_line()+
-  geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")
+  facet_grid(metric~column, scales="free", switch="y")+geom_point(size=2)+geom_line(lwd=0.8)+
+  geom_hline(yintercept=0)+theme_bw()+ylab("")+xlab("Environmental Data Source")+
+  scale_color_manual(values=c("darkorange", "blue"))+theme(legend.position="bottom")
 
 dev.off()
 
