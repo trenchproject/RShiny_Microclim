@@ -60,7 +60,7 @@ grabGRID <- function(param, loc, month) {
     array <- array - 273.2
   }
   
-  df <- data.frame(Date = as.Date(days), 
+  df <- data.frame(Date = as.Date(days, format="%Y-%m-%d"), 
                    Data = array)
   
   return (df)

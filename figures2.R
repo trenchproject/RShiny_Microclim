@@ -192,6 +192,149 @@ get_figure_1 <- function() {
 # RUN below to get figure 1
 #get_figure_1()
 
+#=================================
+#GGPLOT VERSION
+
+getEnvDat <- function(loc, mo, method) {
+  
+  # Get variable name
+  aTemp.v <- varsDf["Air temperature", method]
+  sTemp.v <- varsDf["Surface temperature", method]
+  radiation.v<- varsDf["Radiation", method]
+  
+  # Get air temperature data
+  aTemp <- grabAnyData(method, aTemp.v, loc, mo)
+  
+  #make default vectors
+  sTemp=aTemp
+  sTemp$Data=NA
+  radiation=aTemp
+  radiation$Data=NA
+  
+  #get min as well for Gridmet
+  tmin=aTemp
+  tmin$Data=NA
+  
+  if(method == "GRIDMET"){
+    tmin <- grabAnyData(method, "tmin", loc, mo)
+  }
+  if(method == "NEW01"){
+    tmin <- grabAnyData(method, "TMINN", loc, mo)
+  }
+  
+  #get surface temperature data
+   if(!is.na(sTemp.v)) sTemp <- grabAnyData(method, sTemp.v, loc, mo)
+   
+  # Get radiation data
+  if(!is.na(radiation.v)) radiation <- grabAnyData(method, radiation.v, loc, mo)
+  
+  dates <- as.character(aTemp$Date)
+  
+  edat= cbind(dates, aTemp$Data, sTemp$Data, radiation$Data, tmin$Data)
+  
+  return(edat)
+}
+
+setwd(wd)
+
+#make array to store operative temperature data
+methods <- c("GLDAS","NCEP","ERA5","GRIDMET","USCRN","NEW01")
+
+Ts= array(NA, dim=c(2,2,length(methods),744,5), 
+          dimnames = list(site=c("CO","OR"),month=c("January","July"), dataset=c(methods), t=NULL, dat=c("Date","Ta","Ts","rad","tmin")) )
+
+for(metk in 1:length(methods)){
+  out=getEnvDat("CO", 1, methods[metk])
+  Ts[1,1,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("CO", 7, methods[metk])
+  Ts[1,2,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("OR", 1, methods[metk])
+  Ts[2,1,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("OR", 7, methods[metk])
+  Ts[2,2,metk,1:nrow(out),]=out
+}
+
+#PLOT
+  titles=c("Weld County, Colorado, January 2017", "Weld County, Colorado, July 2017","John Day, Oregon, January 2017", "John Day, Oregon, July 2017")
+  
+  #Gather data in long format
+  Ts1 <- reshape2::melt(Ts[1,1,,,], value.name = "value")
+  Ts1$LocMo= "Colorado, January 2017"
+  Ts2 <- reshape2::melt(Ts[1,2,,,], value.name = "value")
+  Ts2$LocMo= "Colorado, July 2017"
+  Ts3 <- reshape2::melt(Ts[2,1,,,], value.name = "value")
+  Ts3$LocMo= "Oregon, January 2017"
+  Ts4 <- reshape2::melt(Ts[2,2,,,], value.name = "value")
+  Ts4$LocMo= "Oregon, July 2017"
+  Ts.long= rbind(Ts1,Ts2,Ts3,Ts4)
+  
+  #spread metrics
+  Ts.wide <- spread(Ts.long, dat, value)
+  Ts.wide$Ta= as.numeric(Ts.wide$Ta)
+  Ts.wide$Ts= as.numeric(Ts.wide$Ts)
+  Ts.wide$rad= as.numeric(Ts.wide$rad)
+  Ts.wide$tmin= as.numeric(Ts.wide$tmin)
+  dates= as.POSIXct(Ts.wide$Date, format="%Y-%m-%d %H:%M")
+  dates[Ts.wide$dataset=="GRIDMET"]= as.POSIXct(Ts.wide$Date[Ts.wide$dataset=="GRIDMET"], format="%Y-%m-%d")
+  Ts.wide$Date= dates
+  
+  #make environmental data long
+  Ts.wide= gather(Ts.wide, metric, value, Ta:tmin)
+  #change metric names
+  Ts.wide$metric[Ts.wide$metric=="Ta"]="Air temperature"
+  Ts.wide$metric[Ts.wide$metric=="Ts"]="Surface temperature"
+  Ts.wide$metric[Ts.wide$metric=="rad"]="Radiation"
+  
+  #Make factor
+  Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN","GLDAS","NCEP","ERA5","GRIDMET","NEW01"), ordered=TRUE)
+  
+  #Get day of month
+  Ts.wide$day= as.numeric(format(Ts.wide$Date, format = "%d"))
+  Ts.wide$hour= as.numeric(format(Ts.wide$Date, format = "%H"))
+  Ts.wide$dh= Ts.wide$day + Ts.wide$hour/24
+  
+  Ts.fig1= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Air temperature","Surface temperature"),], aes(x=dh, y=value, color=dataset))+ 
+    facet_grid(LocMo~metric, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
+    theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
+    guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") 
+  
+  #add GRIDMET
+  Ts.gm= Ts.wide[Ts.wide$dataset=="GRIDMET",]
+  Ts.gm= na.omit(Ts.gm[Ts.gm$metric %in%c("tmin"), ])
+  Ts.gm$metric="Air temperature"
+  
+  Ts.fig1= Ts.fig1 + geom_line(data=Ts.gm, aes(x=dh, y=value, color=dataset))+
+    geom_point(data=Ts.new2, size=1.5, aes(x=dh, y=value, color=dataset))+
+    guides(size=FALSE)
+  
+  #add NEW01
+  Ts.new= Ts.wide[Ts.wide$dataset=="NEW01",]
+  Ts.new1= na.omit(Ts.new[Ts.new$metric %in%c("Air temperature","Surface temperature"), ])
+  #get min
+  Ts.new2= na.omit(Ts.new[Ts.new$metric %in%c("tmin"), ])
+  Ts.new2$metric="Air temperature"
+  
+  Ts.fig1= Ts.fig1 + geom_point(data=Ts.new1, size=1.5, aes(x=dh, y=value, color=dataset))+
+    geom_point(data=Ts.new2, size=1.5, aes(x=dh, y=value, color=dataset))+
+    guides(size=FALSE)+theme(legend.position = "none")
+  
+  #radiation plot
+  Ts.fig2= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Radiation"),], aes(x=dh, y=value, color=dataset))+ 
+    facet_grid(LocMo~metric, scales="free_y")+geom_line(aes(alpha=0.5))+
+    theme_bw()+ylab("Radiation (W/m2)")+xlab("Date")+
+    guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())
+  
+#plot together
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+
+pdf("Fig1_EnvDat.pdf",height = 12, width = 12)
+
+Ts.fig1+Ts.fig2 + plot_layout(widths = c(2, 1))
+
+dev.off()
 
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
@@ -586,6 +729,7 @@ dev.off()
 # ------------------------------------------------------------------
 
 getOpTemp <- function(loc, mo, method) {
+  setwd(wd)
   
   # Defaults
   T_g_OR1 = .27 - 5 + 273.15 # surface temperature average for oregon january
@@ -660,7 +804,7 @@ getOpTemp <- function(loc, mo, method) {
     op_temp = op_temp - 273.15 # K to C
     
 
-    dates <- aTemp$Date
+    dates <- as.character(aTemp$Date)
     
     return(cbind(dates, op_temp) )
     
@@ -700,7 +844,9 @@ titles=c("Weld County, Colorado, January 2017", "Weld County, Colorado, July 201
 To.long <- reshape2::melt(To[loc,mo,,,1], value.name = "date")
 To.long2 <- reshape2::melt(To[loc,mo,,,2], value.name = "value")
 To.long$To= as.numeric(To.long2$value)
-To.long$date= as.POSIXct(To.long$date, format="%Y-%m-%d %H:%M")
+dates=as.POSIXct(To.long$date, format="%Y-%m-%d %H:%M")
+dates[To.long$dataset=="GRIDMET"]= as.POSIXct(To.long$date[To.long$dataset=="GRIDMET"], format="%Y-%m-%d")
+To.long$date= dates
 
 #make columns
 To.long$column= NA
