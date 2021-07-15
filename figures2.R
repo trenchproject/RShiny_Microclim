@@ -93,108 +93,6 @@ nameDf <- data.frame(row.names = variables,
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 
-makeTimeSeries <- function(param, loc, month, methods) {
-  p <- plot_ly()
-
-  for (method in methods) {
-    # get variable name for dataset
-    inputVar <- varsDf[param, method] 
-
-    # if this dataset has this variable
-    if (!is.na(inputVar)) {
-      # get variable from dataset
-      df <- grabAnyData(method, inputVar, loc, month) 
-
-      # add data to the plot 
-      if(method=="NEW01") p <- p %>% add_trace(x = as.POSIXct(df$Date), y = df$Data, name = method, marker = list(color = colorsDf["color", method]), mode = 'markers')
-      else p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = method, line = list(color = colorsDf["color", method]))
-    }
-  }
-
-  # Adding  GRIDMET and NEW01 Tmin when Air temperature is selected
-  if (param == "Air temperature") {
-    for (method in methods) {
-      inputVar <- varsDf["Tmin", method]
-      if (method %in% c("GRIDMET", "NEW01")) { 
-        # get TMIN from dataset
-        df <- grabAnyData(method, inputVar, loc, month)
-
-        # add data to the plot 
-        if(method=="NEW01") p <- p %>% add_trace(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), marker = list(color = colorsDf["color", method]), mode = 'markers')
-        else p <- p %>% add_lines(x = as.POSIXct(df$Date), y = df$Data, name = paste(method, "Tmin"), line = list(color = colorsDf["color", method]))
-      }
-    }
-  }
-
-  p   # return the plot
-
-}
-
-get_figure_1 <- function() {
-  methods <- c("GLDAS","NCEP","ERA5","GRIDMET","USCRN","NEW01")
-
-  # getting individual plots
-  ORair1 <- makeTimeSeries("Air temperature", "OR", 1, methods)
-  COair1 <- makeTimeSeries("Air temperature", "CO", 1, methods)
-
-  ORsurf1 <- makeTimeSeries("Surface temperature", "OR", 1, methods)
-  COsurf1 <- makeTimeSeries("Surface temperature", "CO", 1, methods)
-
-  ORrad1 <- makeTimeSeries("Radiation", "OR", 1, methods)
-  COrad1 <- makeTimeSeries("Radiation", "CO", 1, methods)
-
-  ORair7 <- makeTimeSeries("Air temperature", "OR", 7, methods) %>%
-    layout(yaxis = list(title = "John Day, Oregon"))
-  COair7 <- makeTimeSeries("Air temperature", "CO", 7, methods) %>%
-    layout(yaxis = list(title = "Weld county, Colorado"))
-
-  ORsurf7 <- makeTimeSeries("Surface temperature", "OR", 7, methods)
-  COsurf7 <- makeTimeSeries("Surface temperature", "CO", 7, methods)
-
-  ORrad7 <- makeTimeSeries("Radiation", "OR", 7, methods)
-  COrad7 <- makeTimeSeries("Radiation", "CO", 7, methods)
-
-
-  # creating figure
-  fig1 <- subplot(ORair1, ORair7, nrows = 2, titleX = TRUE, titleY= TRUE, shareX = FALSE) %>%
-    layout(showlegend = FALSE)
-
-  fig2 <- subplot(ORsurf1, ORsurf7, nrows = 2, titleX = TRUE, shareY = TRUE, shareX = FALSE) %>%
-    layout(showlegend = FALSE)
-
-  fig3 <- subplot(ORrad1, ORrad7, nrows = 2, titleX = TRUE, shareY = TRUE, shareX = FALSE) %>%
-    layout(showlegend = FALSE)
-
-  figOR <- subplot(list(fig1,fig2,fig3), titleX = TRUE, shareX = FALSE, titleY = TRUE, shareY = FALSE) %>%
-    layout(showlegend = FALSE)
-
-
-
-  fig11 <- subplot(COair1, COair7, nrows = 2, titleX = TRUE, titleY= TRUE, shareX = FALSE) %>%
-    layout(showlegend = FALSE)
-
-  fig21 <- subplot(COsurf1, COsurf7, nrows = 2, titleX = TRUE, shareY = TRUE, shareX = FALSE) %>%
-    layout(showlegend = FALSE)
-
-  fig31 <- subplot(COrad1, COrad7, nrows = 2, titleX = TRUE, shareY = TRUE, shareX = FALSE) %>%
-    layout(showlegend = FALSE)
-
-  figCO <- subplot(list(fig11,fig21,fig31), titleX = TRUE, shareX = FALSE, titleY = TRUE, shareY = FALSE) %>%
-    layout(showlegend = FALSE)
-
-
-  fig <- subplot(figOR, figCO, nrows = 2, titleX = TRUE, shareX = FALSE, titleY = TRUE, shareY = FALSE) %>%
-    layout(showlegend=FALSE, title="Air temperature (˚C)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Surface temperature (˚C)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Solar radiation (W/m2)")
-
-  fig  # return figure
-}
-
-# RUN below to get figure 1
-#get_figure_1()
-
-#=================================
-#GGPLOT VERSION
-
 getEnvDat <- function(loc, mo, method) {
   
   # Get variable name
@@ -334,6 +232,99 @@ for(metk in 1:length(methods)){
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 
 pdf("Fig1_EnvDat.pdf",height = 12, width = 12)
+
+Ts.fig1+Ts.fig2 + plot_layout(widths = c(2, 1))
+
+dev.off()
+
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# ------------------ SUPPLEMENTARY TIME SERIES ---------------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------ 
+
+setwd(wd)
+
+#make array to store operative temperature data
+methods <- c("micro_global","micro_ncep","micro_era5","micro_usa","USCRN1cm")
+#methods <- c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","microclimUS", "USCRN1cm")
+
+Ts= array(NA, dim=c(2,2,length(methods),744,5), 
+          dimnames = list(site=c("CO","OR"),month=c("January","July"), dataset=c(methods), t=NULL, 
+                          dat=c("Date","Ta","Ts","rad","tmin")) )
+
+for(metk in 1:length(methods)){
+  out=getEnvDat("CO", 1, methods[metk])
+  Ts[1,1,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("CO", 7, methods[metk])
+  Ts[1,2,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("OR", 1, methods[metk])
+  Ts[2,1,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("OR", 7, methods[metk])
+  Ts[2,2,metk,1:nrow(out),]=out
+}
+
+#PLOT
+titles=c("Weld County, Colorado, January 2017", "Weld County, Colorado, July 2017","John Day, Oregon, January 2017", "John Day, Oregon, July 2017")
+
+#Gather data in long format
+Ts1 <- reshape2::melt(Ts[1,1,,,], value.name = "value")
+Ts1$LocMo= "Colorado, January 2017"
+Ts2 <- reshape2::melt(Ts[1,2,,,], value.name = "value")
+Ts2$LocMo= "Colorado, July 2017"
+Ts3 <- reshape2::melt(Ts[2,1,,,], value.name = "value")
+Ts3$LocMo= "Oregon, January 2017"
+Ts4 <- reshape2::melt(Ts[2,2,,,], value.name = "value")
+Ts4$LocMo= "Oregon, July 2017"
+Ts.long= rbind(Ts1,Ts2,Ts3,Ts4)
+
+#spread metrics
+Ts.wide <- spread(Ts.long, dat, value)
+Ts.wide$Ta= as.numeric(Ts.wide$Ta)
+Ts.wide$Ts= as.numeric(Ts.wide$Ts)
+Ts.wide$rad= as.numeric(Ts.wide$rad)
+Ts.wide$tmin= as.numeric(Ts.wide$tmin)
+dates= as.POSIXct(Ts.wide$Date, format="%Y-%m-%d %H:%M")
+dates[Ts.wide$dataset=="GRIDMET"]= as.POSIXct(Ts.wide$Date[Ts.wide$dataset=="GRIDMET"], format="%Y-%m-%d")
+Ts.wide$Date= dates
+
+#make environmental data long
+Ts.wide= gather(Ts.wide, metric, value, Ta:tmin)
+#change metric names
+Ts.wide$metric[Ts.wide$metric=="Ta"]="Air temperature"
+Ts.wide$metric[Ts.wide$metric=="Ts"]="Surface temperature"
+Ts.wide$metric[Ts.wide$metric=="rad"]="Radiation"
+
+#Make factor
+Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN1cm","micro_global","micro_ncep","micro_era5","micro_usa"), ordered=TRUE)
+#Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm","microclimUS","microclim"), ordered=TRUE)
+
+#Get day of month
+Ts.wide$day= as.numeric(format(Ts.wide$Date, format = "%d"))
+Ts.wide$hour= as.numeric(format(Ts.wide$Date, format = "%H"))
+Ts.wide$dh= Ts.wide$day + Ts.wide$hour/24
+
+Ts.fig1= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Air temperature","Surface temperature"),], aes(x=dh, y=value, color=dataset))+ 
+  facet_grid(LocMo~metric, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
+  theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
+  guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset")+
+  theme(legend.position = "bottom")
+
+#radiation plot
+Ts.fig2= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Radiation"),], aes(x=dh, y=value, color=dataset))+ 
+  facet_grid(LocMo~metric, scales="free_y")+geom_line(aes(alpha=0.5))+
+  theme_bw()+ylab("Radiation (W/m2)")+xlab("Date")+
+  guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())+
+  theme(legend.position = "none")
+
+#plot together
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+
+pdf("FigS1_EnvDat_MicroclimateModel.pdf",height = 12, width = 12)
+#pdf("FigS2_EnvDat_MicroclimateDatasets.pdf",height = 12, width = 12)
 
 Ts.fig1+Ts.fig2 + plot_layout(widths = c(2, 1))
 
@@ -991,8 +982,156 @@ ggplot(data=m.long, aes(x=dataset, y=value, color=site,lty=month, group=group))+
   scale_linetype_manual(values=c("dotted", "solid"))
 dev.off()
 
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+# -------------- SUPPLEMENTARY PLOT COMPARE Ta, Ts, To--------------
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------ 
+#Plot Ta, Ts, To
 
+methods <- c("USCRN","USCRN1cm")
 
+setwd(wd)
 
+Ts= array(NA, dim=c(2,2,length(methods),744,5), 
+          dimnames = list(site=c("CO","OR"),month=c("January","July"), dataset=c(methods), t=NULL, 
+                          dat=c("Date","Ta","Ts","rad","tmin")) )
 
+for(metk in 1:length(methods)){
+  out=getEnvDat("CO", 1, methods[metk])
+  Ts[1,1,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("CO", 7, methods[metk])
+  Ts[1,2,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("OR", 1, methods[metk])
+  Ts[2,1,metk,1:nrow(out),]=out
+  
+  out=getEnvDat("OR", 7, methods[metk])
+  Ts[2,2,metk,1:nrow(out),]=out
+}
 
+#make array to store operative temperature data
+methods= c("USCRN", "USCRN1cm")
+
+To= array(NA, dim=c(2,2,length(methods),744,2), 
+          dimnames = list(site=c("CO","OR"),month=c("January","July"), dataset=c(methods), t=NULL, dat=c("To","Date")) )
+
+for(metk in 1:length(methods)){
+  out=getOpTemp("CO", 1, methods[metk])
+  To[1,1,metk,1:nrow(out),]=out
+  
+  out=getOpTemp("CO", 7, methods[metk])
+  To[1,2,metk,1:nrow(out),]=out
+  
+  out=getOpTemp("OR", 1, methods[metk])
+  To[2,1,metk,1:nrow(out),]=out
+  
+  out=getOpTemp("OR", 7, methods[metk])
+  To[2,2,metk,1:nrow(out),]=out
+}
+
+#PLOT
+#Gather data in long format
+Ts1 <- reshape2::melt(Ts[1,1,,,], value.name = "value")
+Ts1 <- spread(Ts1, dat, value)
+To1<- reshape2::melt(To[1,1,,,], value.name = "value")
+To1 <- spread(To1, dat, value)
+Ts1$To=To1$Date
+Ts1$LocMo= "Colorado, January 2017"
+
+Ts2 <- reshape2::melt(Ts[1,2,,,], value.name = "value")
+Ts2 <- spread(Ts2, dat, value)
+To2<- reshape2::melt(To[1,2,,,], value.name = "value")
+To2 <- spread(To2, dat, value)
+Ts2$To=To2$Date
+Ts2$LocMo= "Colorado, July 2017"
+
+Ts3 <- reshape2::melt(Ts[2,1,,,], value.name = "value")
+Ts3 <- spread(Ts3, dat, value)
+To3<- reshape2::melt(To[2,1,,,], value.name = "value")
+To3 <- spread(To3, dat, value)
+Ts3$To=To3$Date
+Ts3$LocMo= "Oregon, January 2017"
+
+Ts4 <- reshape2::melt(Ts[2,2,,,], value.name = "value")
+Ts4 <- spread(Ts4, dat, value)
+To4<- reshape2::melt(To[2,2,,,], value.name = "value")
+To4 <- spread(To4, dat, value)
+Ts4$To=To4$Date
+Ts4$LocMo= "Oregon, July 2017"
+
+Ts.long= rbind(Ts1,Ts2,Ts3,Ts4)
+
+#-----
+#compare values
+ts= Ts.long
+ts$Date= as.POSIXct(ts$Date, format="%Y-%m-%d %H:%M")
+ts$day= as.numeric(format(ts$Date, format = "%d"))
+ts$hour= as.numeric(format(ts$Date, format = "%H"))
+ts$dh= ts$day + ts$hour/24
+
+ts$LocMo_dh= paste0(ts$LocMo,ts$dh)
+
+#make numeric
+ts$Ta= as.numeric(ts$Ta)
+ts$Ts= as.numeric(ts$Ts)
+ts$To= as.numeric(ts$To)
+
+ts1= ts[which(ts$dataset=="USCRN"),]
+ts2= ts[which(ts$dataset=="USCRN1cm"),]
+
+#check match
+#match(ts1$LocMo_dh,ts2$LocMo_dh)
+
+#combine
+names(ts2)=paste0(names(ts2),"_1cm")
+ts.all=cbind(ts1,ts2[,c(4:8)])
+
+#differences
+ts.all$Ta_Ta1cm= ts.all$Ta-ts.all$Ta_1cm
+ts.all$Ta_To1cm= ts.all$Ta-ts.all$To_1cm
+ts.all$To_To1cm= ts.all$To-ts.all$To_1cm
+
+#mean by LocMo
+aggregate(ts.all[,18:21], by=list(ts.all$LocMo), FUN="mean", na.rm=TRUE)
+aggregate(ts.all[,18:21], by=list(ts.all$LocMo), FUN="max", na.rm=TRUE)
+aggregate(ts.all[,18:21], by=list(ts.all$LocMo), FUN="min", na.rm=TRUE)
+
+#-----
+
+#Longer
+Ts.long= gather(Ts.long, metric, value, Ta:To)
+
+#Make numeric
+Ts.long$value= as.numeric(Ts.long$value)
+
+#Make factor
+Ts.long$dataset= factor(Ts.long$dataset, levels=c("USCRN","USCRN1cm"), ordered=TRUE)
+
+#Get day of month
+Ts.long$Date= as.POSIXct(Ts.long$Date, format="%Y-%m-%d %H:%M")
+Ts.long$day= as.numeric(format(Ts.long$Date, format = "%d"))
+Ts.long$hour= as.numeric(format(Ts.long$Date, format = "%H"))
+Ts.long$dh= Ts.long$day + Ts.long$hour/24
+
+#Restrict variables
+Ts.long= Ts.long[Ts.long$metric %in% c("Ta","To","Ts"),]
+Ts.long$metric[grep("Ta", Ts.long$metric)]="Air"
+Ts.long$metric[grep("Ts", Ts.long$metric)]="Surface"
+Ts.long$metric[grep("To", Ts.long$metric)]="Operative"
+
+Tfig= ggplot(data=Ts.long, aes(x=dh, y=value, color=metric))+ 
+  facet_grid(LocMo~dataset, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
+  theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
+  guides(alpha=FALSE)+scale_color_viridis_d(name="Temperature")+
+  theme(legend.position = "bottom")
+
+#plot together
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+
+pdf("FigSx_TComp.pdf",height = 12, width = 12)
+
+Tfig
+
+dev.off()
