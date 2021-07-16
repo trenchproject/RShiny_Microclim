@@ -694,7 +694,7 @@ shinyServer <- function(input, output, session) {
         # Use selected method to calculate operative temperature
         if (input$op3=="gates") {
           
-          op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=(volume_from_length(l=0.063,"lizard"))^(1/3), psa_dir=0.6, psa_ref=0.4, psa_air=0.95, psa_g=0.05, 
+          op_temp = mapply(Tb_Gates, A=sa_from_mass(8.9, "lizard"), D=(volume_from_length(l=0.063,"lizard"))^(1/3), psa_dir=0.5, psa_ref=0.5, psa_air=0.95, psa_g=0.05, 
                            T_g=sTemp$Data, T_a=aTemp$Data, Qabs=Qabs, epsilon=0.95, H_L=H_L, K=0.15)
           fig <- fig %>% layout(title="Small Ectoterm Operative Temperature (Gates Model)")
           
