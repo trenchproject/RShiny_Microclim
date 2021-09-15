@@ -25,9 +25,9 @@ library(viridis)
 #library(mapview)
 library(ggmap)
 library(patchwork)
-#library(htmltools)
-#library(webshot)
 library(tidyr)
+library("htmltools")
+library("webshot")  
 
 #-----
 variables <- c("Surface temperature", "Air temperature", "Soil temperature (1 m deep)", "Radiation", "Wind speed", "Precipitation", "Relative humidity", "Soil moisture", "Snow Depth")
@@ -232,6 +232,18 @@ for(metk in 1:length(methods)){
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 
 pdf("Fig1_EnvDat.pdf",height = 12, width = 12)
+
+Ts.fig1+Ts.fig2 + plot_layout(widths = c(2, 1))
+
+dev.off()
+
+## 2 week cropped figure
+
+Ts.fig1= Ts.fig1 + xlim(0,15)
+
+Ts.fig2= Ts.fig2 + xlim(0,15)
+
+pdf("Fig1_2week.pdf",height = 12, width = 12)
 
 Ts.fig1+Ts.fig2 + plot_layout(widths = c(2, 1))
 
@@ -496,11 +508,8 @@ get_table_1 <- function() {
   # ))
 
   return(tab.wide)
-  }
+}
 
-# get_table_1 is wrapped in a function, but I usually run through it step by 
-# step and check "tab <- matrix(valuesCO7, ncol=9, byrow=TRUE)" values___ to 
-# get what I need
 
 export_formattable <- function(f, file, width = "100%", height = NULL, 
                                background = "white", delay = 0.2)
@@ -514,12 +523,16 @@ export_formattable <- function(f, file, width = "100%", height = NULL,
           delay = delay)
 }
 
-#export_formattable(tab1, "tab1.png")
+# Export table for supplementary figures
+tab.wide = get_table_1()
+tab <- tab.wide
+tabNA <- names(tab) %in% c("loc.mo")
+tab <- tab[!tabNA]
+tab <- data.table(tab)
+setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
+export_formattable(formattable(tab), "Fig_Metrics_Table.pdf")
 
-#----
-#plot
-
-tab.wide= get_table_1()
+# Plot table 1 
 
 #order facets
 tab.wide$var= factor(tab.wide$var, levels=c("Air Temperature", "Surface Temperature", "Radiation"), ordered=TRUE)
@@ -716,6 +729,7 @@ pdf("Fig2_Maps.pdf",height = 10, width = 10)
 m1 / m7 + plot_annotation(tag_levels = 'A')
 dev.off()
 
+
 # ------------------------------------------------------------------
 # ------------------------------------------------------------------
 # -------------------------- FIGURES 3 and 4 ------------------------------
@@ -835,7 +849,7 @@ for(metk in 1:length(methods)){
 #=================================================
 #Plot figure 3
 
-PlotTo= function(loc,mo, ind){ 
+PlotTo= function(loc,mo, ind, cropped){ 
 
 titles=c("Weld County, Colorado, January 2017", "Weld County, Colorado, July 2017","John Day, Oregon, January 2017", "John Day, Oregon, July 2017")
   
@@ -867,14 +881,22 @@ To.long$ForcingData= factor(To.long$ForcingData, levels=c("USCRN","GLDAS","NCEP"
 To.long$column= factor(To.long$column, levels=c("Environmental Forcing Data","Microclimate Model Output","Microclimate Datasets"), ordered=TRUE)
 
 #Specify those vertically scaled to 1cm
-#To.long$Scaled=0
-#To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] =1
+To.long$Scaled="ref"
+To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] ="1cm"
 
-To.fig= ggplot(data=To.long, aes(x=date, y=To, color=ForcingData))+ 
-  facet_grid(.~column, scales="free", switch="y")+geom_line(aes(alpha=0.5))+
+if(cropped){
+  month=1
+  if(mo==2) {month=7}
+  To.long = To.long[To.long[["date"]] <= as.POSIXct(paste0("2017-",month,"-14 21:00:00"), format="%Y-%m-%d %H:%M"), ]
+  To.long = To.long[!is.na(To.long$dataset),]
+}
+
+To.fig= ggplot(data=To.long, aes(x=date, y=To, lty=Scaled, color=ForcingData))+ 
+  facet_grid(.~column, scales="free", switch="y")+geom_line(aes(alpha=0.6))+
   theme_bw()+ylab("Operative Temperature (°C)")+xlab("Date")+ggtitle(titles[ind])+
   guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") + 
+  scale_linetype_manual(values=c("dashed", "solid"))
 
 To.fig= To.fig + geom_hline(yintercept=43, color="red", lty="dashed")+
   annotate("rect", xmin = To.long$date[1], xmax = max(To.long$date, na.rm=TRUE), ymin = 32, ymax = 37,
@@ -886,7 +908,7 @@ To.obs2= To.obs1
 To.obs2$column= "Microclimate Model Output"
 To.obs= rbind(To.obs1, To.obs2)
 
-To.fig= To.fig+geom_line(data=To.obs,aes(alpha=0.5))
+To.fig= To.fig+geom_line(data=To.obs, aes(alpha=0.6), linetype="dashed")
 
 #remove legend except for last combination
 if(ind<4) To.fig= To.fig + theme(legend.position = "none")
@@ -899,7 +921,12 @@ setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/"
 
 pdf("Fig3_To.pdf",height = 12, width = 12)
 
-PlotTo(1,1, 1) +PlotTo(1,2, 2) +PlotTo(2,1, 3) +PlotTo(2,2, 4) +plot_layout(ncol = 1) + plot_layout(heights = c(1,1,1,1.2))
+PlotTo(1,1, 1,FALSE) +PlotTo(1,2,2,FALSE) +PlotTo(2,1,3,FALSE) +PlotTo(2,2,4,FALSE) +plot_layout(ncol = 1) + plot_layout(heights = c(1,1,1,1.2))
+
+dev.off()
+
+pdf("Fig3_To_2week.pdf",height = 12, width = 12)
+PlotTo(1,1,1,TRUE) +PlotTo(1,2, 2,TRUE) +PlotTo(2,1,3,TRUE) +PlotTo(2,2,4,TRUE) +plot_layout(ncol = 1) + plot_layout(heights = c(1,1,1,1.2))
 
 # + plot_layout(guides = "collect")
 

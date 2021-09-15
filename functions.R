@@ -238,3 +238,31 @@ heat_transfer_coefficient_approximation<-function(V, D, K, nu, taxa="sphere"){
   
   return(H_L)
 }
+
+sa_from_mass <- function(m, taxa){
+  
+  stopifnot(taxa %in% c("lizard", "salamander", "frog", "insect"), m > 0)
+  
+  if (taxa == "lizard") {
+    
+    # initial mass in kg
+    
+    0.0314 * pi * (m / 1000) ^ (2 / 3)
+    
+  } else if (taxa == "salamander") {
+    
+    # convert cm^2 to m^2  
+    
+    8.42 * m ^ 0.694 / (100 * 100) 
+    
+  } else if (taxa == "frog") {
+    
+    9.9 * m ^ 0.56 * (0.01) ^ 2 
+    
+  } else if (taxa == "insect" ) {
+    
+    0.0013 * m ^ 0.8 
+    
+  } 
+  
+}
