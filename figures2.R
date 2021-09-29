@@ -11,6 +11,7 @@ source("cicerone.R", local= TRUE)
 source("functions.R", local = TRUE)
 options(shiny.sanitize.errors = FALSE)
 
+
 library(viridis)
 library(plotly)
 library(formattable)
@@ -196,7 +197,7 @@ for(metk in 1:length(methods)){
   
   Ts.fig1= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Air temperature","Surface temperature"),], aes(x=dh, y=value, color=dataset))+ 
     facet_grid(LocMo~metric, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
-    theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
+    theme_bw()+ylab("Temperature (°C)")+xlab("Day of Month")+
     guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset")
   
   #add GRIDMET
@@ -224,7 +225,7 @@ for(metk in 1:length(methods)){
   #radiation plot
   Ts.fig2= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Radiation"),], aes(x=dh, y=value, color=dataset))+ 
     facet_grid(LocMo~metric, scales="free_y")+geom_line(aes(alpha=0.5))+
-    theme_bw()+ylab("Radiation (W/m2)")+xlab("Date")+
+    theme_bw()+ylab("Radiation (W/m2)")+xlab("Day of Month")+
     guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())+
     theme(legend.position = "none")
   
@@ -239,9 +240,9 @@ dev.off()
 
 ## 2 week cropped figure
 
-Ts.fig1= Ts.fig1 + xlim(0,15)
+Ts.fig1= Ts.fig1 + xlim(0,16)
 
-Ts.fig2= Ts.fig2 + xlim(0,15)
+Ts.fig2= Ts.fig2 + xlim(0,16)
 
 pdf("Fig1_2week.pdf",height = 12, width = 12)
 
@@ -258,8 +259,8 @@ dev.off()
 setwd(wd)
 
 #make array to store operative temperature data
-methods <- c("micro_global","micro_ncep","micro_era5","micro_usa","USCRN1cm")
-#methods <- c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","microclimUS", "USCRN1cm")
+#methods <- c("micro_global","micro_ncep","micro_era5","micro_usa","USCRN1cm") #S1
+methods <- c("GLDAS1cm","microclim","NCEP1cm","ERA51cm","microclimUS", "USCRN1cm") #S2
 
 Ts= array(NA, dim=c(2,2,length(methods),744,5), 
           dimnames = list(site=c("CO","OR"),month=c("January","July"), dataset=c(methods), t=NULL, 
@@ -311,32 +312,44 @@ Ts.wide$metric[Ts.wide$metric=="Ts"]="Surface temperature"
 Ts.wide$metric[Ts.wide$metric=="rad"]="Radiation"
 
 #Make factor
-Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN1cm","micro_global","micro_ncep","micro_era5","micro_usa"), ordered=TRUE)
-#Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm","microclimUS","microclim"), ordered=TRUE)
+#Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN1cm","micro_global","micro_ncep","micro_era5","micro_usa"), ordered=TRUE) #S1
+Ts.wide$dataset= factor(Ts.wide$dataset, levels=c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm","microclimUS","microclim"), ordered=TRUE) #S2
 
 #Get day of month
 Ts.wide$day= as.numeric(format(Ts.wide$Date, format = "%d"))
 Ts.wide$hour= as.numeric(format(Ts.wide$Date, format = "%H"))
 Ts.wide$dh= Ts.wide$day + Ts.wide$hour/24
 
-Ts.fig1= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Air temperature","Surface temperature"),], aes(x=dh, y=value, color=dataset))+ 
+#Specify those vertically scaled to 1cm
+Ts.wide$Scaled="ref"
+Ts.wide$Scaled[Ts.wide$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] ="1cm"
+
+Ts.fig1= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Air temperature","Surface temperature"),], aes(x=dh, y=value, lty=Scaled, color=dataset))+ 
   facet_grid(LocMo~metric, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
-  theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
-  guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset")+
+  theme_bw()+ylab("Temperature (°C)")+xlab("Day of Month")+
+  guides(alpha=FALSE, lty=FALSE)+scale_color_viridis_d(name="Dataset")+
+  scale_linetype_manual(values=c("dashed", "solid")) + 
   theme(legend.position = "bottom")
 
 #radiation plot
-Ts.fig2= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Radiation"),], aes(x=dh, y=value, color=dataset))+ 
+Ts.fig2= ggplot(data=Ts.wide[Ts.wide$metric %in%c("Radiation"),], aes(x=dh, y=value, lty=Scaled, color=dataset))+ 
   facet_grid(LocMo~metric, scales="free_y")+geom_line(aes(alpha=0.5))+
-  theme_bw()+ylab("Radiation (W/m2)")+xlab("Date")+
-  guides(alpha=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())+
+  theme_bw()+ylab("Radiation (W/m2)")+xlab("Day of Month")+
+  guides(alpha=FALSE, lty=FALSE)+scale_color_viridis_d(name="Dataset") +theme(strip.text.y = element_blank())+
+  scale_linetype_manual(values=c("dashed", "solid")) + 
   theme(legend.position = "none")
+
+#add USCRN 1cm on top 
+Ts.obs= Ts.wide[Ts.wide$dataset=="USCRN1cm" & Ts.wide$metric %in% c("Air temperature", "Surface temperature"),]
+Ts.fig1= Ts.fig1+geom_line(data=Ts.obs, aes(alpha=0.5), linetype="dashed")
+Ts.obs= Ts.wide[Ts.wide$dataset=="USCRN1cm" & Ts.wide$metric %in% c("Radiation"),]
+Ts.fig2= Ts.fig2+geom_line(data=Ts.obs, aes(alpha=0.5), linetype="dashed")
 
 #plot together
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 
-pdf("FigS1_EnvDat_MicroclimateModel.pdf",height = 12, width = 12)
-#pdf("FigS2_EnvDat_MicroclimateDatasets.pdf",height = 12, width = 12)
+#pdf("FigS1_EnvDat_MicroclimateModel.pdf",height = 12, width = 12) #S1
+pdf("FigS2_EnvDat_MicroclimateDatasets.pdf",height = 12, width = 12) #S2
 
 Ts.fig1+Ts.fig2 + plot_layout(widths = c(2, 1))
 
@@ -526,8 +539,16 @@ export_formattable <- function(f, file, width = "100%", height = NULL,
 # Export table for supplementary figures
 tab.wide = get_table_1()
 tab <- tab.wide
+tab <- tab[order(tab$loc.mo, tab$var),]
 tabNA <- names(tab) %in% c("loc.mo")
 tab <- tab[!tabNA]
+tab$var <- as.character(tab$var)
+tab$var[tab$var=="Air Temperature"] <- "Air Temperature (˚C)"
+tab$var[tab$var=="Radiation"] <- "Radiation (W/m2)"
+tab$var[tab$var=="Surface Temperature"] <- "Surface Temperature (˚C)"
+tab$Location[tab$Location=="CO"] <- "Colorado"
+tab$Location[tab$Location=="OR"] <- "Oregon"
+colnames(tab) <- c("Methods","Location","Month","Variable","Bias","PCC","RMSE")
 tab <- data.table(tab)
 setwd("/Volumes/GoogleDrive/Shared Drives/TrEnCh/Projects/Microclimate/figures/")
 export_formattable(formattable(tab), "Fig_Metrics_Table.pdf")
@@ -884,22 +905,25 @@ To.long$column= factor(To.long$column, levels=c("Environmental Forcing Data","Mi
 To.long$Scaled="ref"
 To.long$Scaled[To.long$dataset %in% c("USCRN1cm","GLDAS1cm","NCEP1cm","ERA51cm")] ="1cm"
 
+#Get day of month
+To.long$day= as.numeric(format(To.long$date, format = "%d"))
+To.long$hour= as.numeric(format(To.long$date, format = "%H"))
+To.long$dh= To.long$day + To.long$hour/24
+
 if(cropped){
-  month=1
-  if(mo==2) {month=7}
-  To.long = To.long[To.long[["date"]] <= as.POSIXct(paste0("2017-",month,"-14 21:00:00"), format="%Y-%m-%d %H:%M"), ]
+  To.long = To.long[To.long$dh < 16,]
   To.long = To.long[!is.na(To.long$dataset),]
 }
 
-To.fig= ggplot(data=To.long, aes(x=date, y=To, lty=Scaled, color=ForcingData))+ 
+To.fig= ggplot(data=To.long, aes(x=dh, y=To, lty=Scaled, color=ForcingData))+ 
   facet_grid(.~column, scales="free", switch="y")+geom_line(aes(alpha=0.6))+
-  theme_bw()+ylab("Operative Temperature (°C)")+xlab("Date")+ggtitle(titles[ind])+
+  theme_bw()+ylab("Operative Temperature (°C)")+xlab("Day of Month")+ggtitle(titles[ind])+
   guides(lty=FALSE, alpha=FALSE)+scale_color_viridis_d(name="Forcing Data") +
   theme(legend.position = "bottom") + 
   scale_linetype_manual(values=c("dashed", "solid"))
 
 To.fig= To.fig + geom_hline(yintercept=43, color="red", lty="dashed")+
-  annotate("rect", xmin = To.long$date[1], xmax = max(To.long$date, na.rm=TRUE), ymin = 32, ymax = 37,
+  annotate("rect", xmin = To.long$dh[1], xmax = max(To.long$dh, na.rm=TRUE), ymin = 32, ymax = 37,
            alpha = .3,fill = "darkgreen")
 
 #add USCRN 1cm on top and to middle column
@@ -1150,7 +1174,7 @@ Ts.long$metric[grep("To", Ts.long$metric)]="Operative"
 
 Tfig= ggplot(data=Ts.long, aes(x=dh, y=value, color=metric))+ 
   facet_grid(LocMo~dataset, scales="free_y", switch="y")+geom_line(aes(alpha=0.5))+
-  theme_bw()+ylab("Temperature (°C)")+xlab("Date")+
+  theme_bw()+ylab("Temperature (°C)")+xlab("Day of Month")+
   guides(alpha=FALSE)+scale_color_viridis_d(name="Temperature")+
   theme(legend.position = "bottom")
 
