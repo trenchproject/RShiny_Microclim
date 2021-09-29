@@ -280,3 +280,110 @@ volume_from_length <- function (l, taxa) {
   (l / Kl) ^ 3
   
 }
+
+partition_solar_radiation=function(method, kt, lat=NA, sol.elev=NA){  
+  
+  stopifnot(method %in% c("Liu_Jordan", "Orgill_Hollands", "Erbs", "Olyphant", "Spencer", "Reindl-1", "Reindl-2", "Lam_Li"), kt>=0, kt<=1)
+  
+  # Methods from Wong and Chow (2001, Applied Energy 69:1991-224)
+  
+  #based on the correlations between the clearness index kt (dimensionless) and the diffuse fraction kd (dimensionless), diffuse coefficient kD (dimensionless) or the direct transmittance kb (dimensionless) where
+  #k_t= I_t/I_o, k_d=I_d/I_t, k_D=I_d/I_o, k_b=I_b/I_o,
+  #where I_t, I_b, I_d, and I_o are the global, direct, diffuse, and extraterrestial irradiances, respectively
+  
+  #kd- diffuse fraction
+  
+  #6.1 Liu and Jordan 
+  if(method=="Liu_Jordan") {
+    kd= (0.271 -0.294*kt)/kt #kd= (0.384 -0.416*kt)/kt
+    if(kd>1) kd=1
+  }
+  
+  #6.2 Orgill and Hollands
+  if(method=="Orgill_Hollands"){
+    if(kt<0.35) kd= 1-0.249*kt
+    if(kt>=0.35 & kt<=0.75) kd= 1.577-1.84*kt
+    if(kt>=0.75) kd = 0.177 
+  }
+  
+  #6.3 Erbs et al.
+  if(method=="Erbs"){
+    if(kt<=0.22) kd= 1-0.09*kt
+    if(kt>0.22 & kt<0.8) kd= 0.9511 -0.1604*kt +4.388*kt^2 -16.638*kt^3 +12.336*kt^4
+    if(kt>=0.8) kd = 0.165 #Correction from 0.125 for CO from Olyphant 1984
+  }
+  
+  if(method=="Olyphant"){ #Correction for Colorado from Olyphant 1984
+    if(kt<=0.22) kd= 1-0.09*kt
+    if(kt>0.22 & kt<0.8) kd= 0.9511 -0.1604*kt +4.388*kt^2 -16.638*kt^3 +12.336*kt^4
+    if(kt>=0.8) kd = 0.125 
+  }
+  
+  #6.4 Spencer
+  if(method=="Spencer"){
+    a3= 0.94+0.0118*abs(lat)
+    b3= 1.185+0.0135*abs(lat)
+    
+    #method assumes constant kd if kt outside below range
+    kd=NA
+    if(kt>=0.35 & kt<=0.75) kd= a3-b3*kt
+  }
+  
+  #6.5 Reindl et al.
+  if(method=="Reindl-1"){
+    if(kt<=0.3) kd= 1.02-0.248*kt
+    if(kt>0.3 & kt<0.78) kd= 1.45-1.67*kt
+    if(kt>=0.78) kd = 0.147
+  }
+  
+  if(method=="Reindl-2"){
+    if(kt<=0.3) kd= 1.02-0.254*kt
+    if(kt>0.3 & kt<0.78) kd= 1.4-1.749*kt+0.177*sin(sol.elev*180/pi)
+    if(kt>=0.78) kd = 0.486*kt -0.182*sin(sol.elev*180/pi)
+  }
+  
+  #6.6 Lam and Li
+  if(method=="Lam_Li"){
+    if(kt<=0.15) kd= 0.977
+    if(kt>0.15 & kt<=0.7) kd= 1.237-1.361*kt
+    if(kt>0.7) kd = 0.273
+  }
+  
+  #direct and diffuse is c(rad*(1-kd),rad*(kd))
+  
+  return (kd)
+  
+}  
+
+
+zenith_angle=function(doy, lat, lon, hour, offset=NA){
+  
+  stopifnot(doy>0, doy<367, lat>=-90, lat<=90, lon>=-180, lon<=180, hour>=0, hour<=24)
+  
+  lat=lat*pi/180 #to radians
+  
+  RevAng = 0.21631 + 2 * atan(0.967 * tan(0.0086 * (-186 + doy))); # Revolution angle in radians
+  DecAng = asin(0.39795 * cos(RevAng));                            # Declination angle in radians           
+  
+  f=(279.575+0.9856*doy)  # f in degrees as a function of day of year, p.169 Campbell & Norman 2000
+  f=f*pi/180 #convert f in degrees to radians
+  ET= (-104.7*sin (f)+596.2*sin (2*f)+4.3*sin (3*f)-12.7*sin (4*f)-429.3*cos (f)-2.0*cos (2*f)+19.3*cos (3*f))/3600   # (11.4) Equation of time: ET is a 15-20 minute correction which depends on calendar day
+  lon[lon<0]=360+lon[lon<0] #convert to 0 to 360
+  LC= 1/15*(lon%%15) # longitude correction, 1/15h for each degree of standard meridian
+  LC[LC>0.5]= LC[LC>0.5]-1
+  t_0 = 12-LC-ET # solar noon
+  
+  #Check if offset is as expected. (Is the timezone of the location the same as that of the meridian 
+  #that's within 7.5 degrees from that location?)
+  lon[lon>180]=lon[lon>180]-360
+  if (!is.na(offset)) {
+    offset_theory <- as.integer(lon / 15) + lon / abs(lon) * as.integer(abs(lon) %% 15 / 7.5)
+    t_0 = t_0 - offset_theory + offset
+  }
+  
+  cos.zenith= sin(DecAng)*sin(lat) + cos(DecAng)*cos(lat)*cos(pi/12*(hour-t_0)); #cos of zenith angle in radians
+  zenith=acos(cos.zenith)*180/pi # zenith angle in degrees
+  zenith[zenith>90]=90 # if measured from the vertical psi can't be greater than pi/2 (90 degrees)
+  
+  return(zenith)
+}
