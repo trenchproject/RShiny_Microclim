@@ -266,3 +266,17 @@ sa_from_mass <- function(m, taxa){
   } 
   
 }
+
+volume_from_length <- function (l, taxa) {
+  
+  stopifnot(taxa %in% c("lizard", "frog", "sphere"), l > 0)
+  
+  Kl <- switch(taxa, 
+               "lizard" = 3.3,
+               "frog" = 2.27,
+               "sphere" = 1.24)
+  
+  
+  (l / Kl) ^ 3
+  
+}
