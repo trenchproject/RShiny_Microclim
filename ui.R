@@ -34,8 +34,8 @@ shinyUI <- fluidPage(id = "page",
  theme = shinytheme("united"),
   setBackgroundColor(color = "#C7DAE0"),
  
-  title = "Microclimate selection",
-  titlePanel("TrEnCh Project Microclimate Selection Tool"),
+  title = "Microclimate data selection",
+  titlePanel("TrEnCh Project Microclimate Data Selection Tool"),
   hr(),
   includeHTML("intro.html"),
   
