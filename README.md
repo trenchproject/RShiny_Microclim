@@ -1,5 +1,7 @@
 # RShiny_Microclim
 
+[![DOI](https://zenodo.org/badge/311754360.svg)](https://zenodo.org/badge/latestdoi/311754360) Ecosphere manuscript version
+
 RShiny_Microclim is an interactive shiny app that facilitates the selection of microclimate datasets.
 The app compares 8 different datasets (SCAN, ERA5-Land, GLDAS, gridMET, NOAA NCDC, microclim, microclimUS, USCRN) both temporally and spatially.
 Once users selects a dataset, we offer [this](https://bookdown.org/huckley/microclimate_users_guide/) user guide, which explains how to access and download each dataset.
