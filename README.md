@@ -1,10 +1,13 @@
 # RShiny_Microclim
+The repo reproduces the figures in [this manuscript](https://esajournals.onlinelibrary.wiley.com/doi/full/10.1002/ecs2.4506): Meyer, Abigail V., Yutaro Sakairi, Michael R. Kearney, and Lauren B. Buckley. 2023. “A Guide and Tools for Selecting and Accessing Microclimate Data for Mechanistic Niche Modeling.” Ecosphere14(4): e4506.
 
-[![DOI](https://zenodo.org/badge/311754360.svg)](https://zenodo.org/badge/latestdoi/311754360) Ecosphere manuscript version
+[![DOI](https://zenodo.org/badge/311754360.svg)](https://zenodo.org/badge/latestdoi/311754360) Ecosphere manuscript version of code
 
-RShiny_Microclim is an interactive shiny app that facilitates the selection of microclimate datasets.
+[RShiny_MicroclimGuide]() is an interactive shiny app that facilitates the selection of microclimate datasets.
 The app compares 8 different datasets (SCAN, ERA5-Land, GLDAS, gridMET, NOAA NCDC, microclim, microclimUS, USCRN) both temporally and spatially.
-Once users selects a dataset, we offer [this](https://bookdown.org/huckley/microclimate_users_guide/) user guide, which explains how to access and download each dataset.
+Once users selects a dataset, we offer [this](https://bookdown.org/huckley/microclimate_users_guide/) user guide, which explains how to access and download each dataset. 
+
+An archive Docker Azure version of the app is in this repo. The app is now published on Shiny Apps from this [repo](https://github.com/trenchproject/RShiny_MicroclimGuide).
 
 ## Prerequisites for opening in Rstudio
 Git and Rstudio ([Instructions](https://resources.github.com/whitepapers/github-and-rstudio/))  
